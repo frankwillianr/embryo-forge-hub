@@ -7,6 +7,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminCidades from "@/pages/admin/AdminCidades";
 import CidadePage from "@/pages/CidadePage";
+import BannerDetailPage from "@/pages/BannerDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
         <Routes>
           {/* Public single page app */}
           <Route path="/" element={<CidadePage />} />
+          <Route path="/banner/:id" element={<BannerDetailPage />} />
 
           {/* Admin routes with admin layout */}
           <Route
