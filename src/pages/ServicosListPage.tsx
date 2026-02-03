@@ -5,23 +5,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import servicosBanner from "@/assets/servicos-banner.jpg";
 
+// Import icons
+import veiculosIcon from "@/assets/icons/veiculos.png";
+import desapegaIcon from "@/assets/icons/desapega.png";
+import entregadorIcon from "@/assets/icons/entregador.png";
+import salaoIcon from "@/assets/icons/salao.png";
+import reparosIcon from "@/assets/icons/reparos.png";
+import limpezaIcon from "@/assets/icons/limpeza.png";
+import petIcon from "@/assets/icons/pet.png";
+import obrasIcon from "@/assets/icons/obras.png";
+
 const categorias = [
   // Destaques
-  { id: "veiculos", nome: "Veículos", emoji: "🚗" },
-  { id: "desapega", nome: "Desapega", emoji: "🛍️" },
+  { id: "veiculos", nome: "Veículos", icon: veiculosIcon },
+  { id: "desapega", nome: "Desapega", icon: desapegaIcon },
   
   // Entregas e transporte
-  { id: "entregador", nome: "Entregador", emoji: "🛵" },
+  { id: "entregador", nome: "Entregador", icon: entregadorIcon },
   { id: "motorista", nome: "Motorista", emoji: "🚙" },
   { id: "mudancas", nome: "Mudanças", emoji: "🚚" },
   
   // Beleza e estética
-  { id: "salao", nome: "Salão", emoji: "💇‍♀️" },
+  { id: "salao", nome: "Salão", icon: salaoIcon },
   { id: "manicure", nome: "Manicure", emoji: "💅" },
   { id: "barbeiro", nome: "Barbeiro", emoji: "💈" },
   
   // Casa e reparos
-  { id: "reparos", nome: "Reparos", emoji: "🔧" },
+  { id: "reparos", nome: "Reparos", icon: reparosIcon },
   { id: "eletricista", nome: "Eletricista", emoji: "⚡" },
   { id: "encanador", nome: "Encanador", emoji: "🚿" },
   { id: "pintor", nome: "Pintor", emoji: "🎨" },
@@ -29,12 +39,12 @@ const categorias = [
   { id: "vidraceiro", nome: "Vidraceiro", emoji: "🪟" },
   
   // Limpeza e organização
-  { id: "limpeza", nome: "Limpeza", emoji: "✨" },
+  { id: "limpeza", nome: "Limpeza", icon: limpezaIcon },
   { id: "diarista", nome: "Diarista", emoji: "🏠" },
   { id: "dedetizacao", nome: "Dedetização", emoji: "🪲" },
   
   // Construção
-  { id: "obras", nome: "Obras", emoji: "🏗️" },
+  { id: "obras", nome: "Obras", icon: obrasIcon },
   { id: "serralheria", nome: "Serralheria", emoji: "⚙️" },
   { id: "marceneiro", nome: "Marceneiro", emoji: "🪑" },
   
@@ -42,7 +52,7 @@ const categorias = [
   { id: "jardinagem", nome: "Jardinagem", emoji: "🌳" },
   
   // Pet
-  { id: "pet", nome: "Pet", emoji: "🐕" },
+  { id: "pet", nome: "Pet", icon: petIcon },
   
   // Tecnologia
   { id: "informatica", nome: "Informática", emoji: "💻" },
@@ -132,9 +142,17 @@ const ServicosListPage = () => {
                 onClick={() => handleClick(cat.id)}
                 className="flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-xl py-2.5 px-2 transition-all active:scale-95 group"
               >
-                <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">
-                  {cat.emoji}
-                </span>
+                {cat.icon ? (
+                  <img 
+                    src={cat.icon} 
+                    alt={cat.nome}
+                    className="w-10 h-10 mb-1 group-hover:scale-110 transition-transform object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
+                  />
+                ) : (
+                  <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">
+                    {cat.emoji}
+                  </span>
+                )}
                 <span className="text-[10px] font-medium text-foreground text-center leading-tight">
                   {cat.nome}
                 </span>
