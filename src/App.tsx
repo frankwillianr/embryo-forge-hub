@@ -7,6 +7,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminCidades from "@/pages/admin/AdminCidades";
 import AdminJornal from "@/pages/admin/AdminJornal";
+import AdminCinema from "@/pages/admin/AdminCinema";
 import CidadePage from "@/pages/CidadePage";
 import BannerDetailPage from "@/pages/BannerDetailPage";
 import JornalDetailPage from "@/pages/JornalDetailPage";
@@ -50,6 +51,14 @@ const App = () => (
             element={
               <AdminLayout>
                 <AdminJornal />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/cinema"
+            element={
+              <AdminLayout>
+                <AdminCinema />
               </AdminLayout>
             }
           />
