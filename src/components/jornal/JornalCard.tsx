@@ -42,12 +42,12 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
       </div>
 
       {/* Conteúdo minimalista */}
-      <div className="pt-3 space-y-1">
-        <p className="text-[11px] text-muted-foreground/70 uppercase tracking-wide">
+      <div className="pt-2.5 space-y-0.5">
+        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
           {format(new Date(jornal.created_at), "dd MMM", { locale: ptBR })}
-          {jornal.fonte && <span className="ml-2">· {jornal.fonte}</span>}
+          {jornal.fonte && <span className="ml-1.5">· {jornal.fonte}</span>}
         </p>
-        <h3 className="font-medium text-foreground line-clamp-2 text-[15px] leading-snug tracking-tight">
+        <h3 className="font-medium text-foreground line-clamp-2 text-[13px] leading-tight tracking-tight">
           {jornal.titulo}
         </h3>
       </div>
