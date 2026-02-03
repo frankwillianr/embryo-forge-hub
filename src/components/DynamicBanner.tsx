@@ -163,9 +163,9 @@ const DynamicBanner = ({ userName = "Visitante" }: DynamicBannerProps) => {
           </span>
         </div>
 
-        <h1 className="text-2xl font-bold mb-3">
-          Olá, {userName}!
-        </h1>
+        <p className="text-lg font-medium mb-3">
+          Olá, {userName}
+        </p>
 
         <div className="flex items-center gap-3">
           {loading ? (
