@@ -99,7 +99,7 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
         </button>
       </div>
       <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
-        Comunicados e avisos oficiais da prefeitura
+        Denúncias e reclamações da comunidade
       </p>
 
       {/* Scroll horizontal */}
