@@ -19,6 +19,7 @@ import VeiculosListPage from "@/pages/VeiculosListPage";
 import NovoVeiculoPage from "@/pages/NovoVeiculoPage";
 import DesapegaListPage from "@/pages/DesapegaListPage";
 import NovoDesapegaPage from "@/pages/NovoDesapegaPage";
+import DesapegaDetailPage from "@/pages/DesapegaDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -89,6 +90,7 @@ const App = () => (
           {/* Desapega public routes */}
           <Route path="/cidade/:slug/desapega" element={<DesapegaListPage />} />
           <Route path="/cidade/:slug/desapega/novo" element={<NovoDesapegaPage />} />
+          <Route path="/cidade/:slug/desapega/:anuncioId" element={<DesapegaDetailPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
