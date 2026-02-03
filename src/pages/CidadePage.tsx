@@ -1,21 +1,23 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, Newspaper, Film, User, ArrowLeft } from "lucide-react";
+import { Home, Newspaper, Film, Megaphone, User, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CidadeBanner from "@/components/CidadeBanner";
 import HomeSection from "@/components/sections/HomeSection";
 import JornalSection from "@/components/sections/JornalSection";
 import CinemaSection from "@/components/sections/CinemaSection";
+import AloPrefeituraSection from "@/components/sections/AloPrefeituraSection";
 import PerfilSection from "@/components/sections/PerfilSection";
 import { Button } from "@/components/ui/button";
 
-type TabType = "home" | "jornal" | "cinema" | "perfil";
+type TabType = "home" | "jornal" | "cinema" | "prefeitura" | "perfil";
 
 const navItems = [
   { id: "home" as TabType, title: "Home", icon: Home },
   { id: "jornal" as TabType, title: "Jornal", icon: Newspaper },
   { id: "cinema" as TabType, title: "Cinema", icon: Film },
+  { id: "prefeitura" as TabType, title: "Prefeitura", icon: Megaphone },
   { id: "perfil" as TabType, title: "Perfil", icon: User },
 ];
 
@@ -23,6 +25,7 @@ const sectionTitles: Record<TabType, string> = {
   home: "Home",
   jornal: "Jornal",
   cinema: "Cinema",
+  prefeitura: "Alô Prefeitura",
   perfil: "Perfil",
 };
 
@@ -56,6 +59,8 @@ const CidadePage = () => {
         return <JornalSection cidadeSlug={slug} />;
       case "cinema":
         return <CinemaSection cidadeSlug={slug} />;
+      case "prefeitura":
+        return <AloPrefeituraSection cidadeSlug={slug} />;
       case "perfil":
         return <PerfilSection />;
     }

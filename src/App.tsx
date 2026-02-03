@@ -8,10 +8,13 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminCidades from "@/pages/admin/AdminCidades";
 import AdminJornal from "@/pages/admin/AdminJornal";
 import AdminCinema from "@/pages/admin/AdminCinema";
+import AdminAloPrefeitura from "@/pages/admin/AdminAloPrefeitura";
 import CidadePage from "@/pages/CidadePage";
 import BannerDetailPage from "@/pages/BannerDetailPage";
 import JornalDetailPage from "@/pages/JornalDetailPage";
 import JornalListPage from "@/pages/JornalListPage";
+import AloPrefeituraListPage from "@/pages/AloPrefeituraListPage";
+import AloPrefeituraDetailPage from "@/pages/AloPrefeituraDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +65,18 @@ const App = () => (
               </AdminLayout>
             }
           />
+          <Route
+            path="/admin/alo-prefeitura"
+            element={
+              <AdminLayout>
+                <AdminAloPrefeitura />
+              </AdminLayout>
+            }
+          />
+
+          {/* Alô Prefeitura public routes */}
+          <Route path="/cidade/:slug/alo-prefeitura" element={<AloPrefeituraListPage />} />
+          <Route path="/cidade/:slug/alo-prefeitura/:itemId" element={<AloPrefeituraDetailPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

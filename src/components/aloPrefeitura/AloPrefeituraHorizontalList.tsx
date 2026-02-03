@@ -1,0 +1,114 @@
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { Megaphone } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import AloPrefeituraCard from "./AloPrefeituraCard";
+import type { AloPrefeitura, AloPrefeituraImagem } from "@/types/aloPrefeitura";
+
+interface AloPrefeituraHorizontalListProps {
+  cidadeSlug?: string;
+}
+
+const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalListProps) => {
+  const navigate = useNavigate();
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ["alo-prefeitura-home", cidadeSlug],
+    queryFn: async () => {
+      // Busca cidade pelo slug
+      const { data: cidadeData, error: cidadeError } = await supabase
+        .from("cidade")
+        .select("id")
+        .eq("slug", cidadeSlug)
+        .maybeSingle();
+
+      if (cidadeError) throw cidadeError;
+      if (!cidadeData) return [];
+
+      // Busca itens da cidade
+      const { data: itemsData, error: itemsError } = await supabase
+        .from("rel_cidade_alo_prefeitura")
+        .select("*")
+        .eq("cidade_id", cidadeData.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (itemsError) throw itemsError;
+      if (!itemsData || itemsData.length === 0) return [];
+
+      // Busca imagens
+      const itemIds = itemsData.map((j) => j.id);
+      const { data: imagensData, error: imagensError } = await supabase
+        .from("rel_cidade_alo_prefeitura_imagens")
+        .select("*")
+        .in("alo_prefeitura_id", itemIds)
+        .order("ordem");
+
+      if (imagensError) throw imagensError;
+
+      // Agrupa imagens
+      const imagensPorItem = (imagensData || []).reduce((acc, img) => {
+        if (!acc[img.alo_prefeitura_id]) acc[img.alo_prefeitura_id] = [];
+        acc[img.alo_prefeitura_id].push(img as AloPrefeituraImagem);
+        return acc;
+      }, {} as Record<string, AloPrefeituraImagem[]>);
+
+      return itemsData.map((j) => ({
+        ...j,
+        imagens: imagensPorItem[j.id] || [],
+      })) as AloPrefeitura[];
+    },
+    enabled: !!cidadeSlug,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="px-5 py-6">
+        <div className="flex gap-4 overflow-hidden">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex-shrink-0 w-64 space-y-3">
+              <div className="aspect-[4/3] bg-muted/50 animate-pulse rounded-2xl" />
+              <div className="space-y-2">
+                <div className="h-2 w-16 bg-muted/50 animate-pulse rounded" />
+                <div className="h-4 w-full bg-muted/50 animate-pulse rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="py-6">
+      {/* Header minimalista */}
+      <div className="flex items-center justify-between px-5 mb-3">
+        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+          <Megaphone className="h-4 w-4 text-primary" />
+          Alô Prefeitura
+        </h2>
+        <button
+          onClick={() => navigate(`/cidade/${cidadeSlug}/alo-prefeitura`)}
+          className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
+        >
+          Ver todas
+        </button>
+      </div>
+
+      {/* Scroll horizontal */}
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="flex gap-4 px-5 pb-2">
+          {items.map((item) => (
+            <AloPrefeituraCard key={item.id} item={item} cidadeSlug={cidadeSlug} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AloPrefeituraHorizontalList;
