@@ -15,6 +15,7 @@ import JornalDetailPage from "@/pages/JornalDetailPage";
 import JornalListPage from "@/pages/JornalListPage";
 import AloPrefeituraListPage from "@/pages/AloPrefeituraListPage";
 import AloPrefeituraDetailPage from "@/pages/AloPrefeituraDetailPage";
+import VeiculosListPage from "@/pages/VeiculosListPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,9 @@ const App = () => (
           {/* Alô Prefeitura public routes */}
           <Route path="/cidade/:slug/alo-prefeitura" element={<AloPrefeituraListPage />} />
           <Route path="/cidade/:slug/alo-prefeitura/:itemId" element={<AloPrefeituraDetailPage />} />
+
+          {/* Veículos public routes */}
+          <Route path="/cidade/:slug/veiculos" element={<VeiculosListPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

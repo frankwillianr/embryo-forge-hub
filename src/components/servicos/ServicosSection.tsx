@@ -44,8 +44,11 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
   const navigate = useNavigate();
 
   const handleClick = (servicoId: string) => {
-    // Por enquanto só mostra toast, depois vai navegar
-    console.log(`Clicou em ${servicoId}`);
+    if (servicoId === "veiculos") {
+      navigate(`/cidade/${cidadeSlug}/veiculos`);
+    } else {
+      console.log(`Clicou em ${servicoId}`);
+    }
   };
 
   return (
