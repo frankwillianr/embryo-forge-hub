@@ -1,13 +1,15 @@
 import { NavLink } from "@/components/NavLink";
-import { Settings, MapPin } from "lucide-react";
+import { Home, Newspaper, Film, User } from "lucide-react";
 
 interface MobileLayoutProps {
   children: React.ReactNode;
 }
 
 const navItems = [
-  { title: "Cidade", url: "/cidade", icon: MapPin },
-  { title: "Admin", url: "/admin", icon: Settings },
+  { title: "Home", url: "/", icon: Home },
+  { title: "Jornal", url: "/jornal", icon: Newspaper },
+  { title: "Cinema", url: "/cinema", icon: Film },
+  { title: "Perfil", url: "/perfil", icon: User },
 ];
 
 const MobileLayout = ({ children }: MobileLayoutProps) => {
@@ -25,7 +27,7 @@ const MobileLayout = ({ children }: MobileLayoutProps) => {
             <NavLink
               key={item.url}
               to={item.url}
-              className="flex flex-col items-center justify-center gap-1 px-6 py-2 text-muted-foreground transition-colors"
+              className="flex flex-col items-center justify-center gap-1 px-4 py-2 text-muted-foreground transition-colors"
               activeClassName="text-primary"
             >
               <item.icon className="h-5 w-5" />
