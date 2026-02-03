@@ -13,7 +13,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
 
   // Buscar cidade
   const { data: cidade } = useQuery({
-    queryKey: ["cidade", cidadeSlug],
+    queryKey: ["cidade-id", cidadeSlug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cidade")
