@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Camera, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import ImageUpload from "@/components/shared/ImageUpload";
 
 const NovoDesapegaPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -135,17 +136,6 @@ const NovoDesapegaPage = () => {
     setWhatsapp(formatted);
   };
 
-  const handleImageUrlAdd = () => {
-    const url = prompt("Cole a URL da imagem:");
-    if (url && url.startsWith("http")) {
-      setImagens((prev) => [...prev, url]);
-    }
-  };
-
-  const removeImagem = (index: number) => {
-    setImagens((prev) => prev.filter((_, i) => i !== index));
-  };
-
   const isValid =
     titulo.trim().length >= 3 &&
     preco &&
@@ -170,39 +160,13 @@ const NovoDesapegaPage = () => {
         {/* Fotos */}
         <div className="space-y-2">
           <Label>Fotos do produto</Label>
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {imagens.map((url, index) => (
-              <div
-                key={index}
-                className="relative flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-muted"
-              >
-                <img
-                  src={url}
-                  alt={`Foto ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  onClick={() => removeImagem(index)}
-                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-
-            {imagens.length < 5 && (
-              <button
-                onClick={handleImageUrlAdd}
-                className="flex-shrink-0 w-24 h-24 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-              >
-                <Camera className="h-6 w-6" />
-                <span className="text-xs">Adicionar</span>
-              </button>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Adicione até 5 fotos do produto
-          </p>
+          <ImageUpload
+            images={imagens}
+            onChange={setImagens}
+            maxImages={5}
+            bucket="desapega"
+            folder="anuncios"
+          />
         </div>
 
         {/* Título */}
