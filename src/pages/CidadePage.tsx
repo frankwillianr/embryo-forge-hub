@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Home, Newspaper, Film, User } from "lucide-react";
+import { Home, Newspaper, Film, User, ArrowLeft } from "lucide-react";
 import DynamicBanner from "@/components/DynamicBanner";
 import HomeSection from "@/components/sections/HomeSection";
 import JornalSection from "@/components/sections/JornalSection";
 import CinemaSection from "@/components/sections/CinemaSection";
 import PerfilSection from "@/components/sections/PerfilSection";
+import { Button } from "@/components/ui/button";
 
 type TabType = "home" | "jornal" | "cinema" | "perfil";
 
@@ -15,8 +16,17 @@ const navItems = [
   { id: "perfil" as TabType, title: "Perfil", icon: User },
 ];
 
+const sectionTitles: Record<TabType, string> = {
+  home: "Home",
+  jornal: "Jornal",
+  cinema: "Cinema",
+  perfil: "Perfil",
+};
+
 const CidadePage = () => {
   const [activeTab, setActiveTab] = useState<TabType>("home");
+
+  const isHome = activeTab === "home";
 
   const renderSection = () => {
     switch (activeTab) {
@@ -35,7 +45,22 @@ const CidadePage = () => {
     <div className="flex flex-col min-h-screen bg-background">
       {/* Main Content */}
       <main className="flex-1 overflow-auto pb-16">
-        <DynamicBanner />
+        {isHome ? (
+          <DynamicBanner />
+        ) : (
+          <header className="flex items-center gap-3 p-4 border-b border-border bg-card">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setActiveTab("home")}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold text-foreground">
+              {sectionTitles[activeTab]}
+            </h1>
+          </header>
+        )}
         
         <div className="animate-in fade-in duration-300">
           {renderSection()}
