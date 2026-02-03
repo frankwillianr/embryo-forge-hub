@@ -58,32 +58,67 @@ const JornalListPage = () => {
   return (
     <div className="min-h-screen bg-background pb-4">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 p-4 border-b border-border bg-card">
-        <Button variant="ghost" size="icon" onClick={() => navigate(`/cidade/${slug}`)}>
-          <ArrowLeft className="h-5 w-5" />
+      <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-background/95 backdrop-blur-sm">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}`)}>
+          <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-lg font-semibold">📰 Jornal da Cidade</h1>
+        <h1 className="text-base font-semibold">Jornal da Cidade</h1>
       </header>
 
       {/* Lista */}
-      <div className="p-4">
+      <div className="px-4 py-4">
         {isLoading ? (
-          <div className="grid gap-4">
+          <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 bg-muted animate-pulse rounded-xl" />
+              <div key={i} className="flex gap-3">
+                <div className="w-24 h-20 bg-muted/50 animate-pulse rounded-xl flex-shrink-0" />
+                <div className="flex-1 space-y-2 py-1">
+                  <div className="h-2 w-16 bg-muted/50 animate-pulse rounded" />
+                  <div className="h-3 w-full bg-muted/50 animate-pulse rounded" />
+                  <div className="h-3 w-3/4 bg-muted/50 animate-pulse rounded" />
+                </div>
+              </div>
             ))}
           </div>
         ) : jornais.length === 0 ? (
-          <div className="text-center text-muted-foreground py-12">
+          <div className="text-center text-muted-foreground py-12 text-sm">
             Nenhuma notícia publicada ainda
           </div>
         ) : (
-          <div className="grid gap-4">
-            {jornais.map((jornal) => (
-              <div key={jornal.id} className="w-full">
-                <JornalCard jornal={jornal} cidadeSlug={slug} />
-              </div>
-            ))}
+          <div className="space-y-4">
+            {jornais.map((jornal) => {
+              const primeiraImagem = jornal.imagens?.[0]?.imagem_url;
+              return (
+                <div
+                  key={jornal.id}
+                  onClick={() => navigate(`/cidade/${slug}/jornal/${jornal.id}`)}
+                  className="flex gap-3 cursor-pointer group"
+                >
+                  {/* Thumbnail */}
+                  <div className="w-24 h-20 rounded-xl overflow-hidden bg-muted/30 flex-shrink-0">
+                    {primeiraImagem ? (
+                      <img
+                        src={primeiraImagem}
+                        alt={jornal.titulo}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-muted/20 to-muted/40" />
+                    )}
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 py-0.5">
+                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">
+                      {new Date(jornal.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                      {jornal.fonte && <span className="ml-1.5">· {jornal.fonte}</span>}
+                    </p>
+                    <h3 className="text-[13px] font-medium text-foreground line-clamp-2 leading-tight tracking-tight">
+                      {jornal.titulo}
+                    </h3>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
