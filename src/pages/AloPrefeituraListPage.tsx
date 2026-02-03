@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { AloPrefeitura, AloPrefeituraImagem } from "@/types/aloPrefeitura";
+import aloPrefeituraBanner from "@/assets/alo-prefeitura-banner.jpg";
 
 const AloPrefeituraListPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -63,6 +64,20 @@ const AloPrefeituraListPage = () => {
         </Button>
         <h1 className="text-base font-semibold">Alô Prefeitura</h1>
       </header>
+
+      {/* Banner Hero */}
+      <div className="relative h-40 overflow-hidden">
+        <img
+          src={aloPrefeituraBanner}
+          alt="Alô Prefeitura"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute bottom-3 left-4 right-4">
+          <p className="text-xs text-muted-foreground">Sua voz na cidade</p>
+          <h2 className="text-lg font-bold text-foreground">Denúncias da Comunidade</h2>
+        </div>
+      </div>
 
       {/* Lista */}
       <div className="px-4 py-4">
