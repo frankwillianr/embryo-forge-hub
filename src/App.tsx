@@ -21,6 +21,8 @@ import DesapegaListPage from "@/pages/DesapegaListPage";
 import NovoDesapegaPage from "@/pages/NovoDesapegaPage";
 import DesapegaDetailPage from "@/pages/DesapegaDetailPage";
 import ServicosListPage from "@/pages/ServicosListPage";
+import ServicoCategoriaPage from "@/pages/ServicoCategoriaPage";
+import NovaEmpresaPage from "@/pages/NovaEmpresaPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +97,8 @@ const App = () => (
 
           {/* Serviços */}
           <Route path="/cidade/:slug/servicos" element={<ServicosListPage />} />
+          <Route path="/cidade/:slug/servicos/:categoriaId" element={<ServicoCategoriaPage />} />
+          <Route path="/cidade/:slug/servicos/:categoriaId/novo" element={<NovaEmpresaPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
