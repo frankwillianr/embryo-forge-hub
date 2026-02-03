@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { Newspaper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import JornalCard from "./JornalCard";
@@ -89,7 +89,10 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
     <div className="py-6">
       {/* Header minimalista */}
       <div className="flex items-center justify-between px-5 mb-3">
-        <h2 className="text-base font-semibold text-foreground tracking-tight">Jornal da Cidade</h2>
+        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+          <Newspaper className="h-4 w-4 text-primary" />
+          Jornal da Cidade
+        </h2>
         <button
           onClick={() => navigate(`/cidade/${cidadeSlug}/jornal`)}
           className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
