@@ -1,11 +1,11 @@
-import AloPrefeituraHorizontalList from "@/components/aloPrefeitura/AloPrefeituraHorizontalList";
+import AloPrefeituraVerticalList from "@/components/aloPrefeitura/AloPrefeituraVerticalList";
 
 interface AloPrefeituraSectionProps {
   cidadeSlug?: string;
 }
 
 const AloPrefeituraSection = ({ cidadeSlug }: AloPrefeituraSectionProps) => {
-  return <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />;
+  return <AloPrefeituraVerticalList cidadeSlug={cidadeSlug} />;
 };
 
 export default AloPrefeituraSection;
