@@ -65,6 +65,20 @@ const JornalListPage = () => {
         <h1 className="text-base font-semibold">Jornal da Cidade</h1>
       </header>
 
+      {/* Banner Hero */}
+      <div className="relative h-32 overflow-hidden">
+        <img
+          src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80"
+          alt="Jornal"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute bottom-3 left-4 right-4">
+          <p className="text-xs text-muted-foreground">Fique por dentro</p>
+          <h2 className="text-lg font-bold text-foreground">Últimas Notícias</h2>
+        </div>
+      </div>
+
       {/* Lista */}
       <div className="px-4 py-4">
         {isLoading ? (
@@ -88,6 +102,10 @@ const JornalListPage = () => {
           <div className="space-y-4">
             {jornais.map((jornal) => {
               const primeiraImagem = jornal.imagens?.[0]?.imagem_url;
+              const dataPublicacao = new Date(jornal.created_at);
+              const hora = dataPublicacao.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+              const data = dataPublicacao.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+              
               return (
                 <div
                   key={jornal.id}
@@ -109,7 +127,7 @@ const JornalListPage = () => {
                   {/* Content */}
                   <div className="flex-1 min-w-0 py-0.5">
                     <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">
-                      {new Date(jornal.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                      {data} às {hora}
                       {jornal.fonte && <span className="ml-1.5">· {jornal.fonte}</span>}
                     </p>
                     <h3 className="text-[13px] font-medium text-foreground line-clamp-2 leading-tight tracking-tight">
