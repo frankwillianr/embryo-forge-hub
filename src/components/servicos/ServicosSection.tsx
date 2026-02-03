@@ -51,13 +51,21 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
   return (
     <div className="py-6">
       {/* Header */}
-      <div className="px-5 mb-4">
-        <h2 className="text-base font-semibold text-foreground tracking-tight">
-          Serviços
-        </h2>
-        <p className="text-[12px] text-muted-foreground/70">
-          Encontre o que precisa na sua cidade
-        </p>
+      <div className="flex items-center justify-between px-5 mb-4">
+        <div>
+          <h2 className="text-base font-semibold text-foreground tracking-tight">
+            Serviços
+          </h2>
+          <p className="text-[12px] text-muted-foreground/70">
+            Encontre o que precisa na sua cidade
+          </p>
+        </div>
+        <button
+          onClick={() => navigate(`/cidade/${cidadeSlug}/servicos`)}
+          className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
+        >
+          Ver todos
+        </button>
       </div>
 
       {/* Destaques - 2 cards grandes */}
