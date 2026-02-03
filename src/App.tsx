@@ -19,9 +19,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Public single page app */}
-          <Route path="/" element={<CidadePage />} />
-          <Route path="/banner/:id" element={<BannerDetailPage />} />
+          {/* Public city page with slug */}
+          <Route path="/cidade/:slug" element={<CidadePage />} />
+          <Route path="/cidade/:slug/banner/:id" element={<BannerDetailPage />} />
 
           {/* Admin routes with admin layout */}
           <Route

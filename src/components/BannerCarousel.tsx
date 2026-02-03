@@ -4,9 +4,10 @@ import type { Banner } from "@/types/banner";
 
 interface BannerCarouselProps {
   banners: Banner[];
+  cidadeSlug?: string;
 }
 
-const BannerCarousel = ({ banners }: BannerCarouselProps) => {
+const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const navigate = useNavigate();
 
@@ -27,7 +28,7 @@ const BannerCarousel = ({ banners }: BannerCarouselProps) => {
   }
 
   const handleBannerClick = (bannerId: string) => {
-    navigate(`/banner/${bannerId}`);
+    navigate(`/cidade/${cidadeSlug}/banner/${bannerId}`);
   };
 
   return (

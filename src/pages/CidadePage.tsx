@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Home, Newspaper, Film, User, ArrowLeft } from "lucide-react";
 import DynamicBanner from "@/components/DynamicBanner";
 import HomeSection from "@/components/sections/HomeSection";
@@ -24,6 +25,7 @@ const sectionTitles: Record<TabType, string> = {
 };
 
 const CidadePage = () => {
+  const { slug } = useParams<{ slug: string }>();
   const [activeTab, setActiveTab] = useState<TabType>("home");
 
   const isHome = activeTab === "home";
@@ -31,7 +33,7 @@ const CidadePage = () => {
   const renderSection = () => {
     switch (activeTab) {
       case "home":
-        return <HomeSection />;
+        return <HomeSection cidadeSlug={slug} />;
       case "jornal":
         return <JornalSection />;
       case "cinema":

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import type { Banner } from "@/types/banner";
 
 const BannerDetailPage = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id, slug } = useParams<{ id: string; slug: string }>();
   const navigate = useNavigate();
 
   const { data: banner, isLoading } = useQuery({
@@ -16,7 +16,7 @@ const BannerDetailPage = () => {
         .from("banner")
         .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data as Banner;
@@ -43,7 +43,7 @@ const BannerDetailPage = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
         <p className="text-muted-foreground">Banner não encontrado</p>
-        <Button variant="outline" onClick={() => navigate(-1)}>
+        <Button variant="outline" onClick={() => navigate(`/cidade/${slug}`)}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
