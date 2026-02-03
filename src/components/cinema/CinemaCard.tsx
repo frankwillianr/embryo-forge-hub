@@ -106,7 +106,7 @@ const CinemaCard = ({ cinema }: CinemaCardProps) => {
 
       {/* Trailer Modal */}
       <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
-        <DialogContent className="max-w-3xl mx-4 p-0 overflow-hidden rounded-2xl">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-lg sm:max-w-xl p-0 overflow-hidden rounded-2xl">
           <DialogHeader className="p-4 pb-2">
             <DialogTitle className="text-base">{cinema.nome_filme}</DialogTitle>
           </DialogHeader>
