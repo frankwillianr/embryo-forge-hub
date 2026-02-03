@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import BannerCarousel from "@/components/BannerCarousel";
 import JornalHorizontalList from "@/components/jornal/JornalHorizontalList";
 import AloPrefeituraHorizontalList from "@/components/aloPrefeitura/AloPrefeituraHorizontalList";
+import ServicosSection from "@/components/servicos/ServicosSection";
 import type { Banner } from "@/types/banner";
 
 interface HomeSectionProps {
@@ -79,6 +80,9 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
           <p className="text-muted-foreground text-sm">Nenhum anúncio hoje</p>
         </div>
       )}
+
+      {/* Serviços */}
+      <ServicosSection cidadeSlug={cidadeSlug} />
 
       {/* Jornal da Cidade */}
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
