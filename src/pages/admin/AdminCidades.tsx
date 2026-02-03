@@ -70,7 +70,7 @@ const AdminCidades = () => {
   // Create cidade
   const createMutation = useMutation({
     mutationFn: async (cidade: CidadeInsert) => {
-      let bannerUrl = cidade.banner;
+      let bannerUrl = cidade.banner_url;
 
       if (bannerFile) {
         setIsUploading(true);
@@ -83,7 +83,7 @@ const AdminCidades = () => {
 
       const { data, error } = await supabase
         .from("cidade")
-        .insert({ ...cidade, banner: bannerUrl })
+        .insert({ ...cidade, banner_url: bannerUrl })
         .select()
         .single();
       
@@ -103,7 +103,7 @@ const AdminCidades = () => {
   // Update cidade
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...cidade }: Cidade) => {
-      let bannerUrl = cidade.banner;
+      let bannerUrl = cidade.banner_url;
 
       if (bannerFile) {
         setIsUploading(true);
@@ -116,7 +116,7 @@ const AdminCidades = () => {
 
       const { data, error } = await supabase
         .from("cidade")
-        .update({ nome: cidade.nome, slug: cidade.slug, banner: bannerUrl })
+        .update({ nome: cidade.nome, slug: cidade.slug, banner_url: bannerUrl })
         .eq("id", id)
         .select()
         .single();
@@ -170,7 +170,7 @@ const AdminCidades = () => {
         ...editingCidade,
         nome,
         slug,
-        banner: bannerPreview || editingCidade.banner,
+        banner_url: bannerPreview || editingCidade.banner_url,
       });
     } else {
       createMutation.mutate({ nome, slug });
@@ -181,7 +181,7 @@ const AdminCidades = () => {
     setEditingCidade(cidade);
     setNome(cidade.nome);
     setSlug(cidade.slug);
-    setBannerPreview(cidade.banner || null);
+    setBannerPreview(cidade.banner_url || null);
     setIsDialogOpen(true);
   };
 
@@ -354,9 +354,9 @@ const AdminCidades = () => {
               cidades?.map((cidade) => (
                 <TableRow key={cidade.id}>
                   <TableCell>
-                    {cidade.banner ? (
+                    {cidade.banner_url ? (
                       <img
-                        src={cidade.banner}
+                        src={cidade.banner_url}
                         alt={cidade.nome}
                         className="w-16 h-10 object-cover rounded"
                       />
