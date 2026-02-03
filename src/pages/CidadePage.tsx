@@ -53,7 +53,7 @@ const CidadePage = () => {
       case "home":
         return <HomeSection cidadeSlug={slug} />;
       case "jornal":
-        return <JornalSection />;
+        return <JornalSection cidadeSlug={slug} />;
       case "cinema":
         return <CinemaSection />;
       case "perfil":

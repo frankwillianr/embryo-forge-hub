@@ -1,19 +1,20 @@
-import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import JornalCard from "@/components/jornal/JornalCard";
 import type { Jornal, JornalImagem } from "@/types/jornal";
 
-const JornalSection = () => {
-  const { slug } = useParams<{ slug: string }>();
+interface JornalSectionProps {
+  cidadeSlug?: string;
+}
 
+const JornalSection = ({ cidadeSlug }: JornalSectionProps) => {
   const { data: jornais = [], isLoading } = useQuery({
-    queryKey: ["jornais-section", slug],
+    queryKey: ["jornais-section", cidadeSlug],
     queryFn: async () => {
       const { data: cidadeData } = await supabase
         .from("cidade")
         .select("id")
-        .eq("slug", slug)
+        .eq("slug", cidadeSlug)
         .maybeSingle();
 
       if (!cidadeData) return [];
@@ -44,7 +45,7 @@ const JornalSection = () => {
         imagens: imagensPorJornal[j.id] || [],
       })) as Jornal[];
     },
-    enabled: !!slug,
+    enabled: !!cidadeSlug,
   });
 
   if (isLoading) {
@@ -69,7 +70,7 @@ const JornalSection = () => {
     <div className="p-4 space-y-4">
       {jornais.map((jornal) => (
         <div key={jornal.id} className="w-full">
-          <JornalCard jornal={jornal} cidadeSlug={slug} />
+          <JornalCard jornal={jornal} cidadeSlug={cidadeSlug} />
         </div>
       ))}
     </div>
