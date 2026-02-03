@@ -66,7 +66,7 @@ const CidadePage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pb-16">
+      <main className="flex-1 overflow-auto pb-20">
         {isHome ? (
           <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} />
         ) : (
@@ -89,32 +89,85 @@ const CidadePage = () => {
         </div>
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-card border-t border-border">
-        <div className="flex h-full items-center justify-around max-w-md mx-auto">
-          {navItems.map((item) => (
+      {/* Bottom Navigation - Stylish */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50">
+        {/* Background with blur */}
+        <div className="absolute inset-0 bg-card/80 backdrop-blur-xl border-t border-border/50" />
+        
+        <div className="relative flex h-16 items-end justify-center max-w-md mx-auto px-2">
+          {/* Left items */}
+          <div className="flex flex-1 justify-around items-center pb-2">
             <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center gap-1 px-4 py-2 transition-colors ${
-                activeTab === item.id
+              onClick={() => setActiveTab("jornal")}
+              className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all duration-200 ${
+                activeTab === "jornal"
                   ? "text-primary"
-                  : "text-muted-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.title}</span>
+              <Newspaper className="h-[18px] w-[18px]" />
+              <span className="text-[10px] font-medium">Jornal</span>
             </button>
-          ))}
-          
-          {/* Menu Button */}
-          <button
-            onClick={() => setMenuOpen(true)}
-            className="flex flex-col items-center justify-center gap-1 px-4 py-2 transition-colors text-muted-foreground"
-          >
-            <Menu className="h-5 w-5" />
-            <span className="text-xs font-medium">Menu</span>
-          </button>
+
+            <button
+              onClick={() => setActiveTab("cinema")}
+              className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all duration-200 ${
+                activeTab === "cinema"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Film className="h-[18px] w-[18px]" />
+              <span className="text-[10px] font-medium">Cinema</span>
+            </button>
+          </div>
+
+          {/* Center Home Button - Floating */}
+          <div className="relative flex flex-col items-center -mt-4 mx-3">
+            <button
+              onClick={() => setActiveTab("home")}
+              className={`relative flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-300 ${
+                activeTab === "home"
+                  ? "bg-primary text-primary-foreground shadow-primary/30"
+                  : "bg-card text-muted-foreground border border-border hover:border-primary/50 hover:text-primary"
+              }`}
+              style={{
+                boxShadow: activeTab === "home" 
+                  ? "0 8px 24px -4px hsl(var(--primary) / 0.4)" 
+                  : "0 4px 12px -2px rgba(0,0,0,0.1)"
+              }}
+            >
+              <Home className="h-6 w-6" />
+            </button>
+            <span className={`text-[10px] font-medium mt-1 transition-colors ${
+              activeTab === "home" ? "text-primary" : "text-muted-foreground"
+            }`}>
+              Home
+            </span>
+          </div>
+
+          {/* Right items */}
+          <div className="flex flex-1 justify-around items-center pb-2">
+            <button
+              onClick={() => setActiveTab("prefeitura")}
+              className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all duration-200 ${
+                activeTab === "prefeitura"
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Megaphone className="h-[18px] w-[18px]" />
+              <span className="text-[10px] font-medium">Alô</span>
+            </button>
+
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all duration-200 text-muted-foreground hover:text-foreground"
+            >
+              <Menu className="h-[18px] w-[18px]" />
+              <span className="text-[10px] font-medium">Menu</span>
+            </button>
+          </div>
         </div>
       </nav>
 
