@@ -3,6 +3,7 @@ import { Film } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CinemaCard from "./CinemaCard";
 import type { Cinema } from "@/types/cinema";
+import cinemaBanner from "@/assets/cinema-banner.jpg";
 
 interface CinemaListProps {
   cidadeSlug?: string;
@@ -66,10 +67,27 @@ const CinemaList = ({ cidadeSlug }: CinemaListProps) => {
   }
 
   return (
-    <div className="px-4 py-4 space-y-5">
-      {filmes.map((filme) => (
-        <CinemaCard key={filme.id} cinema={filme} />
-      ))}
+    <div>
+      {/* Banner Hero */}
+      <div className="relative h-40 overflow-hidden">
+        <img
+          src={cinemaBanner}
+          alt="Cinema"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute bottom-3 left-4 right-4">
+          <p className="text-xs text-muted-foreground">Em cartaz</p>
+          <h2 className="text-lg font-bold text-foreground">Filmes da Semana</h2>
+        </div>
+      </div>
+
+      {/* Lista de filmes */}
+      <div className="px-4 py-4 space-y-5">
+        {filmes.map((filme) => (
+          <CinemaCard key={filme.id} cinema={filme} />
+        ))}
+      </div>
     </div>
   );
 };
