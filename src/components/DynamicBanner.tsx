@@ -148,7 +148,7 @@ const DynamicBanner = ({ userName = "Visitante" }: DynamicBannerProps) => {
   const textColor = getTextColor(timeOfDay);
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl ${gradient} p-6 shadow-lg`}>
+    <div className={`relative overflow-hidden ${gradient} p-6`}>
       {/* Background decoration */}
       <div className="absolute -right-4 -top-4 opacity-20">
         <TimeIcon className={`h-32 w-32 ${textColor}`} />
