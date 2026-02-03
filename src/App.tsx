@@ -36,14 +36,6 @@ const App = () => (
               </MobileLayout>
             }
           />
-          <Route
-            path="/cidade/:slug"
-            element={
-              <MobileLayout>
-                <Cidade />
-              </MobileLayout>
-            }
-          />
 
           {/* Admin routes with admin layout */}
           <Route
