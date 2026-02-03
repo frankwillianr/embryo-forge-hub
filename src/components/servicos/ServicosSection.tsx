@@ -1,76 +1,18 @@
 import { useNavigate } from "react-router-dom";
-import { 
-  Car, 
-  ShoppingBag, 
-  Bike, 
-  Scissors, 
-  Wrench, 
-  Sparkles, 
-  Dog, 
-  Hammer 
-} from "lucide-react";
 
 interface ServicosSectionProps {
   cidadeSlug?: string;
 }
 
 const allServicos = [
-  {
-    id: "veiculos",
-    nome: "Veículos",
-    icon: Car,
-    emoji: "🚗",
-    isNew: false,
-  },
-  {
-    id: "desapega",
-    nome: "Desapega",
-    icon: ShoppingBag,
-    emoji: "🛍️",
-    isNew: true,
-  },
-  {
-    id: "entregador",
-    nome: "Entregador",
-    icon: Bike,
-    emoji: "🛵",
-    isNew: false,
-  },
-  {
-    id: "salao",
-    nome: "Salão",
-    icon: Scissors,
-    emoji: "💇‍♀️",
-    isNew: false,
-  },
-  {
-    id: "reparos",
-    nome: "Reparos",
-    icon: Wrench,
-    emoji: "🔧",
-    isNew: false,
-  },
-  {
-    id: "limpeza",
-    nome: "Limpeza",
-    icon: Sparkles,
-    emoji: "✨",
-    isNew: false,
-  },
-  {
-    id: "pet",
-    nome: "Pet",
-    icon: Dog,
-    emoji: "🐕",
-    isNew: false,
-  },
-  {
-    id: "obras",
-    nome: "Obras",
-    icon: Hammer,
-    emoji: "🏗️",
-    isNew: false,
-  },
+  { id: "veiculos", nome: "Veículos", emoji: "🚗" },
+  { id: "desapega", nome: "Desapega", emoji: "🛍️" },
+  { id: "entregador", nome: "Entregador", emoji: "🛵" },
+  { id: "salao", nome: "Salão", emoji: "💇‍♀️" },
+  { id: "reparos", nome: "Reparos", emoji: "🔧" },
+  { id: "limpeza", nome: "Limpeza", emoji: "✨" },
+  { id: "pet", nome: "Pet", emoji: "🐕" },
+  { id: "obras", nome: "Obras", emoji: "🏗️" },
 ];
 
 const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
@@ -113,22 +55,15 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
             <button
               key={item.id}
               onClick={() => handleClick(item.id)}
-              className="relative flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-2xl p-3 pt-4 pb-3 transition-all active:scale-95 group"
+              className="flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-xl py-2.5 px-2 transition-all active:scale-95 group"
             >
-              {/* Badge Novo */}
-              {item.isNew && (
-                <span className="absolute -top-1 -left-1 bg-accent text-accent-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">
-                  Novo
-                </span>
-              )}
-              
-              {/* Emoji grande */}
-              <span className="text-3xl mb-2 group-hover:scale-110 transition-transform">
+              {/* Emoji */}
+              <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">
                 {item.emoji}
               </span>
               
               {/* Nome */}
-              <span className="text-[11px] font-medium text-foreground text-center leading-tight">
+              <span className="text-[10px] font-medium text-foreground text-center leading-tight">
                 {item.nome}
               </span>
             </button>

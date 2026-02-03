@@ -3,101 +3,62 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Bike,
-  Scissors,
-  Wrench,
-  Sparkles,
-  Dog,
-  Hammer,
-  Zap,
-  Droplets,
-  PaintBucket,
-  TreeDeciduous,
-  Car,
-  Truck,
-  GraduationCap,
-  Camera,
-  PartyPopper,
-  Hand,
-  Shirt,
-  Home,
-  Dumbbell,
-  Apple,
-  HeartPulse,
-  Key,
-  Square,
-  Factory,
-  Armchair,
-  Monitor,
-  Wind,
-  Bug,
-  User,
-  ShoppingBag,
-} from "lucide-react";
 
-interface ServicoCategoria {
-  id: string;
-  nome: string;
-  icon: React.ElementType;
-  color: string;
-}
-
-const categorias: ServicoCategoria[] = [
-  // Destaques (mostrados na home)
-  { id: "veiculos", nome: "Veículos", icon: Car, color: "bg-blue-500" },
-  { id: "desapega", nome: "Desapega", icon: ShoppingBag, color: "bg-pink-500" },
+const categorias = [
+  // Destaques
+  { id: "veiculos", nome: "Veículos", emoji: "🚗" },
+  { id: "desapega", nome: "Desapega", emoji: "🛍️" },
   
   // Entregas e transporte
-  { id: "entregador", nome: "Entregador", icon: Bike, color: "bg-orange-500" },
-  { id: "motorista", nome: "Motorista", icon: Car, color: "bg-slate-600" },
-  { id: "mudancas", nome: "Mudanças", icon: Truck, color: "bg-amber-600" },
+  { id: "entregador", nome: "Entregador", emoji: "🛵" },
+  { id: "motorista", nome: "Motorista", emoji: "🚙" },
+  { id: "mudancas", nome: "Mudanças", emoji: "🚚" },
   
   // Beleza e estética
-  { id: "salao", nome: "Salão", icon: Scissors, color: "bg-purple-500" },
-  { id: "manicure", nome: "Manicure", icon: Hand, color: "bg-pink-400" },
-  { id: "barbeiro", nome: "Barbeiro", icon: Scissors, color: "bg-gray-700" },
+  { id: "salao", nome: "Salão", emoji: "💇‍♀️" },
+  { id: "manicure", nome: "Manicure", emoji: "💅" },
+  { id: "barbeiro", nome: "Barbeiro", emoji: "💈" },
   
   // Casa e reparos
-  { id: "reparos", nome: "Reparos", icon: Wrench, color: "bg-slate-500" },
-  { id: "eletricista", nome: "Eletricista", icon: Zap, color: "bg-yellow-500" },
-  { id: "encanador", nome: "Encanador", icon: Droplets, color: "bg-blue-400" },
-  { id: "pintor", nome: "Pintor", icon: PaintBucket, color: "bg-indigo-500" },
-  { id: "chaveiro", nome: "Chaveiro", icon: Key, color: "bg-zinc-600" },
-  { id: "vidraceiro", nome: "Vidraceiro", icon: Square, color: "bg-cyan-500" },
+  { id: "reparos", nome: "Reparos", emoji: "🔧" },
+  { id: "eletricista", nome: "Eletricista", emoji: "⚡" },
+  { id: "encanador", nome: "Encanador", emoji: "🚿" },
+  { id: "pintor", nome: "Pintor", emoji: "🎨" },
+  { id: "chaveiro", nome: "Chaveiro", emoji: "🔑" },
+  { id: "vidraceiro", nome: "Vidraceiro", emoji: "🪟" },
   
   // Limpeza e organização
-  { id: "limpeza", nome: "Limpeza", icon: Sparkles, color: "bg-cyan-500" },
-  { id: "diarista", nome: "Diarista", icon: Home, color: "bg-teal-500" },
-  { id: "dedetizacao", nome: "Dedetização", icon: Bug, color: "bg-red-600" },
+  { id: "limpeza", nome: "Limpeza", emoji: "✨" },
+  { id: "diarista", nome: "Diarista", emoji: "🏠" },
+  { id: "dedetizacao", nome: "Dedetização", emoji: "🪲" },
   
   // Construção
-  { id: "obras", nome: "Obras", icon: Hammer, color: "bg-emerald-500" },
-  { id: "serralheria", nome: "Serralheria", icon: Factory, color: "bg-gray-600" },
-  { id: "marceneiro", nome: "Marceneiro", icon: Armchair, color: "bg-amber-700" },
+  { id: "obras", nome: "Obras", emoji: "🏗️" },
+  { id: "serralheria", nome: "Serralheria", emoji: "⚙️" },
+  { id: "marceneiro", nome: "Marceneiro", emoji: "🪑" },
   
-  // Jardim e externo
-  { id: "jardinagem", nome: "Jardinagem", icon: TreeDeciduous, color: "bg-green-500" },
+  // Jardim
+  { id: "jardinagem", nome: "Jardinagem", emoji: "🌳" },
   
   // Pet
-  { id: "pet", nome: "Pet", icon: Dog, color: "bg-amber-500" },
+  { id: "pet", nome: "Pet", emoji: "🐕" },
   
   // Tecnologia
-  { id: "informatica", nome: "Informática", icon: Monitor, color: "bg-blue-600" },
-  { id: "ar-condicionado", nome: "Ar Cond.", icon: Wind, color: "bg-sky-500" },
+  { id: "informatica", nome: "Informática", emoji: "💻" },
+  { id: "ar-condicionado", nome: "Ar Cond.", emoji: "❄️" },
   
   // Saúde e bem-estar
-  { id: "personal", nome: "Personal", icon: Dumbbell, color: "bg-red-500" },
-  { id: "nutricionista", nome: "Nutrição", icon: Apple, color: "bg-green-600" },
-  { id: "massagista", nome: "Massagem", icon: HeartPulse, color: "bg-rose-400" },
+  { id: "personal", nome: "Personal", emoji: "🏋️" },
+  { id: "nutricionista", nome: "Nutrição", emoji: "🍎" },
+  { id: "massagista", nome: "Massagem", emoji: "💆" },
   
   // Educação e eventos
-  { id: "aulas", nome: "Aulas", icon: GraduationCap, color: "bg-violet-500" },
-  { id: "fotografo", nome: "Fotógrafo", icon: Camera, color: "bg-fuchsia-500" },
-  { id: "eventos", nome: "Eventos", icon: PartyPopper, color: "bg-yellow-400" },
+  { id: "aulas", nome: "Aulas", emoji: "📚" },
+  { id: "fotografo", nome: "Fotógrafo", emoji: "📷" },
+  { id: "eventos", nome: "Eventos", emoji: "🎉" },
   
   // Outros
-  { id: "costura", nome: "Costura", icon: Shirt, color: "bg-pink-600" },
+  { id: "costura", nome: "Costura", emoji: "🧵" },
 ];
 
 const ServicosListPage = () => {
@@ -149,26 +110,21 @@ const ServicosListPage = () => {
       {/* Grid de categorias */}
       <main className="flex-1 p-4">
         {filteredCategorias.length > 0 ? (
-          <div className="grid grid-cols-4 gap-4">
-            {filteredCategorias.map((cat) => {
-              const Icon = cat.icon;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => handleClick(cat.id)}
-                  className="flex flex-col items-center gap-2 group"
-                >
-                  <div
-                    className={`w-14 h-14 rounded-full ${cat.color} flex items-center justify-center transition-transform group-active:scale-95 shadow-lg shadow-black/10`}
-                  >
-                    <Icon className="h-6 w-6 text-white" />
-                  </div>
-                  <span className="text-[11px] font-medium text-foreground/80 text-center leading-tight">
-                    {cat.nome}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="grid grid-cols-4 gap-2">
+            {filteredCategorias.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleClick(cat.id)}
+                className="flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-xl py-2.5 px-2 transition-all active:scale-95 group"
+              >
+                <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">
+                  {cat.emoji}
+                </span>
+                <span className="text-[10px] font-medium text-foreground text-center leading-tight">
+                  {cat.nome}
+                </span>
+              </button>
+            ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
