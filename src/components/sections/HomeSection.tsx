@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import BannerCarousel from "@/components/BannerCarousel";
+import JornalHorizontalList from "@/components/jornal/JornalHorizontalList";
 import type { Banner } from "@/types/banner";
 
 interface HomeSectionProps {
@@ -77,6 +78,9 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
           <p className="text-muted-foreground text-sm">Nenhum anúncio hoje</p>
         </div>
       )}
+
+      {/* Jornal da Cidade */}
+      <JornalHorizontalList cidadeSlug={cidadeSlug} />
     </div>
   );
 };
