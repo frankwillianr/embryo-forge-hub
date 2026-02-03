@@ -23,6 +23,7 @@ import DesapegaDetailPage from "@/pages/DesapegaDetailPage";
 import ServicosListPage from "@/pages/ServicosListPage";
 import ServicoCategoriaPage from "@/pages/ServicoCategoriaPage";
 import NovaEmpresaPage from "@/pages/NovaEmpresaPage";
+import ServicoEmpresaDetailPage from "@/pages/ServicoEmpresaDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -99,6 +100,7 @@ const App = () => (
           <Route path="/cidade/:slug/servicos" element={<ServicosListPage />} />
           <Route path="/cidade/:slug/servicos/:categoriaId" element={<ServicoCategoriaPage />} />
           <Route path="/cidade/:slug/servicos/:categoriaId/novo" element={<NovaEmpresaPage />} />
+          <Route path="/cidade/:slug/servicos/:categoriaId/:empresaId" element={<ServicoEmpresaDetailPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
