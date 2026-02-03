@@ -14,30 +14,63 @@ interface ServicosSectionProps {
   cidadeSlug?: string;
 }
 
-const destaques = [
+const allServicos = [
   {
     id: "veiculos",
     nome: "Veículos",
-    descricao: "Compra e venda",
     icon: Car,
-    gradient: "from-blue-500 to-blue-600",
+    emoji: "🚗",
+    isNew: false,
   },
   {
     id: "desapega",
     nome: "Desapega",
-    descricao: "Brechó local",
     icon: ShoppingBag,
-    gradient: "from-pink-500 to-rose-500",
+    emoji: "🛍️",
+    isNew: true,
   },
-];
-
-const categorias = [
-  { id: "entregador", nome: "Entregador", icon: Bike, color: "bg-orange-500" },
-  { id: "salao", nome: "Salão", icon: Scissors, color: "bg-purple-500" },
-  { id: "reparos", nome: "Reparos", icon: Wrench, color: "bg-slate-500" },
-  { id: "limpeza", nome: "Limpeza", icon: Sparkles, color: "bg-cyan-500" },
-  { id: "pet", nome: "Pet", icon: Dog, color: "bg-amber-500" },
-  { id: "obras", nome: "Obras", icon: Hammer, color: "bg-emerald-500" },
+  {
+    id: "entregador",
+    nome: "Entregador",
+    icon: Bike,
+    emoji: "🛵",
+    isNew: false,
+  },
+  {
+    id: "salao",
+    nome: "Salão",
+    icon: Scissors,
+    emoji: "💇‍♀️",
+    isNew: false,
+  },
+  {
+    id: "reparos",
+    nome: "Reparos",
+    icon: Wrench,
+    emoji: "🔧",
+    isNew: false,
+  },
+  {
+    id: "limpeza",
+    nome: "Limpeza",
+    icon: Sparkles,
+    emoji: "✨",
+    isNew: false,
+  },
+  {
+    id: "pet",
+    nome: "Pet",
+    icon: Dog,
+    emoji: "🐕",
+    isNew: false,
+  },
+  {
+    id: "obras",
+    nome: "Obras",
+    icon: Hammer,
+    emoji: "🏗️",
+    isNew: false,
+  },
 ];
 
 const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
@@ -73,56 +106,33 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </button>
       </div>
 
-      {/* Destaques - 2 cards grandes */}
-      <div className="px-5 mb-5">
-        <div className="grid grid-cols-2 gap-3">
-          {destaques.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleClick(item.id)}
-                className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${item.gradient} p-4 text-left transition-transform active:scale-[0.98]`}
-              >
-                <div className="relative z-10">
-                  <Icon className="h-7 w-7 text-white/90 mb-2" />
-                  <h3 className="text-white font-semibold text-[15px]">
-                    {item.nome}
-                  </h3>
-                  <p className="text-white/70 text-[11px]">{item.descricao}</p>
-                </div>
-                {/* Decoração */}
-                <div className="absolute -right-4 -bottom-4 opacity-20">
-                  <Icon className="h-24 w-24 text-white" />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Categorias - 6 bolinhas (3x2) */}
+      {/* Grid de Categorias - Estilo iFood */}
       <div className="px-5">
-        <div className="grid grid-cols-3 gap-x-4 gap-y-5">
-          {categorias.map((cat) => {
-            const Icon = cat.icon;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => handleClick(cat.id)}
-                className="flex flex-col items-center gap-2 group"
-              >
-                <div
-                  className={`w-14 h-14 rounded-full ${cat.color} flex items-center justify-center transition-transform group-active:scale-95 shadow-lg shadow-black/10`}
-                >
-                  <Icon className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-[11px] font-medium text-foreground/80 text-center">
-                  {cat.nome}
+        <div className="grid grid-cols-4 gap-2">
+          {allServicos.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleClick(item.id)}
+              className="relative flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-2xl p-3 pt-4 pb-3 transition-all active:scale-95 group"
+            >
+              {/* Badge Novo */}
+              {item.isNew && (
+                <span className="absolute -top-1 -left-1 bg-accent text-accent-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-sm">
+                  Novo
                 </span>
-              </button>
-            );
-          })}
+              )}
+              
+              {/* Emoji grande */}
+              <span className="text-3xl mb-2 group-hover:scale-110 transition-transform">
+                {item.emoji}
+              </span>
+              
+              {/* Nome */}
+              <span className="text-[11px] font-medium text-foreground text-center leading-tight">
+                {item.nome}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
     </div>
