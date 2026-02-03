@@ -55,7 +55,7 @@ const CidadePage = () => {
       case "jornal":
         return <JornalSection cidadeSlug={slug} />;
       case "cinema":
-        return <CinemaSection />;
+        return <CinemaSection cidadeSlug={slug} />;
       case "perfil":
         return <PerfilSection />;
     }

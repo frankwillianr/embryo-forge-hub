@@ -1,4 +1,4 @@
-import { LayoutDashboard, MapPin, Menu, X, Newspaper } from "lucide-react";
+import { LayoutDashboard, MapPin, Menu, X, Newspaper, Film } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -8,6 +8,7 @@ const menuItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Cidades", url: "/admin/cidades", icon: MapPin },
   { title: "Jornal", url: "/admin/jornal", icon: Newspaper },
+  { title: "Cinema", url: "/admin/cinema", icon: Film },
 ];
 
 const AdminSidebar = () => {
