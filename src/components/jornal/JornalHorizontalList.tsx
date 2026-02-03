@@ -65,10 +65,16 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
 
   if (isLoading) {
     return (
-      <div className="px-4 py-4">
-        <div className="flex gap-3 overflow-hidden">
+      <div className="px-5 py-6">
+        <div className="flex gap-4 overflow-hidden">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="flex-shrink-0 w-72 h-48 bg-muted animate-pulse rounded-xl" />
+            <div key={i} className="flex-shrink-0 w-64 space-y-3">
+              <div className="aspect-[4/3] bg-muted/50 animate-pulse rounded-2xl" />
+              <div className="space-y-2">
+                <div className="h-2 w-16 bg-muted/50 animate-pulse rounded" />
+                <div className="h-4 w-full bg-muted/50 animate-pulse rounded" />
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -80,24 +86,21 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
   }
 
   return (
-    <div className="py-4">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 mb-3">
-        <h2 className="text-lg font-bold text-foreground">📰 Jornal da Cidade</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-primary"
+    <div className="py-6">
+      {/* Header minimalista */}
+      <div className="flex items-center justify-between px-5 mb-4">
+        <h2 className="text-xl font-semibold text-foreground tracking-tight">Notícias</h2>
+        <button
           onClick={() => navigate(`/cidade/${cidadeSlug}/jornal`)}
+          className="text-sm text-primary/80 hover:text-primary transition-colors"
         >
-          Ver tudo
-          <ChevronRight className="h-4 w-4 ml-1" />
-        </Button>
+          Ver todas
+        </button>
       </div>
 
       {/* Scroll horizontal */}
       <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex gap-3 px-4 pb-2">
+        <div className="flex gap-4 px-5 pb-2">
           {jornais.map((jornal) => (
             <JornalCard key={jornal.id} jornal={jornal} cidadeSlug={cidadeSlug} />
           ))}
