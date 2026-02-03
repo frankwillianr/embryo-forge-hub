@@ -66,7 +66,7 @@ const JornalListPage = () => {
       </header>
 
       {/* Banner Hero */}
-      <div className="relative h-32 overflow-hidden">
+      <div className="relative h-40 overflow-hidden">
         <img
           src={jornalBanner}
           alt="Jornal"
