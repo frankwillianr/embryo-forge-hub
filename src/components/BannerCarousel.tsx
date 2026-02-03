@@ -32,28 +32,29 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
   };
 
   return (
-    <div className="relative w-full overflow-hidden">
-      {/* Slides Container */}
-      <div
-        className="flex transition-transform duration-500 ease-out"
-        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-      >
-        {banners.map((banner) => (
-          <div
-            key={banner.id}
-            className="w-full flex-shrink-0 cursor-pointer"
-            onClick={() => handleBannerClick(banner.id)}
-          >
-            <div className="aspect-[16/9] w-full">
-              <img
-                src={banner.imagem_url}
-                alt={banner.titulo}
-                className="w-full h-full object-cover"
-              />
+    <div className="p-5">
+      <div className="relative w-full overflow-hidden rounded-[20px]">
+        {/* Slides Container */}
+        <div
+          className="flex transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+        >
+          {banners.map((banner) => (
+            <div
+              key={banner.id}
+              className="w-full flex-shrink-0 cursor-pointer"
+              onClick={() => handleBannerClick(banner.id)}
+            >
+              <div className="aspect-[16/9] w-full">
+                <img
+                  src={banner.imagem_url}
+                  alt={banner.titulo}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
       {/* Dots Indicator */}
       {banners.length > 1 && (
@@ -74,7 +75,8 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
             />
           ))}
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
