@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Home, Newspaper, Film, User, ArrowLeft } from "lucide-react";
-import DynamicBanner from "@/components/DynamicBanner";
+import { supabase } from "@/integrations/supabase/client";
+import CidadeBanner from "@/components/CidadeBanner";
 import HomeSection from "@/components/sections/HomeSection";
 import JornalSection from "@/components/sections/JornalSection";
 import CinemaSection from "@/components/sections/CinemaSection";
@@ -28,6 +30,22 @@ const CidadePage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [activeTab, setActiveTab] = useState<TabType>("home");
 
+  // Busca dados da cidade
+  const { data: cidade } = useQuery({
+    queryKey: ["cidade", slug],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cidade")
+        .select("*")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!slug,
+  });
+
   const isHome = activeTab === "home";
 
   const renderSection = () => {
@@ -48,7 +66,7 @@ const CidadePage = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-auto pb-16">
         {isHome ? (
-          <DynamicBanner />
+          <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} />
         ) : (
           <header className="flex items-center gap-3 p-4 border-b border-border bg-card">
             <Button
