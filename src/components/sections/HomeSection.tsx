@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import BannerCarousel from "@/components/BannerCarousel";
 import JornalHorizontalList from "@/components/jornal/JornalHorizontalList";
+import AloPrefeituraHorizontalList from "@/components/aloPrefeitura/AloPrefeituraHorizontalList";
 import type { Banner } from "@/types/banner";
 
 interface HomeSectionProps {
@@ -81,6 +82,9 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       {/* Jornal da Cidade */}
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
+
+      {/* Alô Prefeitura */}
+      <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
     </div>
   );
 };
