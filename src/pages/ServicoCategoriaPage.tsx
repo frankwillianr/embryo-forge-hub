@@ -76,7 +76,7 @@ const ServicoCategoriaPage = () => {
         .eq("cidade_id", cidade!.id)
         .eq("categoria", categoriaId)
         .eq("status", "ativo")
-        .order("created_at", { ascending: false });
+        .order("nome", { ascending: true });
 
       if (searchTerm) {
         query = query.ilike("nome", `%${searchTerm}%`);
