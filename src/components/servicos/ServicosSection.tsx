@@ -49,7 +49,7 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
     } else if (servicoId === "desapega") {
       navigate(`/cidade/${cidadeSlug}/desapega`);
     } else {
-      console.log(`Clicou em ${servicoId}`);
+      navigate(`/cidade/${cidadeSlug}/servicos/${servicoId}`);
     }
   };
 
