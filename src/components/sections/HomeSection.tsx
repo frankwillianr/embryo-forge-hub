@@ -3,22 +3,47 @@ import { supabase } from "@/integrations/supabase/client";
 import BannerCarousel from "@/components/BannerCarousel";
 import type { Banner } from "@/types/banner";
 
-const HomeSection = () => {
-  // Busca banners ativos para a data de hoje
+interface HomeSectionProps {
+  cidadeSlug?: string;
+}
+
+const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
+  // Busca banners ativos para a data de hoje e cidade específica
   const { data: banners = [], isLoading } = useQuery({
-    queryKey: ["banners-hoje"],
+    queryKey: ["banners-hoje", cidadeSlug],
     queryFn: async () => {
       const hoje = new Date().toISOString().split("T")[0];
+
+      // Primeiro busca a cidade pelo slug
+      const { data: cidadeData, error: cidadeError } = await supabase
+        .from("cidade")
+        .select("id")
+        .eq("slug", cidadeSlug)
+        .maybeSingle();
+
+      if (cidadeError) throw cidadeError;
+      if (!cidadeData) return [];
+
+      // Busca banners vinculados à cidade
+      const { data: relData, error: relError } = await supabase
+        .from("rel_cidade_banner")
+        .select("banner_id")
+        .eq("cidade_id", cidadeData.id);
+
+      if (relError) throw relError;
+      if (!relData || relData.length === 0) return [];
+
+      const bannerIdsDaCidade = relData.map((r) => r.banner_id);
 
       // Busca IDs de banners que tem exibição agendada para hoje
       const { data: diasData, error: diasError } = await supabase
         .from("rel_banner_dias")
         .select("banner_id")
         .eq("data_exibicao", hoje)
-        .eq("utilizado", false);
+        .eq("utilizado", false)
+        .in("banner_id", bannerIdsDaCidade);
 
       if (diasError) throw diasError;
-
       if (!diasData || diasData.length === 0) return [];
 
       const bannerIds = diasData.map((d) => d.banner_id);
@@ -34,6 +59,7 @@ const HomeSection = () => {
 
       return (bannersData as Banner[]) || [];
     },
+    enabled: !!cidadeSlug,
   });
 
   return (
@@ -42,7 +68,7 @@ const HomeSection = () => {
       {isLoading ? (
         <div className="aspect-[16/9] w-full bg-muted animate-pulse" />
       ) : banners.length > 0 ? (
-        <BannerCarousel banners={banners} />
+        <BannerCarousel banners={banners} cidadeSlug={cidadeSlug} />
       ) : (
         <div className="aspect-[16/9] w-full bg-muted flex items-center justify-center">
           <p className="text-muted-foreground text-sm">Nenhum anúncio hoje</p>
