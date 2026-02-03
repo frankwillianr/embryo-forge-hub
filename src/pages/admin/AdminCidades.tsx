@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cidade, CidadeInsert } from "@/types/cidade";
@@ -28,6 +28,10 @@ const AdminCidades = () => {
   const [editingCidade, setEditingCidade] = useState<Cidade | null>(null);
   const [nome, setNome] = useState("");
   const [slug, setSlug] = useState("");
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   // Fetch cidades
@@ -44,12 +48,42 @@ const AdminCidades = () => {
     },
   });
 
+  // Upload banner to storage
+  const uploadBanner = async (file: File, cidadeSlug: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${cidadeSlug}-${Date.now()}.${fileExt}`;
+    const filePath = `banners/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('cidade-banners')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('cidade-banners')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
+
   // Create cidade
   const createMutation = useMutation({
     mutationFn: async (cidade: CidadeInsert) => {
+      let bannerUrl = cidade.banner;
+
+      if (bannerFile) {
+        setIsUploading(true);
+        try {
+          bannerUrl = await uploadBanner(bannerFile, cidade.slug);
+        } finally {
+          setIsUploading(false);
+        }
+      }
+
       const { data, error } = await supabase
         .from("cidade")
-        .insert(cidade)
+        .insert({ ...cidade, banner: bannerUrl })
         .select()
         .single();
       
@@ -69,9 +103,20 @@ const AdminCidades = () => {
   // Update cidade
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...cidade }: Cidade) => {
+      let bannerUrl = cidade.banner;
+
+      if (bannerFile) {
+        setIsUploading(true);
+        try {
+          bannerUrl = await uploadBanner(bannerFile, cidade.slug);
+        } finally {
+          setIsUploading(false);
+        }
+      }
+
       const { data, error } = await supabase
         .from("cidade")
-        .update({ nome: cidade.nome, slug: cidade.slug })
+        .update({ nome: cidade.nome, slug: cidade.slug, banner: bannerUrl })
         .eq("id", id)
         .select()
         .single();
@@ -111,6 +156,8 @@ const AdminCidades = () => {
   const resetForm = () => {
     setNome("");
     setSlug("");
+    setBannerFile(null);
+    setBannerPreview(null);
     setEditingCidade(null);
     setIsDialogOpen(false);
   };
@@ -123,6 +170,7 @@ const AdminCidades = () => {
         ...editingCidade,
         nome,
         slug,
+        banner: bannerPreview || editingCidade.banner,
       });
     } else {
       createMutation.mutate({ nome, slug });
@@ -133,6 +181,7 @@ const AdminCidades = () => {
     setEditingCidade(cidade);
     setNome(cidade.nome);
     setSlug(cidade.slug);
+    setBannerPreview(cidade.banner || null);
     setIsDialogOpen(true);
   };
 
@@ -152,6 +201,26 @@ const AdminCidades = () => {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBannerFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBannerPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeBanner = () => {
+    setBannerFile(null);
+    setBannerPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -167,7 +236,7 @@ const AdminCidades = () => {
               Nova Cidade
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>
                 {editingCidade ? "Editar Cidade" : "Nova Cidade"}
@@ -194,12 +263,62 @@ const AdminCidades = () => {
                   required
                 />
               </div>
+              
+              {/* Banner Upload */}
+              <div className="space-y-2">
+                <Label>Banner</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                
+                {bannerPreview ? (
+                  <div className="relative">
+                    <img
+                      src={bannerPreview}
+                      alt="Preview do banner"
+                      className="w-full h-32 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6"
+                      onClick={removeBanner}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                  >
+                    <Image className="h-8 w-8 text-muted-foreground mb-2" />
+                    <span className="text-sm text-muted-foreground">
+                      Clique para fazer upload
+                    </span>
+                  </div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {editingCidade ? "Salvar" : "Criar"}
+                <Button 
+                  type="submit" 
+                  disabled={createMutation.isPending || updateMutation.isPending || isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Upload className="h-4 w-4 mr-2 animate-pulse" />
+                      Enviando...
+                    </>
+                  ) : editingCidade ? "Salvar" : "Criar"}
                 </Button>
               </div>
             </form>
@@ -211,6 +330,7 @@ const AdminCidades = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[80px]">Banner</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead>Criado em</TableHead>
@@ -220,19 +340,32 @@ const AdminCidades = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : cidades?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   Nenhuma cidade cadastrada
                 </TableCell>
               </TableRow>
             ) : (
               cidades?.map((cidade) => (
                 <TableRow key={cidade.id}>
+                  <TableCell>
+                    {cidade.banner ? (
+                      <img
+                        src={cidade.banner}
+                        alt={cidade.nome}
+                        className="w-16 h-10 object-cover rounded"
+                      />
+                    ) : (
+                      <div className="w-16 h-10 bg-muted rounded flex items-center justify-center">
+                        <Image className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{cidade.nome}</TableCell>
                   <TableCell className="text-muted-foreground">{cidade.slug}</TableCell>
                   <TableCell className="text-muted-foreground">
