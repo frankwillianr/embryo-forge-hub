@@ -70,7 +70,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
       <div className="flex items-center justify-between px-5 mb-4">
         <div>
           <h2 className="text-base font-semibold text-foreground tracking-tight">
-            🔥 Ofertas da Cidade
+            Ofertas da Cidade
           </h2>
           <p className="text-[12px] text-muted-foreground/70">
             Promoções imperdíveis

@@ -110,7 +110,7 @@ const OfertasListPage = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold text-foreground">
-          🔥 Ofertas da Cidade
+          Ofertas da Cidade
         </h1>
       </header>
 
@@ -124,7 +124,7 @@ const OfertasListPage = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-3 left-4 right-4">
           <p className="text-xs text-muted-foreground">Economize</p>
-          <h2 className="text-lg font-bold text-foreground">🔥 Ofertas Imperdíveis</h2>
+          <h2 className="text-lg font-bold text-foreground">Ofertas Imperdíveis</h2>
         </div>
       </div>
 
