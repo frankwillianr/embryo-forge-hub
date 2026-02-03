@@ -71,7 +71,7 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
               <img 
                 src={item.icon} 
                 alt={item.nome}
-                className="w-10 h-10 mb-1 group-hover:scale-110 transition-transform object-contain"
+                className="w-10 h-10 mb-1 group-hover:scale-110 transition-transform object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
               />
               
               {/* Nome */}
