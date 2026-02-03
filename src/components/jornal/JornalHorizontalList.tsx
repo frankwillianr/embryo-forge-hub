@@ -89,7 +89,7 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
     <div className="py-6">
       {/* Header minimalista */}
       <div className="flex items-center justify-between px-5 mb-3">
-        <h2 className="text-base font-semibold text-foreground tracking-tight">Notícias</h2>
+        <h2 className="text-base font-semibold text-foreground tracking-tight">Jornal da Cidade</h2>
         <button
           onClick={() => navigate(`/cidade/${cidadeSlug}/jornal`)}
           className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
