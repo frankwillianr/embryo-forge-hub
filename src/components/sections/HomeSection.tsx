@@ -66,7 +66,7 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
   });
 
   return (
-    <div className="space-y-4">
+    <div>
       {/* Carrossel de Anúncios */}
       {isLoading ? (
         <div className="aspect-[16/9] w-full bg-muted animate-pulse" />
@@ -77,11 +77,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
           <p className="text-muted-foreground text-sm">Nenhum anúncio hoje</p>
         </div>
       )}
-
-      {/* Conteúdo adicional da Home */}
-      <div className="p-4">
-        <p className="text-muted-foreground">Conteúdo da cidade virá aqui</p>
-      </div>
     </div>
   );
 };
