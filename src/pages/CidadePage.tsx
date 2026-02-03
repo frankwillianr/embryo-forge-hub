@@ -123,23 +123,23 @@ const CidadePage = () => {
           </div>
 
           {/* Center Home Button - Floating */}
-          <div className="relative flex flex-col items-center -mt-4 mx-3">
+          <div className="relative flex flex-col items-center -mt-2 mx-2">
             <button
               onClick={() => setActiveTab("home")}
-              className={`relative flex items-center justify-center w-14 h-14 rounded-full shadow-lg transition-all duration-300 ${
+              className={`relative flex items-center justify-center w-11 h-11 rounded-full shadow-lg transition-all duration-300 ${
                 activeTab === "home"
                   ? "bg-primary text-primary-foreground shadow-primary/30"
                   : "bg-card text-muted-foreground border border-border hover:border-primary/50 hover:text-primary"
               }`}
               style={{
                 boxShadow: activeTab === "home" 
-                  ? "0 8px 24px -4px hsl(var(--primary) / 0.4)" 
-                  : "0 4px 12px -2px rgba(0,0,0,0.1)"
+                  ? "0 6px 16px -3px hsl(var(--primary) / 0.4)" 
+                  : "0 3px 8px -2px rgba(0,0,0,0.1)"
               }}
             >
-              <Home className="h-6 w-6" />
+              <Home className="h-5 w-5" />
             </button>
-            <span className={`text-[10px] font-medium mt-1 transition-colors ${
+            <span className={`text-[10px] font-medium mt-0.5 transition-colors ${
               activeTab === "home" ? "text-primary" : "text-muted-foreground"
             }`}>
               Home
