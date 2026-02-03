@@ -66,7 +66,7 @@ const CidadePage = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-auto pb-16">
         {isHome ? (
-          <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} />
+          <CidadeBanner bannerUrl={cidade?.banner} cidadeNome={cidade?.nome} />
         ) : (
           <header className="flex items-center gap-3 p-4 border-b border-border bg-card">
             <Button
