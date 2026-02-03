@@ -115,8 +115,7 @@ const ServicosListPage = () => {
     } else if (servicoId === "desapega") {
       navigate(`/cidade/${slug}/desapega`);
     } else {
-      // Futuro: navegar para página de profissionais dessa categoria
-      console.log(`Clicou em ${servicoId}`);
+      navigate(`/cidade/${slug}/servicos/${servicoId}`);
     }
   };
 
