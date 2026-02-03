@@ -1,4 +1,5 @@
 import { Car, Fuel, Gauge, Calendar, Star } from "lucide-react";
+import FipePriceCompact from "./FipePriceCompact";
 
 interface VeiculoCardProps {
   veiculo: {
@@ -102,11 +103,18 @@ const VeiculoCard = ({ veiculo, onClick }: VeiculoCardProps) => {
             </span>
           </div>
 
-          {/* Preço */}
-          <div className="mt-2">
+          {/* Preços */}
+          <div className="mt-2 space-y-0.5">
             <span className="text-base font-bold text-primary">
               {formatPrice(veiculo.preco)}
             </span>
+            <FipePriceCompact
+              marcaNome={veiculo.marca?.nome}
+              modeloNome={veiculo.modelo?.nome}
+              anoModelo={veiculo.ano_modelo.toString()}
+              combustivel={veiculo.combustivel}
+              precoAnunciado={veiculo.preco}
+            />
           </div>
         </div>
       </div>
