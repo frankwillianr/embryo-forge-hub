@@ -46,6 +46,8 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
   const handleClick = (servicoId: string) => {
     if (servicoId === "veiculos") {
       navigate(`/cidade/${cidadeSlug}/veiculos`);
+    } else if (servicoId === "desapega") {
+      navigate(`/cidade/${cidadeSlug}/desapega`);
     } else {
       console.log(`Clicou em ${servicoId}`);
     }
