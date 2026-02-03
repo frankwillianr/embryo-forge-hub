@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import JornalCard from "@/components/jornal/JornalCard";
+import JornalFeedCard from "@/components/jornal/JornalFeedCard";
 import type { Jornal, JornalImagem } from "@/types/jornal";
 
 interface JornalSectionProps {
@@ -50,9 +50,9 @@ const JornalSection = ({ cidadeSlug }: JornalSectionProps) => {
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-4">
+      <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-48 bg-muted animate-pulse rounded-xl" />
+          <div key={i} className="aspect-square bg-muted animate-pulse" />
         ))}
       </div>
     );
@@ -67,11 +67,9 @@ const JornalSection = ({ cidadeSlug }: JornalSectionProps) => {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="divide-y divide-border/30">
       {jornais.map((jornal) => (
-        <div key={jornal.id} className="w-full">
-          <JornalCard jornal={jornal} cidadeSlug={cidadeSlug} />
-        </div>
+        <JornalFeedCard key={jornal.id} jornal={jornal} cidadeSlug={cidadeSlug} />
       ))}
     </div>
   );
