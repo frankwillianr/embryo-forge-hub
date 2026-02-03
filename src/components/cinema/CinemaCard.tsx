@@ -106,15 +106,15 @@ const CinemaCard = ({ cinema }: CinemaCardProps) => {
 
       {/* Trailer Modal */}
       <Dialog open={trailerOpen} onOpenChange={setTrailerOpen}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden">
-          <DialogHeader className="p-4 pb-0">
+        <DialogContent className="max-w-3xl mx-4 p-0 overflow-hidden rounded-2xl">
+          <DialogHeader className="p-4 pb-2">
             <DialogTitle className="text-base">{cinema.nome_filme}</DialogTitle>
           </DialogHeader>
-          <div className="aspect-video w-full">
+          <div className="aspect-video w-full px-4 pb-4">
             {embedUrl && (
               <iframe
                 src={embedUrl}
-                className="w-full h-full"
+                className="w-full h-full rounded-xl"
                 allowFullScreen
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               />
