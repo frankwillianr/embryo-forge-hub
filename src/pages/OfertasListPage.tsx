@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import ofertasBanner from "@/assets/ofertas-banner.jpg";
 
 const categoriasMeta: Record<string, { nome: string; icone: string }> = {
   entregador: { nome: "Entregador", icone: "🚴" },
@@ -112,6 +113,20 @@ const OfertasListPage = () => {
           🔥 Ofertas da Cidade
         </h1>
       </header>
+
+      {/* Banner Hero */}
+      <div className="relative h-40 overflow-hidden">
+        <img
+          src={ofertasBanner}
+          alt="Ofertas"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute bottom-3 left-4 right-4">
+          <p className="text-xs text-muted-foreground">Economize</p>
+          <h2 className="text-lg font-bold text-foreground">🔥 Ofertas Imperdíveis</h2>
+        </div>
+      </div>
 
       {/* Search */}
       <div className="p-4 border-b border-border bg-card/50">
