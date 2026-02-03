@@ -18,6 +18,7 @@ import AloPrefeituraDetailPage from "@/pages/AloPrefeituraDetailPage";
 import VeiculosListPage from "@/pages/VeiculosListPage";
 import NovoVeiculoPage from "@/pages/NovoVeiculoPage";
 import DesapegaListPage from "@/pages/DesapegaListPage";
+import NovoDesapegaPage from "@/pages/NovoDesapegaPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -87,6 +88,7 @@ const App = () => (
 
           {/* Desapega public routes */}
           <Route path="/cidade/:slug/desapega" element={<DesapegaListPage />} />
+          <Route path="/cidade/:slug/desapega/novo" element={<NovoDesapegaPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
