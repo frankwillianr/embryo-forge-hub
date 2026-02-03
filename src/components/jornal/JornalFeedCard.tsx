@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play } from "lucide-react";
@@ -78,7 +78,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
               {jornal.fonte || "Jornal da Cidade"}
             </span>
             <span className="text-[11px] text-muted-foreground">
-              {format(new Date(jornal.created_at), "dd 'de' MMM", { locale: ptBR })}
+              {formatDistanceToNow(new Date(jornal.created_at), { addSuffix: true, locale: ptBR })}
             </span>
           </div>
         </div>
