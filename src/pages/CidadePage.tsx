@@ -1,24 +1,23 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, Newspaper, Film, Megaphone, User, ArrowLeft } from "lucide-react";
+import { Home, Newspaper, Film, Megaphone, Menu, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CidadeBanner from "@/components/CidadeBanner";
 import HomeSection from "@/components/sections/HomeSection";
 import JornalSection from "@/components/sections/JornalSection";
 import CinemaSection from "@/components/sections/CinemaSection";
 import AloPrefeituraSection from "@/components/sections/AloPrefeituraSection";
-import PerfilSection from "@/components/sections/PerfilSection";
+import MenuSheet from "@/components/menu/MenuSheet";
 import { Button } from "@/components/ui/button";
 
-type TabType = "home" | "jornal" | "cinema" | "prefeitura" | "perfil";
+type TabType = "home" | "jornal" | "cinema" | "prefeitura";
 
 const navItems = [
   { id: "home" as TabType, title: "Home", icon: Home },
   { id: "jornal" as TabType, title: "Jornal", icon: Newspaper },
   { id: "cinema" as TabType, title: "Cinema", icon: Film },
   { id: "prefeitura" as TabType, title: "Prefeitura", icon: Megaphone },
-  { id: "perfil" as TabType, title: "Perfil", icon: User },
 ];
 
 const sectionTitles: Record<TabType, string> = {
@@ -26,12 +25,12 @@ const sectionTitles: Record<TabType, string> = {
   jornal: "Jornal",
   cinema: "Cinema",
   prefeitura: "Alô Prefeitura",
-  perfil: "Perfil",
 };
 
 const CidadePage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [activeTab, setActiveTab] = useState<TabType>("home");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Busca dados da cidade
   const { data: cidade } = useQuery({
@@ -61,8 +60,6 @@ const CidadePage = () => {
         return <CinemaSection cidadeSlug={slug} />;
       case "prefeitura":
         return <AloPrefeituraSection cidadeSlug={slug} />;
-      case "perfil":
-        return <PerfilSection />;
     }
   };
 
@@ -109,8 +106,24 @@ const CidadePage = () => {
               <span className="text-xs font-medium">{item.title}</span>
             </button>
           ))}
+          
+          {/* Menu Button */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="flex flex-col items-center justify-center gap-1 px-4 py-2 transition-colors text-muted-foreground"
+          >
+            <Menu className="h-5 w-5" />
+            <span className="text-xs font-medium">Menu</span>
+          </button>
         </div>
       </nav>
+
+      {/* Menu Sheet */}
+      <MenuSheet 
+        open={menuOpen} 
+        onOpenChange={setMenuOpen} 
+        cidadeNome={cidade?.nome} 
+      />
     </div>
   );
 };
