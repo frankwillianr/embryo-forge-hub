@@ -312,29 +312,13 @@ const ServicoEmpresaDetailPage = () => {
 
           {/* Ações rápidas */}
           <div className="px-5 mt-6">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={handleWhatsApp}
                 className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-green-500/10 text-green-600 transition-transform active:scale-95"
               >
                 <MessageCircle className="h-6 w-6" />
                 <span className="text-xs font-medium">WhatsApp</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const endereco = formatEndereco();
-                  if (endereco) {
-                    window.open(
-                      `https://maps.google.com/?q=${encodeURIComponent(endereco)}`,
-                      "_blank"
-                    );
-                  }
-                }}
-                className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-blue-500/10 text-blue-600 transition-transform active:scale-95"
-              >
-                <MapPin className="h-6 w-6" />
-                <span className="text-xs font-medium">Mapa</span>
               </button>
 
               {empresa.instagram ? (
@@ -455,6 +439,41 @@ const ServicoEmpresaDetailPage = () => {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Mapa */}
+            {formatEndereco() && (
+              <div className="mt-6">
+                <h3 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-muted-foreground" />
+                  Localização
+                </h3>
+                <div className="rounded-2xl overflow-hidden border border-border">
+                  <iframe
+                    title="Localização"
+                    width="100%"
+                    height="200"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(
+                      formatEndereco() || ""
+                    )}`}
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    window.open(
+                      `https://maps.google.com/?q=${encodeURIComponent(formatEndereco() || "")}`,
+                      "_blank"
+                    );
+                  }}
+                  className="w-full mt-3 text-sm text-primary font-medium"
+                >
+                  Abrir no Google Maps →
+                </button>
               </div>
             )}
           </div>
