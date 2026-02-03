@@ -4,6 +4,7 @@ import BannerCarousel from "@/components/BannerCarousel";
 import JornalHorizontalList from "@/components/jornal/JornalHorizontalList";
 import AloPrefeituraHorizontalList from "@/components/aloPrefeitura/AloPrefeituraHorizontalList";
 import ServicosSection from "@/components/servicos/ServicosSection";
+import OfertasSection from "@/components/ofertas/OfertasSection";
 import type { Banner } from "@/types/banner";
 
 interface HomeSectionProps {
@@ -89,6 +90,9 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       {/* Alô Prefeitura */}
       <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
+
+      {/* Ofertas da Cidade */}
+      <OfertasSection cidadeSlug={cidadeSlug} />
     </div>
   );
 };
