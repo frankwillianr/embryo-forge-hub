@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Megaphone } from "lucide-react";
+import { Megaphone, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AloPrefeituraCard from "./AloPrefeituraCard";
+import NovaDenunciaModal from "./NovaDenunciaModal";
 import type { AloPrefeitura, AloPrefeituraImagem } from "@/types/aloPrefeitura";
 
 interface AloPrefeituraHorizontalListProps {
@@ -11,8 +13,9 @@ interface AloPrefeituraHorizontalListProps {
 
 const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalListProps) => {
   const navigate = useNavigate();
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["alo-prefeitura-home", cidadeSlug],
     queryFn: async () => {
       // Busca cidade pelo slug
@@ -23,18 +26,19 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
         .maybeSingle();
 
       if (cidadeError) throw cidadeError;
-      if (!cidadeData) return [];
+      if (!cidadeData) return { items: [], cidadeId: null };
 
-      // Busca itens da cidade
+      // Busca itens aprovados da cidade
       const { data: itemsData, error: itemsError } = await supabase
         .from("rel_cidade_alo_prefeitura")
         .select("*")
         .eq("cidade_id", cidadeData.id)
+        .eq("status", "aprovado")
         .order("created_at", { ascending: false })
         .limit(10);
 
       if (itemsError) throw itemsError;
-      if (!itemsData || itemsData.length === 0) return [];
+      if (!itemsData || itemsData.length === 0) return { items: [], cidadeId: cidadeData.id };
 
       // Busca imagens
       const itemIds = itemsData.map((j) => j.id);
@@ -53,13 +57,19 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
         return acc;
       }, {} as Record<string, AloPrefeituraImagem[]>);
 
-      return itemsData.map((j) => ({
-        ...j,
-        imagens: imagensPorItem[j.id] || [],
-      })) as AloPrefeitura[];
+      return {
+        items: itemsData.map((j) => ({
+          ...j,
+          imagens: imagensPorItem[j.id] || [],
+        })) as AloPrefeitura[],
+        cidadeId: cidadeData.id,
+      };
     },
     enabled: !!cidadeSlug,
   });
+
+  const items = data?.items || [];
+  const cidadeId = data?.cidadeId;
 
   if (isLoading) {
     return (
@@ -79,10 +89,6 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
     );
   }
 
-  if (items.length === 0) {
-    return null;
-  }
-
   return (
     <div className="py-6">
       {/* Header minimalista */}
@@ -91,25 +97,58 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
           <Megaphone className="h-4 w-4 text-primary" />
           Alô Prefeitura
         </h2>
-        <button
-          onClick={() => navigate(`/cidade/${cidadeSlug}/alo-prefeitura`)}
-          className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
-        >
-          Ver todas
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setModalOpen(true)}
+            className="text-xs font-medium px-2.5 py-1 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/15 transition-colors flex items-center gap-1"
+          >
+            <Plus className="h-3 w-3" />
+            Denunciar
+          </button>
+          <button
+            onClick={() => navigate(`/cidade/${cidadeSlug}/alo-prefeitura`)}
+            className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
+          >
+            Ver todas
+          </button>
+        </div>
       </div>
       <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
         Denúncias e reclamações da comunidade
       </p>
 
       {/* Scroll horizontal */}
-      <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex gap-4 px-5 pb-2">
-          {items.map((item) => (
-            <AloPrefeituraCard key={item.id} item={item} cidadeSlug={cidadeSlug} />
-          ))}
+      {items.length > 0 ? (
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex gap-4 px-5 pb-2">
+            {items.map((item) => (
+              <AloPrefeituraCard key={item.id} item={item} cidadeSlug={cidadeSlug} />
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="px-5 py-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Nenhuma denúncia publicada ainda.
+          </p>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="mt-2 text-sm text-primary font-medium"
+          >
+            Seja o primeiro a denunciar
+          </button>
+        </div>
+      )}
+
+      {/* Modal de nova denúncia */}
+      {cidadeId && (
+        <NovaDenunciaModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          cidadeId={cidadeId}
+          cidadeSlug={cidadeSlug || ""}
+        />
+      )}
     </div>
   );
 };
