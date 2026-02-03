@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import FipePrice from "@/components/veiculos/FipePrice";
 
 const combustivelOptions = [
   { value: "gasolina", label: "Gasolina" },
@@ -357,6 +358,14 @@ const NovoVeiculoPage = () => {
             onChange={(e) => setTitulo(e.target.value)}
           />
         </div>
+
+        {/* Preço FIPE - Referência */}
+        <FipePrice
+          marcaNome={marcas?.find(m => m.id === marcaId)?.nome}
+          modeloNome={modelos?.find(m => m.id === modeloId)?.nome}
+          anoModelo={anoModelo}
+          combustivel={combustivel}
+        />
 
         {/* Preço */}
         <div className="space-y-2">
