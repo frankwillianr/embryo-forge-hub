@@ -73,11 +73,11 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
     <div>
       {/* Carrossel de Anúncios */}
       {isLoading ? (
-        <div className="aspect-[16/9] w-full bg-muted animate-pulse" />
+        <div className="aspect-[16/9] w-full bg-muted animate-pulse m-5 rounded-[20px]" />
       ) : banners.length > 0 ? (
         <BannerCarousel banners={banners} cidadeSlug={cidadeSlug} />
       ) : (
-        <div className="aspect-[16/9] w-full bg-muted flex items-center justify-center">
+        <div className="aspect-[16/9] w-full bg-muted flex items-center justify-center mx-5 rounded-[20px]">
           <p className="text-muted-foreground text-sm">Nenhum anúncio hoje</p>
         </div>
       )}
