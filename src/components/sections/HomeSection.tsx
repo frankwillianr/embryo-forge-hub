@@ -57,7 +57,10 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       if (bannersError) throw bannersError;
 
-      return (bannersData as Banner[]) || [];
+      // Shuffle array (ordem aleatória)
+      const shuffled = [...(bannersData || [])].sort(() => Math.random() - 0.5);
+
+      return shuffled as Banner[];
     },
     enabled: !!cidadeSlug,
   });
