@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import JornalCard from "@/components/jornal/JornalCard";
 import type { Jornal, JornalImagem } from "@/types/jornal";
+import jornalBanner from "@/assets/jornal-banner.jpg";
 
 const JornalListPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -68,7 +68,7 @@ const JornalListPage = () => {
       {/* Banner Hero */}
       <div className="relative h-32 overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80"
+          src={jornalBanner}
           alt="Jornal"
           className="w-full h-full object-cover"
         />
