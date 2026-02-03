@@ -1,18 +1,28 @@
 import { useNavigate } from "react-router-dom";
 
+// Import icons
+import veiculosIcon from "@/assets/icons/veiculos.png";
+import desapegaIcon from "@/assets/icons/desapega.png";
+import entregadorIcon from "@/assets/icons/entregador.png";
+import salaoIcon from "@/assets/icons/salao.png";
+import reparosIcon from "@/assets/icons/reparos.png";
+import limpezaIcon from "@/assets/icons/limpeza.png";
+import petIcon from "@/assets/icons/pet.png";
+import obrasIcon from "@/assets/icons/obras.png";
+
 interface ServicosSectionProps {
   cidadeSlug?: string;
 }
 
 const allServicos = [
-  { id: "veiculos", nome: "Veículos", emoji: "🚗" },
-  { id: "desapega", nome: "Desapega", emoji: "🛍️" },
-  { id: "entregador", nome: "Entregador", emoji: "🛵" },
-  { id: "salao", nome: "Salão", emoji: "💇‍♀️" },
-  { id: "reparos", nome: "Reparos", emoji: "🔧" },
-  { id: "limpeza", nome: "Limpeza", emoji: "✨" },
-  { id: "pet", nome: "Pet", emoji: "🐕" },
-  { id: "obras", nome: "Obras", emoji: "🏗️" },
+  { id: "veiculos", nome: "Veículos", icon: veiculosIcon },
+  { id: "desapega", nome: "Desapega", icon: desapegaIcon },
+  { id: "entregador", nome: "Entregador", icon: entregadorIcon },
+  { id: "salao", nome: "Salão", icon: salaoIcon },
+  { id: "reparos", nome: "Reparos", icon: reparosIcon },
+  { id: "limpeza", nome: "Limpeza", icon: limpezaIcon },
+  { id: "pet", nome: "Pet", icon: petIcon },
+  { id: "obras", nome: "Obras", icon: obrasIcon },
 ];
 
 const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
@@ -57,10 +67,12 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
               onClick={() => handleClick(item.id)}
               className="flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-xl py-2.5 px-2 transition-all active:scale-95 group"
             >
-              {/* Emoji */}
-              <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">
-                {item.emoji}
-              </span>
+              {/* Icon */}
+              <img 
+                src={item.icon} 
+                alt={item.nome}
+                className="w-10 h-10 mb-1 group-hover:scale-110 transition-transform object-contain"
+              />
               
               {/* Nome */}
               <span className="text-[10px] font-medium text-foreground text-center leading-tight">
