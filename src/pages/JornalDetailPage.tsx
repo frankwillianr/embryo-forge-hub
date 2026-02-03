@@ -155,9 +155,9 @@ const JornalDetailPage = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 p-4 border-b border-border bg-card">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-5 w-5" />
+      <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-background/95 backdrop-blur-sm">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}/jornal`)}>
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <span className="text-sm text-muted-foreground">Notícia</span>
       </header>
@@ -204,14 +204,9 @@ const JornalDetailPage = () => {
             {format(new Date(jornal.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
           </span>
           {jornal.fonte && (
-            <a
-              href={jornal.fonte.startsWith("http") ? jornal.fonte : `https://${jornal.fonte}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary flex items-center gap-1"
-            >
-              Fonte <ExternalLink className="h-3 w-3" />
-            </a>
+            <span className="text-primary/80">
+              via {jornal.fonte}
+            </span>
           )}
         </div>
 
