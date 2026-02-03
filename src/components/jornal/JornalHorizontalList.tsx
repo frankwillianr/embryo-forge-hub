@@ -88,11 +88,11 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
   return (
     <div className="py-6">
       {/* Header minimalista */}
-      <div className="flex items-center justify-between px-5 mb-4">
-        <h2 className="text-xl font-semibold text-foreground tracking-tight">Notícias</h2>
+      <div className="flex items-center justify-between px-5 mb-3">
+        <h2 className="text-base font-semibold text-foreground tracking-tight">Notícias</h2>
         <button
           onClick={() => navigate(`/cidade/${cidadeSlug}/jornal`)}
-          className="text-sm text-primary/80 hover:text-primary transition-colors"
+          className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
         >
           Ver todas
         </button>
