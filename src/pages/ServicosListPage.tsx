@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import servicosBanner from "@/assets/servicos-banner.jpg";
 
 const categorias = [
   // Destaques
@@ -93,6 +94,20 @@ const ServicosListPage = () => {
         </Button>
         <h1 className="text-lg font-semibold text-foreground">Serviços</h1>
       </header>
+
+      {/* Banner Hero */}
+      <div className="relative h-40 overflow-hidden">
+        <img
+          src={servicosBanner}
+          alt="Serviços"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute bottom-3 left-4 right-4">
+          <p className="text-xs text-muted-foreground">Encontre</p>
+          <h2 className="text-lg font-bold text-foreground">Todos os Serviços</h2>
+        </div>
+      </div>
 
       {/* Search */}
       <div className="p-4 border-b border-border bg-card/50">
