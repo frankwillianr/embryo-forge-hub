@@ -1,9 +1,12 @@
+export type AloPrefeituraStatus = "pendente" | "aprovado" | "rejeitado";
+
 export interface AloPrefeitura {
   id: string;
   cidade_id: string;
   titulo: string;
   descricao: string | null;
   video_url: string | null;
+  status: AloPrefeituraStatus;
   created_at: string;
   updated_at: string;
   imagens?: AloPrefeituraImagem[];
