@@ -149,28 +149,25 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
             </div>
           ))}
         </div>
-
-        {/* Dots Indicator */}
-        {banners.length > 1 && (
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
-            {banners.map((_, index) => (
-              <button
-                key={index}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCurrentIndex(index);
-                }}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === currentIndex
-                    ? "bg-primary w-4"
-                    : "bg-white/60 hover:bg-white/80"
-                }`}
-                aria-label={`Ir para slide ${index + 1}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
+
+      {/* Dots Indicator - abaixo da imagem */}
+      {banners.length > 1 && (
+        <div className="flex justify-center gap-1.5 pt-3">
+          {banners.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                index === currentIndex
+                  ? "bg-primary/70 w-4"
+                  : "bg-muted-foreground/20 w-1.5 hover:bg-muted-foreground/40"
+              }`}
+              aria-label={`Ir para slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };
