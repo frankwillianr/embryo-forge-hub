@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
-import { Sun, Moon, Sunrise, Sunset, Cloud, CloudRain, Loader2 } from "lucide-react";
+import { Sun, Moon, Sunrise, Sunset, Cloud, CloudRain, Loader2, MapPin } from "lucide-react";
 
 interface WeatherData {
   temperature: number;
   condition: "clear" | "cloudy" | "rainy";
+}
+
+interface LocationData {
+  neighborhood: string;
+  city: string;
 }
 
 type TimeOfDay = "morning" | "afternoon" | "evening" | "night";
@@ -77,11 +82,11 @@ interface DynamicBannerProps {
 const DynamicBanner = ({ userName = "Visitante" }: DynamicBannerProps) => {
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay());
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [location, setLocation] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [locationError, setLocationError] = useState(false);
 
   useEffect(() => {
-    // Update time of day every minute
     const interval = setInterval(() => {
       setTimeOfDay(getTimeOfDay());
     }, 60000);
@@ -90,6 +95,33 @@ const DynamicBanner = ({ userName = "Visitante" }: DynamicBannerProps) => {
   }, []);
 
   useEffect(() => {
+    const fetchLocationName = async (latitude: number, longitude: number) => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+          {
+            headers: {
+              "Accept-Language": "pt-BR",
+            },
+          }
+        );
+        const data = await response.json();
+        
+        const address = data.address;
+        const neighborhood = 
+          address.suburb || 
+          address.neighbourhood || 
+          address.district || 
+          address.city_district || 
+          "";
+        const city = address.city || address.town || address.municipality || "";
+
+        setLocation({ neighborhood, city });
+      } catch (error) {
+        console.error("Erro ao buscar localização:", error);
+      }
+    };
+
     const fetchWeather = async (latitude: number, longitude: number) => {
       try {
         const response = await fetch(
@@ -100,7 +132,6 @@ const DynamicBanner = ({ userName = "Visitante" }: DynamicBannerProps) => {
         const weatherCode = data.current.weather_code;
         let condition: WeatherData["condition"] = "clear";
         
-        // Weather codes: 0-3 clear/partly cloudy, 45-67 cloudy/foggy, 71+ rain/snow
         if (weatherCode >= 61 && weatherCode <= 99) {
           condition = "rainy";
         } else if (weatherCode >= 3 && weatherCode <= 60) {
@@ -119,27 +150,29 @@ const DynamicBanner = ({ userName = "Visitante" }: DynamicBannerProps) => {
       }
     };
 
-    const getLocation = () => {
+    const getLocationData = () => {
       if (!navigator.geolocation) {
         setLocationError(true);
-        // Default to São Paulo coordinates
         fetchWeather(-23.5505, -46.6333);
+        fetchLocationName(-23.5505, -46.6333);
         return;
       }
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          fetchWeather(position.coords.latitude, position.coords.longitude);
+          const { latitude, longitude } = position.coords;
+          fetchWeather(latitude, longitude);
+          fetchLocationName(latitude, longitude);
         },
         () => {
           setLocationError(true);
-          // Default to São Paulo coordinates
           fetchWeather(-23.5505, -46.6333);
+          fetchLocationName(-23.5505, -46.6333);
         }
       );
     };
 
-    getLocation();
+    getLocationData();
   }, []);
 
   const TimeIcon = getTimeIcon(timeOfDay);
@@ -167,21 +200,27 @@ const DynamicBanner = ({ userName = "Visitante" }: DynamicBannerProps) => {
           Olá, {userName}
         </p>
 
-        <div className="flex items-center gap-3">
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-sm">Carregando clima...</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span className="text-sm">Carregando...</span>
+              </div>
+            ) : weather ? (
+              <div className="flex items-center gap-2">
+                {WeatherIcon && <WeatherIcon className="h-5 w-5" />}
+                <span className="text-lg font-semibold">{weather.temperature}°C</span>
+              </div>
+            ) : null}
+          </div>
+
+          {location?.neighborhood && (
+            <div className="flex items-center gap-1 text-sm opacity-80">
+              <MapPin className="h-4 w-4" />
+              <span>{location.neighborhood}</span>
             </div>
-          ) : weather ? (
-            <div className="flex items-center gap-2">
-              {WeatherIcon && <WeatherIcon className="h-5 w-5" />}
-              <span className="text-lg font-semibold">{weather.temperature}°C</span>
-              {locationError && (
-                <span className="text-xs opacity-70">(localização padrão)</span>
-              )}
-            </div>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
