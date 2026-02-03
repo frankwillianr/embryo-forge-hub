@@ -86,7 +86,7 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
   return (
     <div className="py-6">
       {/* Header minimalista */}
-      <div className="flex items-center justify-between px-5 mb-3">
+      <div className="flex items-center justify-between px-5 mb-1">
         <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
           <Megaphone className="h-4 w-4 text-primary" />
           Alô Prefeitura
@@ -98,6 +98,9 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
           Ver todas
         </button>
       </div>
+      <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
+        Comunicados e avisos oficiais da prefeitura
+      </p>
 
       {/* Scroll horizontal */}
       <div className="overflow-x-auto scrollbar-hide">

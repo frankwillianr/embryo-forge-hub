@@ -88,7 +88,7 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
   return (
     <div className="py-6">
       {/* Header minimalista */}
-      <div className="flex items-center justify-between px-5 mb-3">
+      <div className="flex items-center justify-between px-5 mb-1">
         <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
           <Newspaper className="h-4 w-4 text-primary" />
           Jornal da Cidade
@@ -100,6 +100,9 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
           Ver todas
         </button>
       </div>
+      <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
+        Fique por dentro das últimas notícias da sua cidade
+      </p>
 
       {/* Scroll horizontal */}
       <div className="overflow-x-auto scrollbar-hide">
