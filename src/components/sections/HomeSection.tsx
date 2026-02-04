@@ -86,9 +86,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       {/* Jornal da Cidade */}
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
 
-      {/* Quick Access Cards */}
-      <QuickAccessCards cidadeSlug={cidadeSlug} />
-
       {/* Serviços */}
       <ServicosSection cidadeSlug={cidadeSlug} />
 
@@ -97,6 +94,9 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       {/* Ofertas da Cidade */}
       <OfertasSection cidadeSlug={cidadeSlug} />
+
+      {/* Quick Access Cards */}
+      <QuickAccessCards cidadeSlug={cidadeSlug} />
     </div>
   );
 };
