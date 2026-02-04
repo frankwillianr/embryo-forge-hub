@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Briefcase, Search } from "lucide-react";
+import { ArrowLeft, Plus, Briefcase, Search, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import VagaCard from "@/components/vagas/VagaCard";
 import { Vaga } from "@/types/vagas";
+import vagasBanner from "@/assets/vagas-banner.jpg";
 
 const VagasListPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -53,37 +54,44 @@ const VagasListPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
-        <div className="flex items-center gap-3 p-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(`/cidade/${slug}`)}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold text-foreground">
-              Vagas de Emprego
-            </h1>
-            <p className="text-xs text-muted-foreground">{cidade?.nome}</p>
-          </div>
+      {/* Banner */}
+      <div className="relative h-40 overflow-hidden">
+        <img
+          src={vagasBanner}
+          alt="Vagas de Emprego"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+        
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(`/cidade/${slug}`)}
+          className="absolute top-4 left-4 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        
+        {/* Title */}
+        <div className="absolute bottom-4 left-4 right-4">
+          <h1 className="text-2xl font-bold text-white">Vagas de Emprego</h1>
+          <p className="text-white/80 text-sm">{cidade?.nome}</p>
         </div>
+      </div>
 
-        {/* Search */}
-        <div className="px-4 pb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar vagas..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+      {/* Search */}
+      <div className="px-4 py-3 border-b border-border bg-card">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar vagas..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
-      </header>
+      </div>
 
       {/* Content */}
       <main className="p-4 pb-24 space-y-3">
@@ -122,7 +130,7 @@ const VagasListPage = () => {
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-orange-500 to-amber-400 hover:from-orange-600 hover:to-amber-500"
         size="icon"
       >
-        <Plus className="h-6 w-6" />
+        <MoreHorizontal className="h-6 w-6" />
       </Button>
     </div>
   );
