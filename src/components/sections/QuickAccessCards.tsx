@@ -36,9 +36,11 @@ const QuickAccessCards = ({ cidadeSlug }: QuickAccessCardsProps) => {
   const navigate = useNavigate();
 
   const handleClick = (id: string) => {
-    // Future navigation - for now just placeholder
-    console.log(`Clicked on ${id}`);
-    // navigate(`/cidade/${cidadeSlug}/${id}`);
+    if (id === "vagas") {
+      navigate(`/cidade/${cidadeSlug}/vagas`);
+    } else {
+      console.log(`Clicked on ${id}`);
+    }
   };
 
   return (
