@@ -38,6 +38,8 @@ const QuickAccessCards = ({ cidadeSlug }: QuickAccessCardsProps) => {
   const handleClick = (id: string) => {
     if (id === "vagas") {
       navigate(`/cidade/${cidadeSlug}/vagas`);
+    } else if (id === "pets") {
+      navigate(`/cidade/${cidadeSlug}/pets`);
     } else {
       console.log(`Clicked on ${id}`);
     }
