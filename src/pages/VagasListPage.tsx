@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Briefcase, Search, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Briefcase, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,36 +53,32 @@ const VagasListPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Banner */}
+    <div className="min-h-screen bg-background pb-4">
+      {/* Header */}
+      <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-background/95 backdrop-blur-sm">
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}`)}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h1 className="text-base font-semibold">Vagas de Emprego</h1>
+      </header>
+
+      {/* Banner Hero */}
       <div className="relative h-40 overflow-hidden">
         <img
           src={vagasBanner}
           alt="Vagas de Emprego"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-        
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(`/cidade/${slug}`)}
-          className="absolute top-4 left-4 bg-black/30 backdrop-blur-sm text-white hover:bg-black/50"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        
-        {/* Title */}
-        <div className="absolute bottom-4 left-4 right-4">
-          <h1 className="text-2xl font-bold text-white">Vagas de Emprego</h1>
-          <p className="text-white/80 text-sm">{cidade?.nome}</p>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute bottom-3 left-4 right-4">
+          <p className="text-xs text-muted-foreground">Oportunidades</p>
+          <h2 className="text-lg font-bold text-foreground">Vagas de Emprego</h2>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="px-4 py-3 border-b border-border bg-card">
-        <div className="relative">
+      {/* Search + Add Button */}
+      <div className="px-4 py-3 flex gap-2">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar vagas..."
@@ -91,22 +87,32 @@ const VagasListPage = () => {
             className="pl-10"
           />
         </div>
+        <Button
+          onClick={() => navigate(`/cidade/${slug}/vagas/nova`)}
+          className="bg-primary hover:bg-primary/90"
+        >
+          Anunciar
+        </Button>
       </div>
 
-      {/* Content */}
-      <main className="p-4 pb-24 space-y-3">
+      {/* Lista */}
+      <div className="px-4 py-2">
         {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
-          ))
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-32 rounded-xl" />
+            ))}
+          </div>
         ) : filteredVagas && filteredVagas.length > 0 ? (
-          filteredVagas.map((vaga) => (
-            <VagaCard
-              key={vaga.id}
-              vaga={vaga}
-              onClick={() => navigate(`/cidade/${slug}/vagas/${vaga.id}`)}
-            />
-          ))
+          <div className="space-y-3">
+            {filteredVagas.map((vaga) => (
+              <VagaCard
+                key={vaga.id}
+                vaga={vaga}
+                onClick={() => navigate(`/cidade/${slug}/vagas/${vaga.id}`)}
+              />
+            ))}
+          </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -122,16 +128,7 @@ const VagasListPage = () => {
             </p>
           </div>
         )}
-      </main>
-
-      {/* FAB - Add new job */}
-      <Button
-        onClick={() => navigate(`/cidade/${slug}/vagas/nova`)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-orange-500 to-amber-400 hover:from-orange-600 hover:to-amber-500"
-        size="icon"
-      >
-        <MoreHorizontal className="h-6 w-6" />
-      </Button>
+      </div>
     </div>
   );
 };
