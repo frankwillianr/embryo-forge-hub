@@ -25,6 +25,9 @@ import ServicoCategoriaPage from "@/pages/ServicoCategoriaPage";
 import NovaEmpresaPage from "@/pages/NovaEmpresaPage";
 import ServicoEmpresaDetailPage from "@/pages/ServicoEmpresaDetailPage";
 import OfertasListPage from "@/pages/OfertasListPage";
+import VagasListPage from "@/pages/VagasListPage";
+import NovaVagaPage from "@/pages/NovaVagaPage";
+import VagaDetailPage from "@/pages/VagaDetailPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -105,6 +108,11 @@ const App = () => (
 
           {/* Ofertas */}
           <Route path="/cidade/:slug/ofertas" element={<OfertasListPage />} />
+
+          {/* Vagas de Emprego */}
+          <Route path="/cidade/:slug/vagas" element={<VagasListPage />} />
+          <Route path="/cidade/:slug/vagas/nova" element={<NovaVagaPage />} />
+          <Route path="/cidade/:slug/vagas/:vagaId" element={<VagaDetailPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
