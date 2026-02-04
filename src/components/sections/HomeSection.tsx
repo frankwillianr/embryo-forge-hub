@@ -5,6 +5,7 @@ import JornalHorizontalList from "@/components/jornal/JornalHorizontalList";
 import AloPrefeituraHorizontalList from "@/components/aloPrefeitura/AloPrefeituraHorizontalList";
 import ServicosSection from "@/components/servicos/ServicosSection";
 import OfertasSection from "@/components/ofertas/OfertasSection";
+import QuickAccessCards from "@/components/sections/QuickAccessCards";
 import type { Banner } from "@/types/banner";
 
 interface HomeSectionProps {
@@ -84,6 +85,9 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       {/* Jornal da Cidade */}
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
+
+      {/* Quick Access Cards */}
+      <QuickAccessCards cidadeSlug={cidadeSlug} />
 
       {/* Serviços */}
       <ServicosSection cidadeSlug={cidadeSlug} />
