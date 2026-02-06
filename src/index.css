@@ -124,7 +124,7 @@ All colors MUST be HSL.
 }
 
 .pt-safe {
-  padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  padding-top: calc(env(safe-area-inset-top, 0px) + 55px);
 }
 
 .pb-safe {

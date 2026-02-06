@@ -70,7 +70,7 @@ const CidadePage = () => {
         {isHome ? (
           <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} />
         ) : (
-          <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 35px)' }}>
+          <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
             <Button
               variant="ghost"
               size="icon"
