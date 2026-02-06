@@ -54,7 +54,7 @@ const VagasListPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 pt-safe border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <Button 
           variant="ghost" 
           size="icon" 
