@@ -87,7 +87,7 @@ const DesapegaDetailPage = () => {
   if (isLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        <header className="flex items-center gap-3 p-4 border-b border-border bg-card">
+        <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
