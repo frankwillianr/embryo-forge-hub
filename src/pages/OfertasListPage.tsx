@@ -101,7 +101,7 @@ const OfertasListPage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 p-4 border-b border-border bg-card">
+      <header className="sticky top-0 z-10 flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
         <Button
           variant="ghost"
           size="icon"
