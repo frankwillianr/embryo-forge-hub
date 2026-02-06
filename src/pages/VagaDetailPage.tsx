@@ -64,8 +64,8 @@ const VagaDetailPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b border-border">
-        <div className="flex items-center gap-3 p-4">
+      <header className="sticky top-0 z-40 bg-card border-b border-border pt-safe">
+        <div className="flex items-center gap-3 px-4 pb-4">
           <Button
             variant="ghost"
             size="icon"
