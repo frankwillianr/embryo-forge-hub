@@ -158,7 +158,7 @@ const ServicoEmpresaDetailPage = () => {
   if (!empresa) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        <header className="flex items-center gap-3 p-4 border-b border-border bg-card">
+        <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
           <Button
             variant="ghost"
             size="icon"
