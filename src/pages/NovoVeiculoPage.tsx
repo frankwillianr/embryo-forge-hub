@@ -270,7 +270,7 @@ const NovoVeiculoPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center gap-3 p-4 border-b border-border bg-card">
+      <header className="sticky top-0 z-50 flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
         <Button variant="ghost" size="icon" onClick={() => navigate(`/cidade/${slug}/veiculos`)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>

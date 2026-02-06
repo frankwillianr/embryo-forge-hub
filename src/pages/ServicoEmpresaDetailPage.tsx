@@ -158,7 +158,7 @@ const ServicoEmpresaDetailPage = () => {
   if (!empresa) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
-        <header className="flex items-center gap-3 p-4 border-b border-border bg-card">
+        <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
           <Button
             variant="ghost"
             size="icon"
@@ -185,7 +185,7 @@ const ServicoEmpresaDetailPage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header flutuante sobre a imagem */}
-      <header className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between p-4">
+      <header className="fixed top-0 left-0 right-0 z-20 flex items-center justify-between p-4 pt-safe">
         <Button
           variant="secondary"
           size="icon"
