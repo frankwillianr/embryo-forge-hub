@@ -22,7 +22,7 @@ const navItems = [
 
 const sectionTitles: Record<TabType, string> = {
   home: "Home",
-  jornal: "Jornal",
+  jornal: "jornal da cidade",
   cinema: "Cinema",
   prefeitura: "Alô Prefeitura",
 };
