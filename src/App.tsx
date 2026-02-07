@@ -31,6 +31,7 @@ import VagaDetailPage from "@/pages/VagaDetailPage";
 import PetsListPage from "@/pages/PetsListPage";
 import PetDetailPage from "@/pages/PetDetailPage";
 import NovoPetPage from "@/pages/NovoPetPage";
+import AnunciarPage from "@/pages/AnunciarPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -121,6 +122,9 @@ const App = () => (
           <Route path="/cidade/:slug/pets" element={<PetsListPage />} />
           <Route path="/cidade/:slug/pets/novo" element={<NovoPetPage />} />
           <Route path="/cidade/:slug/pets/:id" element={<PetDetailPage />} />
+
+          {/* Anunciar Hub */}
+          <Route path="/cidade/:slug/anunciar" element={<AnunciarPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
