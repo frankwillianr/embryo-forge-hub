@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminCidades from "@/pages/admin/AdminCidades";
@@ -34,18 +35,20 @@ import PetDetailPage from "@/pages/PetDetailPage";
 import NovoPetPage from "@/pages/NovoPetPage";
 import AnunciarPage from "@/pages/AnunciarPage";
 import NovoBannerPage from "@/pages/NovoBannerPage";
+import AuthPage from "@/pages/AuthPage";
 import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Public city page with slug */}
-          <Route path="/cidade/:slug" element={<CidadePage />} />
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public city page with slug */}
+            <Route path="/cidade/:slug" element={<CidadePage />} />
           <Route path="/cidade/:slug/banner/:id" element={<BannerDetailPage />} />
           <Route path="/cidade/:slug/jornal" element={<JornalListPage />} />
           <Route path="/cidade/:slug/jornal/:jornalId" element={<JornalDetailPage />} />
@@ -132,14 +135,18 @@ const App = () => (
           <Route path="/cidade/:slug/pets/novo" element={<NovoPetPage />} />
           <Route path="/cidade/:slug/pets/:id" element={<PetDetailPage />} />
 
-          {/* Anunciar Hub */}
-          <Route path="/cidade/:slug/anunciar" element={<AnunciarPage />} />
-          <Route path="/cidade/:slug/banner/novo" element={<NovoBannerPage />} />
+            {/* Anunciar Hub */}
+            <Route path="/cidade/:slug/anunciar" element={<AnunciarPage />} />
+            <Route path="/cidade/:slug/banner/novo" element={<NovoBannerPage />} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            {/* Auth */}
+            <Route path="/cidade/:slug/auth" element={<AuthPage />} />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

@@ -1,5 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Car, ShoppingBag, Briefcase, Building2, PawPrint, Megaphone } from "lucide-react";
+import { ArrowLeft, Car, ShoppingBag, Briefcase, Building2, PawPrint, Megaphone, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 const anunciarOptions = [
   {
@@ -55,10 +57,30 @@ const anunciarOptions = [
 const AnunciarPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate(`/cidade/${slug}/auth?redirect=/cidade/${slug}/anunciar`);
+    }
+  }, [user, loading, navigate, slug]);
 
   const handleOptionClick = (path: string) => {
     navigate(`/cidade/${slug}/${path}`);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
