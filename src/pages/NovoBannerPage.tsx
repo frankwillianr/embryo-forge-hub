@@ -110,9 +110,8 @@ const NovoBannerPage = () => {
   useEffect(() => {
     if (dataInicio && dataFim) {
       const days = differenceInDays(dataFim, dataInicio) + 1;
-      if (days >= 7 && days <= 365) {
-        form.setValue("dias_comprados", days);
-      }
+      // Always update dias_comprados to reflect actual selection
+      form.setValue("dias_comprados", Math.max(0, days));
     }
   }, [dataInicio, dataFim, form]);
 
