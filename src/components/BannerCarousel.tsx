@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Megaphone } from "lucide-react";
 import type { Banner } from "@/types/banner";
 
 interface BannerCarouselProps {
@@ -149,6 +150,18 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
             </div>
           ))}
         </div>
+
+        {/* Botão Anunciar - sutil no canto */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/cidade/${cidadeSlug}/anunciar`);
+          }}
+          className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/80 text-[10px] font-medium hover:bg-black/60 transition-colors"
+        >
+          <Megaphone className="h-3 w-3" />
+          Anunciar
+        </button>
       </div>
 
       {/* Dots Indicator - abaixo da imagem */}
