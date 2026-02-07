@@ -271,6 +271,32 @@ const AuthPage = () => {
     setLoading(true);
     
     try {
+      // Check if CPF already exists BEFORE creating auth user
+      const { data: existingCpf } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("cpf", cpf)
+        .maybeSingle();
+
+      if (existingCpf) {
+        toast({ title: "Erro", description: "Este CPF já está cadastrado", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      // Check if email already exists
+      const { data: existingEmail } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (existingEmail) {
+        toast({ title: "Erro", description: "Este email já está cadastrado", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -300,6 +326,9 @@ const AuthPage = () => {
       });
 
       if (profileError) {
+        // If profile creation fails, sign out the user to avoid orphan auth
+        await supabase.auth.signOut();
+        
         let errorMessage = profileError.message;
         if (profileError.message.includes("profile_cpf_key") || profileError.message.includes("duplicate")) {
           errorMessage = "Este CPF já está cadastrado";
