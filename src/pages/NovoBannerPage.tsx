@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Megaphone, Image, Video, Plus, X, Youtube, Upload, Calendar } from "lucide-react";
+import { ArrowLeft, Megaphone, Image, Video, Plus, X, Youtube, Upload, Calendar, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const bannerSchema = z.object({
   titulo: z.string().min(3, "Título deve ter pelo menos 3 caracteres").max(100, "Título muito longo"),
@@ -47,6 +48,7 @@ const diasOptions = [
 const NovoBannerPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [imagemPrincipal, setImagemPrincipal] = useState<File | null>(null);
   const [imagemPrincipalPreview, setImagemPrincipalPreview] = useState<string | null>(null);
   const [imagensGaleria, setImagensGaleria] = useState<File[]>([]);
@@ -54,6 +56,13 @@ const NovoBannerPage = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoType, setVideoType] = useState<"youtube" | "upload">("youtube");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate(`/cidade/${slug}/auth?redirect=/cidade/${slug}/banner/novo`);
+    }
+  }, [user, authLoading, navigate, slug]);
 
   const form = useForm<BannerFormData>({
     resolver: zodResolver(bannerSchema),
@@ -143,6 +152,18 @@ const NovoBannerPage = () => {
   };
 
   const selectedDias = diasOptions.find(d => d.value === form.watch("dias_comprados"));
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background pb-8">
