@@ -114,11 +114,22 @@ const CidadePage = () => {
 
     setIsSendingEmail(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-brevo-email", {
-        body: { to: testEmail },
-      });
+      const response = await fetch(
+        "https://umauozcntfxgphzbiifz.supabase.co/functions/v1/send-brevo-email",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ to: testEmail }),
+        }
+      );
 
-      if (error) throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erro ao enviar email");
+      }
 
       toast.success(`Email enviado para ${testEmail}!`);
       setTestEmail("");
