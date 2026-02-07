@@ -127,7 +127,7 @@ const PrivacyPolicyModal = ({ open, onAccept, onReject }: PrivacyPolicyModalProp
           <AlertDialogCancel onClick={onReject} className="flex-1 sm:flex-none">
             Recusar
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onAccept} className="flex-1 sm:flex-none bg-gradient-to-r from-primary to-[#E80560]">
+          <AlertDialogAction onClick={onAccept} className="flex-1 sm:flex-none">
             Aceitar e Criar Conta
           </AlertDialogAction>
         </AlertDialogFooter>
