@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminCidades from "@/pages/admin/AdminCidades";
+import AdminCidadeDetail from "@/pages/admin/AdminCidadeDetail";
 import AdminJornal from "@/pages/admin/AdminJornal";
 import AdminCinema from "@/pages/admin/AdminCinema";
 import AdminAloPrefeitura from "@/pages/admin/AdminAloPrefeitura";
@@ -63,6 +64,14 @@ const App = () => (
             element={
               <AdminLayout>
                 <AdminCidades />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin/cidades/:cidadeId"
+            element={
+              <AdminLayout>
+                <AdminCidadeDetail />
               </AdminLayout>
             }
           />
