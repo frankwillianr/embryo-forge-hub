@@ -12,3 +12,9 @@ verify_jwt = false
 
 [functions.send-brevo-email]
 verify_jwt = false
+
+[functions.create-banner-payment]
+verify_jwt = false
+
+[functions.send-banner-payment-email]
+verify_jwt = false

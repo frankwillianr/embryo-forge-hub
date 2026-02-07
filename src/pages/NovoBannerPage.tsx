@@ -57,7 +57,7 @@ const NovoBannerPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cidade")
-        .select("id, valor_dia_banner")
+        .select("id, nome, valor_dia_banner")
         .eq("slug", slug)
         .maybeSingle();
       
@@ -178,28 +178,151 @@ const NovoBannerPage = () => {
 
   // Step 2: Confirm and create banner with "aguardando_pagamento" status
   const handleConfirmPublish = async () => {
-    if (!formData || !imagemPrincipal) return;
+    if (!formData || !imagemPrincipal || !cidade?.id) return;
     
     setIsSubmitting(true);
 
     try {
-      // TODO: Upload images and create banner in database with status "aguardando_pagamento"
-      // TODO: Create Stripe checkout session and send payment link via email
+      // 1. Upload main image to storage
+      const timestamp = Date.now();
+      const mainImagePath = `banners/${user?.id}/${timestamp}_main_${imagemPrincipal.name}`;
       
-      console.log("Banner data:", {
-        ...formData,
-        status: "aguardando_pagamento",
-        imagemPrincipal,
-        imagensGaleria,
-        videoFile: videoType === "upload" ? videoFile : null,
-        userEmail: user?.email,
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("banners")
+        .upload(mainImagePath, imagemPrincipal);
+
+      if (uploadError) throw new Error(`Erro ao fazer upload da imagem: ${uploadError.message}`);
+
+      const { data: publicUrlData } = supabase.storage
+        .from("banners")
+        .getPublicUrl(mainImagePath);
+
+      const imagemUrl = publicUrlData.publicUrl;
+
+      // 2. Upload gallery images if any
+      const galeriaUrls: string[] = [];
+      for (let i = 0; i < imagensGaleria.length; i++) {
+        const galeriaPath = `banners/${user?.id}/${timestamp}_galeria_${i}_${imagensGaleria[i].name}`;
+        const { error: galeriaError } = await supabase.storage
+          .from("banners")
+          .upload(galeriaPath, imagensGaleria[i]);
+        
+        if (!galeriaError) {
+          const { data: galeriaUrl } = supabase.storage
+            .from("banners")
+            .getPublicUrl(galeriaPath);
+          galeriaUrls.push(galeriaUrl.publicUrl);
+        }
+      }
+
+      // 3. Upload video if applicable
+      let videoUploadUrl: string | null = null;
+      if (videoType === "upload" && videoFile) {
+        const videoPath = `banners/${user?.id}/${timestamp}_video_${videoFile.name}`;
+        const { error: videoError } = await supabase.storage
+          .from("banners")
+          .upload(videoPath, videoFile);
+        
+        if (!videoError) {
+          const { data: videoUrl } = supabase.storage
+            .from("banners")
+            .getPublicUrl(videoPath);
+          videoUploadUrl = videoUrl.publicUrl;
+        }
+      }
+
+      // 4. Create banner in database with status "aguardando_pagamento"
+      const { data: bannerData, error: bannerError } = await supabase
+        .from("banner")
+        .insert({
+          titulo: formData.titulo,
+          descricao: formData.descricao,
+          imagem_url: imagemUrl,
+          video_youtube_url: videoType === "youtube" ? formData.video_youtube_url : null,
+          video_upload_url: videoUploadUrl,
+          dias_comprados: formData.dias_comprados,
+          dias_usados: 0,
+          ativo: false,
+          status: "aguardando_pagamento",
+          admin_user_id: user?.id,
+        })
+        .select()
+        .single();
+
+      if (bannerError) throw new Error(`Erro ao criar banner: ${bannerError.message}`);
+
+      // 5. Insert gallery images
+      if (galeriaUrls.length > 0) {
+        const galeriaInserts = galeriaUrls.map((url, index) => ({
+          banner_id: bannerData.id,
+          imagem_url: url,
+          ordem: index,
+        }));
+        await supabase.from("banner_imagem").insert(galeriaInserts);
+      }
+
+      // 6. Link banner to city
+      await supabase.from("rel_cidade_banner").insert({
+        cidade_id: cidade.id,
+        banner_id: bannerData.id,
+      });
+
+      // 7. Create exhibition dates
+      const diasExibicao = [];
+      for (let i = 0; i < formData.dias_comprados; i++) {
+        const dataExibicao = addDays(formData.data_inicio, i);
+        diasExibicao.push({
+          banner_id: bannerData.id,
+          data_exibicao: format(dataExibicao, "yyyy-MM-dd"),
+          utilizado: false,
+        });
+      }
+      await supabase.from("rel_banner_dias").insert(diasExibicao);
+
+      // 8. Create Stripe payment session via edge function
+      const valorTotal = formData.dias_comprados * precoPorDia;
+      
+      const { data: paymentResponse, error: paymentError } = await supabase.functions.invoke(
+        "create-banner-payment",
+        {
+          body: {
+            bannerId: bannerData.id,
+            cidadeId: cidade.id,
+            cidadeNome: slug || "cidade",
+            bannerTitulo: formData.titulo,
+            valorTotal,
+            diasComprados: formData.dias_comprados,
+            valorDia: precoPorDia,
+            userEmail: user?.email || "",
+            userName: profile?.nome || user?.email?.split("@")[0] || "Cliente",
+          },
+        }
+      );
+
+      if (paymentError) throw new Error(`Erro ao criar pagamento: ${paymentError.message}`);
+
+      // 9. Send payment email via edge function
+      await supabase.functions.invoke("send-banner-payment-email", {
+        body: {
+          to: user?.email || "",
+          userName: profile?.nome || user?.email?.split("@")[0] || "Cliente",
+          bannerTitulo: formData.titulo,
+          cidadeNome: slug?.toUpperCase() || "Cidade",
+          diasComprados: formData.dias_comprados,
+          valorTotal,
+          paymentUrl: paymentResponse.sessionUrl,
+          expiresAt: paymentResponse.expiresAt,
+        },
       });
 
       // Close preview modal and show payment confirmation
       setShowPreviewModal(false);
       setShowPaymentModal(true);
-    } catch (error) {
-      toast.error("Erro ao criar anúncio. Tente novamente.");
+      
+      toast.success("Anúncio criado! Verifique seu e-mail para o link de pagamento.");
+    } catch (error: any) {
+      console.error("Error creating banner:", error);
+      toast.error(error.message || "Erro ao criar anúncio. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
