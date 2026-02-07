@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +25,7 @@ import type { Cidade, CidadeInsert } from "@/types/cidade";
 import { toast } from "sonner";
 
 const AdminCidades = () => {
+  const navigate = useNavigate();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCidade, setEditingCidade] = useState<Cidade | null>(null);
   const [nome, setNome] = useState("");
@@ -352,7 +354,11 @@ const AdminCidades = () => {
               </TableRow>
             ) : (
               cidades?.map((cidade) => (
-                <TableRow key={cidade.id}>
+                <TableRow 
+                  key={cidade.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/admin/cidades/${cidade.id}`)}
+                >
                   <TableCell>
                     {cidade.banner_url ? (
                       <img
@@ -376,14 +382,20 @@ const AdminCidades = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleEdit(cidade)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(cidade);
+                        }}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => deleteMutation.mutate(cidade.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteMutation.mutate(cidade.id);
+                        }}
                         disabled={deleteMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
