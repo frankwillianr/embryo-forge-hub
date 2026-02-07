@@ -181,7 +181,7 @@ const NovoBannerPage = () => {
       </header>
 
       {/* Hero Banner */}
-      <div className="relative h-28 bg-gradient-to-br from-primary to-[#E80560] flex items-center justify-center">
+      <div className="relative h-28 bg-[#331D4A] flex items-center justify-center">
         <div className="text-center text-white">
           <Megaphone className="h-8 w-8 mx-auto mb-1" />
           <h2 className="text-lg font-bold">Destaque seu negócio</h2>
@@ -455,10 +455,11 @@ const NovoBannerPage = () => {
           {/* Submit Button */}
           <Button
             type="submit"
-            className="w-full h-12 text-base font-semibold"
+            variant="dark"
+            className="w-full h-12 text-base font-semibold rounded-xl"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Enviando..." : "Enviar Solicitação de Banner"}
+            {isSubmitting ? "Enviando..." : "Enviar Solicitação"}
           </Button>
         </form>
       </Form>
