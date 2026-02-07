@@ -180,18 +180,22 @@ const NovoBannerPage = () => {
         </div>
       </header>
 
-      {/* Hero Banner */}
-      <div className="relative h-28 bg-[#331D4A] flex items-center justify-center">
-        <div className="text-center text-white">
-          <Megaphone className="h-8 w-8 mx-auto mb-1" />
-          <h2 className="text-lg font-bold">Destaque seu negócio</h2>
-          <p className="text-sm opacity-90">Apareça no banner principal da cidade</p>
-        </div>
-      </div>
-
       {/* Form */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="p-4 space-y-6">
+          {/* Intro Card */}
+          <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-2xl">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Megaphone className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground">Destaque seu negócio</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Seu banner aparecerá no carrossel principal da cidade
+              </p>
+            </div>
+          </div>
+
           {/* Imagem Principal */}
           <div className="space-y-3">
             <Label className="flex items-center gap-2 text-base font-semibold">
