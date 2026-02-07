@@ -553,7 +553,16 @@ const NovoBannerPage = () => {
               />
             </div>
 
-            {diasComprados >= 7 && (
+            {diasComprados < 7 ? (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
+                <p className="text-sm text-destructive font-medium">
+                  ⚠️ Período mínimo de 7 dias é obrigatório
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Selecione uma data de término que resulte em pelo menos 7 dias de exibição.
+                </p>
+              </div>
+            ) : (
               <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Total:</span>
@@ -562,7 +571,7 @@ const NovoBannerPage = () => {
                 <p className="text-xs text-muted-foreground mt-1">
                   {dataInicio && dataFim && (
                     <>
-                      De {format(dataInicio, "dd/MM/yyyy", { locale: ptBR })} até {format(dataFim, "dd/MM/yyyy", { locale: ptBR })} ({diasComprados} dias)
+                      De {format(dataInicio, "dd/MM/yyyy", { locale: ptBR })} até {format(dataFim, "dd/MM/yyyy", { locale: ptBR })} ({diasComprados} dias × R$ {PRECO_POR_DIA.toFixed(2).replace(".", ",")}/dia)
                     </>
                   )}
                 </p>
