@@ -47,7 +47,8 @@ const loginSchema = z.object({
 });
 
 const signupSchema = z.object({
-  nome: z.string().trim().min(2, "Nome muito curto").max(100),
+  nome: z.string().trim().min(2, "Nome muito curto").max(100)
+    .refine((val) => val.trim().split(/\s+/).length >= 2, "Informe nome e sobrenome"),
   email: z.string().trim().email("Email inválido"),
   cpf: z.string()
     .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "Formato inválido")
