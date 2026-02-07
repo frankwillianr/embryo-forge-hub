@@ -3,13 +3,16 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Banner } from "@/types/banner";
+import BannerImageCarousel from "@/components/banner/BannerImageCarousel";
+import BannerVideoPlayer from "@/components/banner/BannerVideoPlayer";
+import type { Banner, BannerImagem } from "@/types/banner";
 
 const BannerDetailPage = () => {
   const { id, slug } = useParams<{ id: string; slug: string }>();
   const navigate = useNavigate();
 
-  const { data: banner, isLoading } = useQuery({
+  // Fetch banner data
+  const { data: banner, isLoading: loadingBanner } = useQuery({
     queryKey: ["banner", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -24,14 +27,23 @@ const BannerDetailPage = () => {
     enabled: !!id,
   });
 
-  const getYoutubeEmbedUrl = (url: string) => {
-    const videoId = url.match(
-      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
-    )?.[1];
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
-  };
+  // Fetch additional images
+  const { data: images = [] } = useQuery({
+    queryKey: ["banner-images", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("banner_imagens")
+        .select("*")
+        .eq("banner_id", id)
+        .order("ordem", { ascending: true });
 
-  if (isLoading) {
+      if (error) throw error;
+      return data as BannerImagem[];
+    },
+    enabled: !!id,
+  });
+
+  if (loadingBanner) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <p className="text-muted-foreground">Carregando...</p>
@@ -51,9 +63,8 @@ const BannerDetailPage = () => {
     );
   }
 
-  const embedUrl = banner.video_youtube_url
-    ? getYoutubeEmbedUrl(banner.video_youtube_url)
-    : null;
+  // Combine all images for the carousel
+  const carouselImages = images.map((img) => img.imagem_url);
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,7 +80,7 @@ const BannerDetailPage = () => {
 
       {/* Content */}
       <div className="pb-8">
-        {/* Banner Image */}
+        {/* Banner Principal */}
         <div className="aspect-[16/9] w-full">
           <img
             src={banner.imagem_url}
@@ -80,26 +91,27 @@ const BannerDetailPage = () => {
 
         {/* Info */}
         <div className="p-4 space-y-6">
+          {/* Título */}
           <h2 className="text-2xl font-bold text-foreground">{banner.titulo}</h2>
 
+          {/* Descrição */}
           {banner.descricao && (
             <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
               {banner.descricao}
             </p>
           )}
 
-          {/* YouTube Video */}
-          {embedUrl && (
-            <div className="aspect-video w-full rounded-lg overflow-hidden">
-              <iframe
-                src={embedUrl}
-                title={banner.titulo}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full"
-              />
-            </div>
+          {/* Carrossel de Imagens */}
+          {carouselImages.length > 0 && (
+            <BannerImageCarousel images={carouselImages} />
           )}
+
+          {/* Vídeo */}
+          <BannerVideoPlayer
+            videoUrl={banner.video_upload_url}
+            youtubeUrl={banner.video_youtube_url}
+            title={banner.titulo}
+          />
         </div>
       </div>
     </div>
