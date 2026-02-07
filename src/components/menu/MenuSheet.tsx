@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Phone, Mail, MapPin, LogOut } from "lucide-react";
+import { User, Phone, Mail, MapPin, LogOut, Car, ShoppingBag, Megaphone, Briefcase, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Sheet,
@@ -48,11 +48,51 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
     onOpenChange(false);
   };
 
+  const handleNavigate = (path: string) => {
+    onOpenChange(false);
+    navigate(path);
+  };
+
   const firstName = profile?.nome?.split(" ")[0];
+
+  const menuItems = [
+    {
+      icon: ShoppingBag,
+      label: "Meus Anúncios",
+      description: "Desapega e ofertas",
+      path: `/cidade/${cidadeSlug}/meus-anuncios`,
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+    },
+    {
+      icon: Car,
+      label: "Meus Veículos",
+      description: "Carros e motos à venda",
+      path: `/cidade/${cidadeSlug}/meus-veiculos`,
+      color: "text-blue-600",
+      bgColor: "bg-blue-500/10",
+    },
+    {
+      icon: Megaphone,
+      label: "Minhas Denúncias",
+      description: "Alô Prefeitura",
+      path: `/cidade/${cidadeSlug}/minhas-denuncias`,
+      color: "text-red-600",
+      bgColor: "bg-red-500/10",
+    },
+    {
+      icon: Briefcase,
+      label: "Minhas Vagas",
+      description: "Vagas de emprego",
+      path: `/cidade/${cidadeSlug}/minhas-vagas`,
+      color: "text-green-600",
+      bgColor: "bg-green-500/10",
+    },
+  ];
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[300px] sm:w-[350px] p-0">
+      <SheetContent side="right" className="w-[300px] sm:w-[350px] p-0 overflow-y-auto">
         <SheetHeader className="p-6 pb-4 pt-safe border-b border-border">
           <SheetTitle className="text-left text-lg">Menu</SheetTitle>
         </SheetHeader>
@@ -104,13 +144,45 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
 
           <Separator />
 
+          {/* Menu Items - Only show when logged in */}
+          {user && (
+            <>
+              <div className="px-6 py-4">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Minha Conta
+                </h3>
+
+                <div className="space-y-2">
+                  {menuItems.map((item) => (
+                    <button
+                      key={item.path}
+                      onClick={() => handleNavigate(item.path)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
+                    >
+                      <div className={`w-10 h-10 rounded-full ${item.bgColor} flex items-center justify-center`}>
+                        <item.icon className={`h-5 w-5 ${item.color}`} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground">{item.label}</p>
+                        <p className="text-xs text-muted-foreground">{item.description}</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+            </>
+          )}
+
           {/* Contatos Section */}
           <div className="px-6 py-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               Contatos
             </h3>
 
-            <div className="space-y-4">
+            <div className="space-y-2">
               <a
                 href="tel:+5533999999999"
                 className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
@@ -164,7 +236,7 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
 
       {/* Logout Confirmation Modal */}
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-        <AlertDialogContent className="max-w-[90vw] sm:max-w-sm">
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-sm rounded-[10px]">
           <AlertDialogHeader>
             <AlertDialogTitle>Sair da conta?</AlertDialogTitle>
             <AlertDialogDescription>
