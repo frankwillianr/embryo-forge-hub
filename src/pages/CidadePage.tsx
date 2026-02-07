@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, Newspaper, Film, Megaphone, Menu, ArrowLeft } from "lucide-react";
+import { Home, Newspaper, Film, Megaphone, Menu, ArrowLeft, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CidadeBanner from "@/components/CidadeBanner";
 import HomeSection from "@/components/sections/HomeSection";
@@ -11,6 +11,7 @@ import AloPrefeituraSection from "@/components/sections/AloPrefeituraSection";
 import MenuSheet from "@/components/menu/MenuSheet";
 import { Button } from "@/components/ui/button";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { toast } from "sonner";
 
 type TabType = "home" | "jornal" | "cinema" | "prefeitura";
 
@@ -60,6 +61,42 @@ const CidadePage = () => {
     }
   }, [permissionStatus]);
 
+  // Função temporária para testar push
+  const handleTestPush = async () => {
+    try {
+      toast.loading("Enviando push de teste...");
+      
+      const response = await fetch(
+        "https://ea10efd5-6ac8-47e5-b54d-1e553eb45c17.supabase.co/functions/v1/send-push-notification",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: "🎉 Teste de Push!",
+            body: "Parabéns! As notificações push estão funcionando!",
+          }),
+        }
+      );
+
+      const result = await response.json();
+      toast.dismiss();
+      
+      if (result.success) {
+        toast.success(`Push enviado! ${result.sent} dispositivo(s)`);
+      } else {
+        toast.error(result.error || "Erro ao enviar push");
+      }
+      
+      console.log("Resultado do push:", result);
+    } catch (error) {
+      toast.dismiss();
+      toast.error("Erro ao enviar push");
+      console.error("Erro:", error);
+    }
+  };
+
   const isHome = activeTab === "home";
 
   const renderSection = () => {
@@ -80,7 +117,19 @@ const CidadePage = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-auto pb-20">
         {isHome ? (
-          <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} />
+          <>
+            <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} />
+            {/* Botão temporário de teste de push */}
+            <div className="p-4">
+              <Button 
+                onClick={handleTestPush}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                🔔 Testar Push Notification
+              </Button>
+            </div>
+          </>
         ) : (
           <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
             <Button
