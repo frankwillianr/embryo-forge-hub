@@ -67,7 +67,7 @@ const CidadePage = () => {
       toast.loading("Enviando push de teste...");
       
       const response = await fetch(
-        "https://ea10efd5-6ac8-47e5-b54d-1e553eb45c17.supabase.co/functions/v1/send-push-notification",
+        "https://umauozcntfxgphzbiifz.supabase.co/functions/v1/send-push-notification",
         {
           method: "POST",
           headers: {
