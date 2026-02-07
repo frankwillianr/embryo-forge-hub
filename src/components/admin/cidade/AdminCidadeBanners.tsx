@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Megaphone, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Megaphone, Clock, CheckCircle, XCircle, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -82,10 +82,11 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
     );
   }
 
-  // Agrupar por status (usando campo 'ativo')
-  const ativos = banners.filter((b: any) => b.ativo === true);
-  const inativos = banners.filter((b: any) => b.ativo === false);
-  const pendentes = banners.filter((b: any) => b.ativo === null || b.ativo === undefined);
+  // Agrupar por status
+  const aguardandoPagamento = banners.filter((b: any) => b.status === "aguardando_pagamento");
+  const pendentes = banners.filter((b: any) => b.status === "pendente" || b.ativo === null || b.ativo === undefined);
+  const ativos = banners.filter((b: any) => b.ativo === true && b.status !== "aguardando_pagamento");
+  const inativos = banners.filter((b: any) => b.ativo === false && b.status !== "aguardando_pagamento");
 
   const renderBannerTable = (items: any[], showActions: boolean = false) => (
     <div className="border rounded-lg">
@@ -180,7 +181,12 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-muted/50 border rounded-lg p-4 text-center">
+          <CreditCard className="h-6 w-6 mx-auto text-amber-600 mb-2" />
+          <p className="text-2xl font-bold">{aguardandoPagamento.length}</p>
+          <p className="text-sm text-muted-foreground">Aguardando Pagamento</p>
+        </div>
         <div className="bg-muted/50 border rounded-lg p-4 text-center">
           <Clock className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
           <p className="text-2xl font-bold">{pendentes.length}</p>
@@ -199,8 +205,12 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
       </div>
 
       {/* Tabs por status */}
-      <Tabs defaultValue="pendentes">
-        <TabsList className="grid w-full grid-cols-3">
+      <Tabs defaultValue="aguardando_pagamento">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="aguardando_pagamento" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Aguardando ({aguardandoPagamento.length})
+          </TabsTrigger>
           <TabsTrigger value="pendentes" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
             Pendentes ({pendentes.length})
@@ -214,6 +224,10 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
             Inativos ({inativos.length})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="aguardando_pagamento" className="mt-4">
+          {renderBannerTable(aguardandoPagamento, false)}
+        </TabsContent>
 
         <TabsContent value="pendentes" className="mt-4">
           {renderBannerTable(pendentes, true)}
