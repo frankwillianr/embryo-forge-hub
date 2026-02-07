@@ -31,7 +31,7 @@ import { useAuth } from "@/hooks/useAuth";
 const bannerSchema = z.object({
   titulo: z.string().min(3, "Título deve ter pelo menos 3 caracteres").max(100, "Título muito longo"),
   descricao: z.string().max(1000, "Descrição muito longa").optional(),
-  dias_comprados: z.number().min(1, "Mínimo de 1 dia").max(365, "Máximo de 365 dias"),
+  dias_comprados: z.number().min(7, "Mínimo de 7 dias").max(365, "Máximo de 365 dias"),
   video_youtube_url: z.string().url("URL inválida").optional().or(z.literal("")),
 });
 
@@ -173,7 +173,7 @@ const NovoBannerPage = () => {
   const handleCustomDiasChange = (value: string) => {
     const numValue = parseInt(value, 10);
     setCustomDias(value);
-    if (!isNaN(numValue) && numValue >= 1 && numValue <= 365) {
+    if (!isNaN(numValue) && numValue >= 7 && numValue <= 365) {
       form.setValue("dias_comprados", numValue);
     }
   };
@@ -466,7 +466,7 @@ const NovoBannerPage = () => {
                   id="custom-dias"
                   type="number"
                   inputMode="numeric"
-                  min={1}
+                  min={7}
                   max={365}
                   placeholder="Ex: 50"
                   value={customDias}
@@ -474,7 +474,7 @@ const NovoBannerPage = () => {
                   className="text-lg"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Mínimo 1 dia, máximo 365 dias
+                  Mínimo 7 dias, máximo 365 dias
                 </p>
               </div>
             )}
