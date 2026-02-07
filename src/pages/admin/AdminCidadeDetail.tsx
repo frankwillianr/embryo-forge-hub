@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Newspaper, Film, Phone, Megaphone } from "lucide-react";
+import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import AdminCidadeJornal from "@/components/admin/cidade/AdminCidadeJornal";
 import AdminCidadeCinema from "@/components/admin/cidade/AdminCidadeCinema";
 import AdminCidadeAloPrefeitura from "@/components/admin/cidade/AdminCidadeAloPrefeitura";
 import AdminCidadeBanners from "@/components/admin/cidade/AdminCidadeBanners";
+import AdminCidadePrecificacao from "@/components/admin/cidade/AdminCidadePrecificacao";
 
 const AdminCidadeDetail = () => {
   const { cidadeId } = useParams<{ cidadeId: string }>();
@@ -76,7 +77,7 @@ const AdminCidadeDetail = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-12">
+        <TabsList className="w-full grid grid-cols-5 h-12">
           <TabsTrigger value="jornal" className="flex items-center gap-2">
             <Newspaper className="h-4 w-4" />
             <span className="hidden sm:inline">Jornal</span>
@@ -92,6 +93,10 @@ const AdminCidadeDetail = () => {
           <TabsTrigger value="banners" className="flex items-center gap-2">
             <Megaphone className="h-4 w-4" />
             <span className="hidden sm:inline">Banners</span>
+          </TabsTrigger>
+          <TabsTrigger value="precificacao" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            <span className="hidden sm:inline">Precificação</span>
           </TabsTrigger>
         </TabsList>
 
@@ -109,6 +114,10 @@ const AdminCidadeDetail = () => {
 
         <TabsContent value="banners" className="mt-6">
           <AdminCidadeBanners cidadeId={cidadeId!} />
+        </TabsContent>
+
+        <TabsContent value="precificacao" className="mt-6">
+          <AdminCidadePrecificacao cidadeId={cidadeId!} />
         </TabsContent>
       </Tabs>
     </div>
