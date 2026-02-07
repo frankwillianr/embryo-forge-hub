@@ -122,6 +122,56 @@ const AuthPage = () => {
       .replace(/(-\d{4})\d+?$/, "$1");
   };
 
+  // Real-time field validation on blur
+  const validateField = (field: string, value: string) => {
+    let error = "";
+    
+    switch (field) {
+      case "nome":
+        if (!value.trim()) {
+          error = "Nome obrigatório";
+        } else if (value.trim().split(/\s+/).length < 2) {
+          error = "Informe nome e sobrenome";
+        }
+        break;
+      case "email":
+        if (!value.trim()) {
+          error = "Email obrigatório";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          error = "Email inválido";
+        }
+        break;
+      case "cpf":
+        if (!value) {
+          error = "CPF obrigatório";
+        } else if (!/^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(value)) {
+          error = "Formato inválido";
+        } else if (!isValidCpf(value)) {
+          error = "CPF inválido";
+        }
+        break;
+      case "contato":
+        if (!value) {
+          error = "Contato obrigatório";
+        } else if (!/^\(\d{2}\)\s?\d{4,5}-\d{4}$/.test(value)) {
+          error = "Contato inválido";
+        }
+        break;
+      case "password":
+        if (value.length < 6) {
+          error = "Mínimo 6 caracteres";
+        }
+        break;
+      case "confirmPassword":
+        if (value !== password) {
+          error = "Senhas não conferem";
+        }
+        break;
+    }
+    
+    setErrors((prev) => ({ ...prev, [field]: error }));
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -396,7 +446,8 @@ const AuthPage = () => {
                 <Input
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
-                  placeholder="Seu nome"
+                  onBlur={() => validateField("nome", nome)}
+                  placeholder="Seu nome completo"
                   className="pl-10 h-11 bg-background border-border/50"
                 />
               </div>
@@ -412,6 +463,7 @@ const AuthPage = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => validateField("email", email)}
                   placeholder="seu@email.com"
                   className="pl-10 h-11 bg-background border-border/50"
                 />
@@ -428,6 +480,7 @@ const AuthPage = () => {
                   <Input
                     value={cpf}
                     onChange={(e) => setCpf(formatCpf(e.target.value))}
+                    onBlur={() => validateField("cpf", cpf)}
                     placeholder="000.000.000-00"
                     maxLength={14}
                     className="pl-10 h-11 bg-background border-border/50 text-sm"
@@ -443,6 +496,7 @@ const AuthPage = () => {
                   <Input
                     value={contato}
                     onChange={(e) => setContato(formatPhone(e.target.value))}
+                    onBlur={() => validateField("contato", contato)}
                     placeholder="(00) 00000-0000"
                     maxLength={15}
                     className="pl-10 h-11 bg-background border-border/50 text-sm"
@@ -460,6 +514,7 @@ const AuthPage = () => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onBlur={() => validateField("password", password)}
                   placeholder="Mínimo 6 caracteres"
                   className="h-11 pr-10 bg-background border-border/50"
                 />
@@ -482,6 +537,7 @@ const AuthPage = () => {
                   type={showPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  onBlur={() => validateField("confirmPassword", confirmPassword)}
                   placeholder="Digite a senha novamente"
                   className="h-11 pr-10 bg-background border-border/50"
                 />
