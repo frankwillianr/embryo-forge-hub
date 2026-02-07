@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Home, Newspaper, Film, Megaphone, Menu, ArrowLeft } from "lucide-react";
@@ -10,6 +10,7 @@ import CinemaSection from "@/components/sections/CinemaSection";
 import AloPrefeituraSection from "@/components/sections/AloPrefeituraSection";
 import MenuSheet from "@/components/menu/MenuSheet";
 import { Button } from "@/components/ui/button";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 type TabType = "home" | "jornal" | "cinema" | "prefeitura";
 
@@ -47,6 +48,17 @@ const CidadePage = () => {
     },
     enabled: !!slug,
   });
+
+  // Inicializa push notifications com o ID da cidade
+  const { permissionStatus } = usePushNotifications({ 
+    cidadeId: cidade?.id || null 
+  });
+
+  useEffect(() => {
+    if (permissionStatus === 'granted') {
+      console.log('Push notifications ativadas para esta cidade');
+    }
+  }, [permissionStatus]);
 
   const isHome = activeTab === "home";
 
