@@ -11,6 +11,7 @@ import AloPrefeituraSection from "@/components/sections/AloPrefeituraSection";
 import MenuSheet from "@/components/menu/MenuSheet";
 import { Button } from "@/components/ui/button";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 type TabType = "home" | "jornal" | "cinema" | "prefeitura";
@@ -33,6 +34,10 @@ const CidadePage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [menuOpen, setMenuOpen] = useState(false);
+  const { profile } = useAuth();
+
+  // Get first name from profile
+  const firstName = profile?.nome?.split(" ")[0] || null;
 
   // Busca dados da cidade
   const { data: cidade } = useQuery({
@@ -117,7 +122,7 @@ const CidadePage = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-auto pb-20">
         {isHome ? (
-          <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} />
+          <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} userName={firstName} />
         ) : (
           <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
             <Button
@@ -224,7 +229,8 @@ const CidadePage = () => {
       <MenuSheet 
         open={menuOpen} 
         onOpenChange={setMenuOpen} 
-        cidadeNome={cidade?.nome} 
+        cidadeNome={cidade?.nome}
+        cidadeSlug={slug}
       />
     </div>
   );

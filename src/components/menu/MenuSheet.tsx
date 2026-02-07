@@ -1,4 +1,5 @@
-import { User, Phone, Mail, MapPin, X } from "lucide-react";
+import { User, Phone, Mail, MapPin, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -6,14 +7,31 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/hooks/useAuth";
 
 interface MenuSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   cidadeNome?: string;
+  cidadeSlug?: string;
 }
 
-const MenuSheet = ({ open, onOpenChange, cidadeNome }: MenuSheetProps) => {
+const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProps) => {
+  const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
+
+  const handleLogin = () => {
+    onOpenChange(false);
+    navigate(`/cidade/${cidadeSlug}/auth`);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    onOpenChange(false);
+  };
+
+  const firstName = profile?.nome?.split(" ")[0];
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[300px] sm:w-[350px] p-0">
@@ -25,20 +43,43 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome }: MenuSheetProps) => {
           {/* Perfil Section */}
           <div className="px-6 py-4">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="h-7 w-7 text-primary" />
-              </div>
+              {profile?.foto_url ? (
+                <img 
+                  src={profile.foto_url} 
+                  alt={profile.nome} 
+                  className="w-14 h-14 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-7 w-7 text-primary" />
+                </div>
+              )}
               <div>
-                <p className="font-semibold text-foreground">Visitante</p>
+                <p className="font-semibold text-foreground">
+                  {user ? `Olá, ${firstName}` : "Visitante"}
+                </p>
                 <p className="text-sm text-muted-foreground">
                   {cidadeNome || "Sua cidade"}
                 </p>
               </div>
             </div>
 
-            <button className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">
-              Fazer Login
-            </button>
+            {user ? (
+              <button 
+                onClick={handleLogout}
+                className="w-full py-2.5 px-4 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair da conta
+              </button>
+            ) : (
+              <button 
+                onClick={handleLogin}
+                className="w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                Fazer Login
+              </button>
+            )}
           </div>
 
           <Separator />
