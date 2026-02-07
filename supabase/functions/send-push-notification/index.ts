@@ -35,6 +35,10 @@ serve(async (req: Request): Promise<Response> => {
 
     let tokens: string[] = [];
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     // Se foi passado um token específico, usa ele
     if (deviceToken) {
       tokens = [deviceToken];
@@ -42,10 +46,6 @@ serve(async (req: Request): Promise<Response> => {
     } 
     // Se foi passado cidadeId, busca todos os tokens dessa cidade
     else if (cidadeId) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
       const { data: tokensData, error } = await supabase
         .from("rel_cidade_push_tokens")
         .select("device_token")
@@ -57,8 +57,19 @@ serve(async (req: Request): Promise<Response> => {
 
       tokens = tokensData?.map((t) => t.device_token) || [];
       console.log(`Encontrados ${tokens.length} tokens para cidade ${cidadeId}`);
-    } else {
-      throw new Error("cidadeId ou deviceToken é obrigatório");
+    } 
+    // Se não passou nada, busca TODOS os tokens (broadcast)
+    else {
+      const { data: tokensData, error } = await supabase
+        .from("rel_cidade_push_tokens")
+        .select("device_token");
+
+      if (error) {
+        throw new Error(`Erro ao buscar tokens: ${error.message}`);
+      }
+
+      tokens = tokensData?.map((t) => t.device_token) || [];
+      console.log(`Broadcast: encontrados ${tokens.length} tokens no total`);
     }
 
     if (tokens.length === 0) {
