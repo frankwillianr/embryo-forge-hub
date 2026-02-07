@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'supabase/functions/**'
+  workflow_dispatch: # Permite executar manualmente
 
 jobs:
   deploy:
@@ -17,6 +18,22 @@ jobs:
         with:
           version: latest
 
-      - run: supabase functions deploy send-brevo-email --no-verify-jwt --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+      - name: Deploy send-brevo-email
+        run: supabase functions deploy send-brevo-email --no-verify-jwt --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy send-push-notification
+        run: supabase functions deploy send-push-notification --no-verify-jwt --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy create-banner-payment
+        run: supabase functions deploy create-banner-payment --no-verify-jwt --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy send-banner-payment-email
+        run: supabase functions deploy send-banner-payment-email --no-verify-jwt --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
