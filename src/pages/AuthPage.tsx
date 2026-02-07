@@ -234,7 +234,8 @@ const AuthPage = () => {
         });
         return;
       }
-      navigate(redirectTo);
+      toast({ title: "Bem-vindo!", description: "Login realizado com sucesso" });
+      navigate(`/cidade/${slug}`);
     } catch (error: any) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } finally {
@@ -273,7 +274,6 @@ const AuthPage = () => {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: `${window.location.origin}/cidade/${slug}/auth` },
       });
 
       if (authError) {
@@ -304,8 +304,8 @@ const AuthPage = () => {
         return;
       }
 
-      toast({ title: "Conta criada!", description: "Verifique seu email para confirmar" });
-      navigate(redirectTo);
+      toast({ title: "Bem-vindo!", description: "Conta criada com sucesso" });
+      navigate(`/cidade/${slug}`);
     } catch (error: any) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } finally {
