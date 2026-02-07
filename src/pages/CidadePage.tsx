@@ -117,19 +117,7 @@ const CidadePage = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-auto pb-20">
         {isHome ? (
-          <>
-            <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} />
-            {/* Botão temporário de teste de push */}
-            <div className="p-4">
-              <Button 
-                onClick={handleTestPush}
-                className="w-full bg-primary hover:bg-primary/90"
-              >
-                <Bell className="h-4 w-4 mr-2" />
-                🔔 Testar Push Notification
-              </Button>
-            </div>
-          </>
+          <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} />
         ) : (
           <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
             <Button
