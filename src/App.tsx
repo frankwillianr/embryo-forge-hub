@@ -32,8 +32,8 @@ import PetsListPage from "@/pages/PetsListPage";
 import PetDetailPage from "@/pages/PetDetailPage";
 import NovoPetPage from "@/pages/NovoPetPage";
 import AnunciarPage from "@/pages/AnunciarPage";
+import NovoBannerPage from "@/pages/NovoBannerPage";
 import NotFound from "@/pages/NotFound";
-
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -125,6 +125,7 @@ const App = () => (
 
           {/* Anunciar Hub */}
           <Route path="/cidade/:slug/anunciar" element={<AnunciarPage />} />
+          <Route path="/cidade/:slug/banner/novo" element={<NovoBannerPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
