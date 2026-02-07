@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/form";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { BannerPreviewModal } from "@/components/banner/BannerPreviewModal";
 import { PaymentConfirmationModal } from "@/components/banner/PaymentConfirmationModal";
 
@@ -42,12 +44,30 @@ const bannerSchema = z.object({
 
 type BannerFormData = z.infer<typeof bannerSchema>;
 
-const PRECO_POR_DIA = 7.13;
+const DEFAULT_PRECO_POR_DIA = 10;
 
 const NovoBannerPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
+
+  // Fetch city pricing
+  const { data: cidade } = useQuery({
+    queryKey: ["cidade-pricing", slug],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cidade")
+        .select("id, valor_dia_banner")
+        .eq("slug", slug)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!slug,
+  });
+
+  const precoPorDia = cidade?.valor_dia_banner || DEFAULT_PRECO_POR_DIA;
   const [imagemPrincipal, setImagemPrincipal] = useState<File | null>(null);
   const [imagemPrincipalPreview, setImagemPrincipalPreview] = useState<string | null>(null);
   const [imagensGaleria, setImagensGaleria] = useState<File[]>([]);
@@ -195,7 +215,7 @@ const NovoBannerPage = () => {
   const diasComprados = form.watch("dias_comprados");
   const titulo = form.watch("titulo");
   const descricao = form.watch("descricao");
-  const precoTotal = `R$ ${(diasComprados * PRECO_POR_DIA).toFixed(2).replace(".", ",")}`;
+  const precoTotal = `R$ ${(diasComprados * precoPorDia).toFixed(2).replace(".", ",")}`;
 
   // Validate if form is complete for submit button
   const isFormValid = 
@@ -571,7 +591,7 @@ const NovoBannerPage = () => {
                 <p className="text-xs text-muted-foreground mt-1">
                   {dataInicio && dataFim && (
                     <>
-                      De {format(dataInicio, "dd/MM/yyyy", { locale: ptBR })} até {format(dataFim, "dd/MM/yyyy", { locale: ptBR })} ({diasComprados} dias × R$ {PRECO_POR_DIA.toFixed(2).replace(".", ",")}/dia)
+                      De {format(dataInicio, "dd/MM/yyyy", { locale: ptBR })} até {format(dataFim, "dd/MM/yyyy", { locale: ptBR })} ({diasComprados} dias × R$ {precoPorDia.toFixed(2).replace(".", ",")}/dia)
                     </>
                   )}
                 </p>
