@@ -64,7 +64,8 @@ interface CidadeBannerProps {
   userName?: string;
 }
 
-const CidadeBanner = ({ bannerUrl, cidadeNome, userName = "Visitante" }: CidadeBannerProps) => {
+const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) => {
+  const displayName = userName || "Visitante";
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay());
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [location, setLocation] = useState<LocationData | null>(null);
@@ -191,7 +192,7 @@ const CidadeBanner = ({ bannerUrl, cidadeNome, userName = "Visitante" }: CidadeB
         </div>
 
         <p className="text-lg font-medium mb-3">
-          Olá, {userName}
+          Olá, {displayName}
         </p>
 
         <div className="flex items-center justify-between">
