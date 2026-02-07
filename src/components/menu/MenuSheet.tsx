@@ -52,8 +52,8 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[300px] sm:w-[350px] p-0">
-        <SheetHeader className="p-6 pb-4 pt-safe">
-          <SheetTitle className="text-left">Menu</SheetTitle>
+        <SheetHeader className="p-6 pb-4 pt-safe border-b border-border">
+          <SheetTitle className="text-left text-lg">Menu</SheetTitle>
         </SheetHeader>
 
         <div className="flex flex-col">
