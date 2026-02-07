@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { User, Phone, Mail, MapPin, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -6,6 +7,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -19,13 +30,19 @@ interface MenuSheetProps {
 const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProps) => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogin = () => {
     onOpenChange(false);
     navigate(`/cidade/${cidadeSlug}/auth`);
   };
 
-  const handleLogout = async () => {
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleLogoutConfirm = async () => {
+    setShowLogoutConfirm(false);
     await signOut();
     onOpenChange(false);
   };
@@ -66,7 +83,7 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
 
             {user ? (
               <button 
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
                 className="w-full py-2.5 px-4 rounded-xl bg-muted text-foreground text-sm font-medium hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
               >
                 <LogOut className="h-4 w-4" />
@@ -141,6 +158,29 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
           </div>
         </div>
       </SheetContent>
+
+      {/* Logout Confirmation Modal */}
+      <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <AlertDialogContent className="max-w-[90vw] sm:max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sair da conta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você tem certeza que deseja sair da sua conta?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="flex-1 sm:flex-none">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleLogoutConfirm}
+              className="flex-1 sm:flex-none bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sair
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 };
