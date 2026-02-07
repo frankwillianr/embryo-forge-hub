@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+aimport { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,7 +15,6 @@ interface EmailRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -36,23 +35,23 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailPayload = {
       sender: {
-        name: "Guia Virtual",
-        email: "noreply@guiavirtual.app", // Configure seu domínio verificado no Brevo
+        name: "Open City",
+        email: "comercial@opencity.com",
       },
       to: [{ email: to }],
-      subject: subject || "Teste de Email - Guia Virtual",
+      subject: subject || "Teste de Email - Open City",
       htmlContent: htmlContent || `
         <html>
           <body style="font-family: Arial, sans-serif; padding: 20px;">
             <h1 style="color: #331D4A;">Olá! 👋</h1>
-            <p>Este é um email de teste enviado pelo Guia Virtual.</p>
+            <p>Este é um email de teste enviado pela Open City.</p>
             <p>Se você recebeu este email, a integração com o Brevo está funcionando corretamente!</p>
             <hr style="border: 1px solid #eee; margin: 20px 0;" />
-            <p style="color: #666; font-size: 12px;">Guia Virtual - Sua cidade na palma da mão</p>
+            <p style="color: #666; font-size: 12px;">Open City - Sua cidade na palma da mão</p>
           </body>
         </html>
       `,
-      textContent: textContent || "Este é um email de teste enviado pelo Guia Virtual.",
+      textContent: textContent || "Este é um email de teste enviado pela Open City.",
     };
 
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
