@@ -42,14 +42,7 @@ const bannerSchema = z.object({
 
 type BannerFormData = z.infer<typeof bannerSchema>;
 
-const diasOptions = [
-  { value: 7, label: "7 dias", price: "R$ 49,90" },
-  { value: 15, label: "15 dias", price: "R$ 89,90" },
-  { value: 30, label: "30 dias", price: "R$ 149,90" },
-  { value: 60, label: "60 dias", price: "R$ 249,90" },
-  { value: 90, label: "90 dias", price: "R$ 329,90" },
-  { value: -1, label: "Outro valor", price: "" },
-];
+const PRECO_POR_DIA = 7.13;
 
 const NovoBannerPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -62,8 +55,6 @@ const NovoBannerPage = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoType, setVideoType] = useState<"youtube" | "upload">("youtube");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [customDias, setCustomDias] = useState<string>("");
-  const [isCustomDias, setIsCustomDias] = useState(false);
   
   // Modal states
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -101,8 +92,6 @@ const NovoBannerPage = () => {
       const days = differenceInDays(dataFim, dataInicio) + 1;
       if (days >= 7 && days <= 365) {
         form.setValue("dias_comprados", days);
-        setIsCustomDias(true);
-        setCustomDias(String(days));
       }
     }
   }, [dataInicio, dataFim, form]);
@@ -204,28 +193,7 @@ const NovoBannerPage = () => {
   };
 
   const diasComprados = form.watch("dias_comprados");
-  const selectedDias = isCustomDias 
-    ? { value: diasComprados, label: `${diasComprados} dias`, price: `R$ ${(diasComprados * 7.13).toFixed(2).replace(".", ",")}` }
-    : diasOptions.find(d => d.value === diasComprados);
-
-  const handleDiasChange = (value: string) => {
-    const numValue = Number(value);
-    if (numValue === -1) {
-      setIsCustomDias(true);
-      setCustomDias("");
-    } else {
-      setIsCustomDias(false);
-      form.setValue("dias_comprados", numValue);
-    }
-  };
-
-  const handleCustomDiasChange = (value: string) => {
-    const numValue = parseInt(value, 10);
-    setCustomDias(value);
-    if (!isNaN(numValue) && numValue >= 7 && numValue <= 365) {
-      form.setValue("dias_comprados", numValue);
-    }
-  };
+  const precoTotal = `R$ ${(diasComprados * PRECO_POR_DIA).toFixed(2).replace(".", ",")}`;
 
   // Prepare preview data for modal
   const previewData = formData && imagemPrincipalPreview ? {
@@ -237,7 +205,7 @@ const NovoBannerPage = () => {
     video_youtube_url: formData.video_youtube_url,
     imagemPrincipalPreview,
     imagensGaleriaPreview,
-    preco: selectedDias?.price || "",
+    preco: precoTotal,
   } : null;
 
   if (authLoading) {
@@ -576,39 +544,16 @@ const NovoBannerPage = () => {
               />
             </div>
 
-            {/* Quick Select Options */}
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Ou selecione um período:</Label>
-              <div className="flex flex-wrap gap-2">
-                {diasOptions.filter(d => d.value > 0).map((option) => (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant={diasComprados === option.value ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      const newEndDate = addDays(dataInicio || tomorrow, option.value - 1);
-                      form.setValue("data_fim", newEndDate);
-                      form.setValue("dias_comprados", option.value);
-                      setIsCustomDias(false);
-                    }}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {selectedDias && selectedDias.value > 0 && (
+            {diasComprados >= 7 && (
               <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Total:</span>
-                  <span className="text-xl font-bold text-primary">{selectedDias.price}</span>
+                  <span className="text-xl font-bold text-primary">{precoTotal}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {dataInicio && dataFim && (
                     <>
-                      De {format(dataInicio, "dd/MM/yyyy", { locale: ptBR })} até {format(dataFim, "dd/MM/yyyy", { locale: ptBR })} ({selectedDias.value} dias)
+                      De {format(dataInicio, "dd/MM/yyyy", { locale: ptBR })} até {format(dataFim, "dd/MM/yyyy", { locale: ptBR })} ({diasComprados} dias)
                     </>
                   )}
                 </p>
