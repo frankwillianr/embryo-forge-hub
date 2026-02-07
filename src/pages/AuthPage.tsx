@@ -401,7 +401,7 @@ const AuthPage = () => {
 
             <Button 
               type="submit" 
-              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-[#E80560] hover:opacity-90 transition-opacity" 
+              className="w-full h-12 text-base font-semibold" 
               disabled={loading}
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
@@ -563,7 +563,7 @@ const AuthPage = () => {
 
             <Button 
               type="submit" 
-              className="w-full h-12 text-base font-semibold bg-gradient-to-r from-primary to-[#E80560] hover:opacity-90 transition-opacity mt-2" 
+              className="w-full h-12 text-base font-semibold mt-2" 
               disabled={loading || uploading}
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
