@@ -123,11 +123,11 @@ const PrivacyPolicyModal = ({ open, onAccept, onReject }: PrivacyPolicyModalProp
           </div>
         </ScrollArea>
 
-        <AlertDialogFooter className="flex-row gap-2 sm:gap-0">
-          <AlertDialogCancel onClick={onReject} className="flex-1 sm:flex-none">
+        <AlertDialogFooter className="flex-row gap-3 pt-4">
+          <AlertDialogCancel onClick={onReject} className="flex-1 mt-0">
             Recusar
           </AlertDialogCancel>
-          <AlertDialogAction onClick={onAccept} className="flex-1 sm:flex-none">
+          <AlertDialogAction onClick={onAccept} className="flex-1">
             Aceitar e Criar Conta
           </AlertDialogAction>
         </AlertDialogFooter>
