@@ -151,7 +151,21 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
           ))}
         </div>
 
-        {/* Botão Anunciar - sutil no canto */}
+        {/* Botão Saiba Mais - canto esquerdo */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const currentBanner = banners[currentIndex];
+            if (currentBanner) {
+              navigate(`/cidade/${cidadeSlug}/banner/${currentBanner.id}`);
+            }
+          }}
+          className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/80 text-[10px] font-medium hover:bg-black/60 transition-colors"
+        >
+          Saiba mais
+        </button>
+
+        {/* Botão Anunciar - canto direito */}
         <button
           onClick={(e) => {
             e.stopPropagation();
