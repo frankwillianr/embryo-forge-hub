@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
+import PrivacyPolicyModal from "@/components/auth/PrivacyPolicyModal";
 
 // CPF validation function (Brazilian algorithm)
 const isValidCpf = (cpf: string): boolean => {
@@ -83,6 +84,7 @@ const AuthPage = () => {
   const [fotoUrl, setFotoUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const redirectTo = searchParams.get("redirect") || `/cidade/${slug}`;
 
@@ -240,7 +242,7 @@ const AuthPage = () => {
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSignupClick = (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
@@ -259,7 +261,14 @@ const AuthPage = () => {
       return;
     }
 
+    // Show privacy policy modal
+    setShowPrivacyModal(true);
+  };
+
+  const handleSignupConfirm = async () => {
+    setShowPrivacyModal(false);
     setLoading(true);
+    
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -405,7 +414,7 @@ const AuthPage = () => {
           </form>
         ) : (
           /* Signup Form */
-          <form onSubmit={handleSignup} className="space-y-4">
+          <form onSubmit={handleSignupClick} className="space-y-4">
             {/* Photo Upload */}
             <div className="flex justify-center mb-2">
               <div
@@ -590,6 +599,13 @@ const AuthPage = () => {
           Ao continuar, você concorda com nossos Termos de Uso e Política de Privacidade.
         </p>
       </div>
+
+      {/* Privacy Policy Modal */}
+      <PrivacyPolicyModal
+        open={showPrivacyModal}
+        onAccept={handleSignupConfirm}
+        onReject={() => setShowPrivacyModal(false)}
+      />
     </div>
   );
 };
