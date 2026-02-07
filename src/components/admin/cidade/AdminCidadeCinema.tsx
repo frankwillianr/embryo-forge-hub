@@ -22,10 +22,7 @@ const AdminCidadeCinema = ({ cidadeId }: AdminCidadeCinemaProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rel_cidade_cinema")
-        .select(`
-          *,
-          cinema:cinema_id (*)
-        `)
+        .select("*")
         .eq("cidade_id", cidadeId)
         .order("created_at", { ascending: false });
 
@@ -42,13 +39,15 @@ const AdminCidadeCinema = ({ cidadeId }: AdminCidadeCinemaProps) => {
     return (
       <div className="text-center py-12 border rounded-lg bg-muted/30">
         <Film className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="font-semibold text-lg mb-2">Nenhum filme vinculado</h3>
+        <h3 className="font-semibold text-lg mb-2">Nenhum filme cadastrado</h3>
         <p className="text-muted-foreground text-sm mb-4">
-          Esta cidade ainda não possui filmes do cinema vinculados.
+          Esta cidade ainda não possui filmes em cartaz.
         </p>
-        <Button variant="outline">
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Gerenciar Cinema
+        <Button variant="outline" asChild>
+          <a href="/admin/cinema">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Gerenciar Cinema
+          </a>
         </Button>
       </div>
     );
@@ -57,10 +56,12 @@ const AdminCidadeCinema = ({ cidadeId }: AdminCidadeCinemaProps) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Filmes vinculados ({filmes.length})</h3>
-        <Button variant="outline" size="sm">
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Gerenciar Cinema
+        <h3 className="font-semibold">Filmes cadastrados ({filmes.length})</h3>
+        <Button variant="outline" size="sm" asChild>
+          <a href="/admin/cinema">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Gerenciar Cinema
+          </a>
         </Button>
       </div>
 
@@ -78,10 +79,10 @@ const AdminCidadeCinema = ({ cidadeId }: AdminCidadeCinemaProps) => {
             {filmes.map((item: any) => (
               <TableRow key={item.id}>
                 <TableCell>
-                  {item.cinema?.poster_url ? (
+                  {item.poster_url ? (
                     <img
-                      src={item.cinema.poster_url}
-                      alt={item.cinema.titulo}
+                      src={item.poster_url}
+                      alt={item.titulo}
                       className="w-12 h-16 object-cover rounded"
                     />
                   ) : (
@@ -91,13 +92,13 @@ const AdminCidadeCinema = ({ cidadeId }: AdminCidadeCinemaProps) => {
                   )}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {item.cinema?.titulo || "Sem título"}
+                  {item.titulo || "Sem título"}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{item.cinema?.genero || "—"}</Badge>
+                  <Badge variant="secondary">{item.genero || "—"}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">{item.cinema?.classificacao || "—"}</Badge>
+                  <Badge variant="outline">{item.classificacao || "—"}</Badge>
                 </TableCell>
               </TableRow>
             ))}

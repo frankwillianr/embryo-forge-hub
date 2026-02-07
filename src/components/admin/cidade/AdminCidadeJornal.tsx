@@ -22,10 +22,7 @@ const AdminCidadeJornal = ({ cidadeId }: AdminCidadeJornalProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rel_cidade_jornal")
-        .select(`
-          *,
-          jornal:jornal_id (*)
-        `)
+        .select("*")
         .eq("cidade_id", cidadeId)
         .order("created_at", { ascending: false });
 
@@ -42,13 +39,15 @@ const AdminCidadeJornal = ({ cidadeId }: AdminCidadeJornalProps) => {
     return (
       <div className="text-center py-12 border rounded-lg bg-muted/30">
         <Newspaper className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h3 className="font-semibold text-lg mb-2">Nenhuma notícia vinculada</h3>
+        <h3 className="font-semibold text-lg mb-2">Nenhuma notícia cadastrada</h3>
         <p className="text-muted-foreground text-sm mb-4">
-          Esta cidade ainda não possui notícias do jornal vinculadas.
+          Esta cidade ainda não possui notícias do jornal.
         </p>
-        <Button variant="outline">
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Gerenciar Jornal
+        <Button variant="outline" asChild>
+          <a href="/admin/jornal">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Gerenciar Jornal
+          </a>
         </Button>
       </div>
     );
@@ -57,10 +56,12 @@ const AdminCidadeJornal = ({ cidadeId }: AdminCidadeJornalProps) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Notícias vinculadas ({noticias.length})</h3>
-        <Button variant="outline" size="sm">
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Gerenciar Jornal
+        <h3 className="font-semibold">Notícias cadastradas ({noticias.length})</h3>
+        <Button variant="outline" size="sm" asChild>
+          <a href="/admin/jornal">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Gerenciar Jornal
+          </a>
         </Button>
       </div>
 
@@ -78,19 +79,17 @@ const AdminCidadeJornal = ({ cidadeId }: AdminCidadeJornalProps) => {
             {noticias.map((item: any) => (
               <TableRow key={item.id}>
                 <TableCell className="font-medium">
-                  {item.jornal?.titulo || "Sem título"}
+                  {item.titulo || "Sem título"}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{item.jornal?.categoria || "—"}</Badge>
+                  <Badge variant="secondary">{item.categoria || "Geral"}</Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {item.jornal?.created_at
-                    ? new Date(item.jornal.created_at).toLocaleDateString("pt-BR")
-                    : "—"}
+                  {new Date(item.created_at).toLocaleDateString("pt-BR")}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={item.jornal?.publicado ? "default" : "outline"}>
-                    {item.jornal?.publicado ? "Publicado" : "Rascunho"}
+                  <Badge variant={item.publicado !== false ? "default" : "outline"}>
+                    {item.publicado !== false ? "Publicado" : "Rascunho"}
                   </Badge>
                 </TableCell>
               </TableRow>

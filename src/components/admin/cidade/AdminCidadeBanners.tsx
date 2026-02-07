@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Megaphone, Clock, CheckCircle, XCircle, Eye } from "lucide-react";
+import { Megaphone, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -13,16 +13,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface AdminCidadeBannersProps {
   cidadeId: string;
 }
-
-const statusConfig = {
-  pendente: { label: "Aguardando", variant: "secondary" as const, icon: Clock, color: "text-yellow-600" },
-  aprovado: { label: "Aprovado", variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
-  rejeitado: { label: "Rejeitado", variant: "destructive" as const, icon: XCircle, color: "text-red-600" },
-};
 
 const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
   const queryClient = useQueryClient();
@@ -30,25 +25,34 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
   const { data: banners, isLoading } = useQuery({
     queryKey: ["admin-cidade-banners", cidadeId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Busca os banner_ids vinculados a esta cidade
+      const { data: relData, error: relError } = await supabase
         .from("rel_cidade_banner")
-        .select(`
-          *,
-          banner:banner_id (*)
-        `)
-        .eq("cidade_id", cidadeId)
+        .select("banner_id")
+        .eq("cidade_id", cidadeId);
+
+      if (relError) throw relError;
+      if (!relData || relData.length === 0) return [];
+
+      const bannerIds = relData.map((r) => r.banner_id);
+
+      // Busca os banners
+      const { data: bannersData, error: bannersError } = await supabase
+        .from("banner")
+        .select("*")
+        .in("id", bannerIds)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      return data;
+      if (bannersError) throw bannersError;
+      return bannersData || [];
     },
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ bannerId, status }: { bannerId: string; status: string }) => {
+    mutationFn: async ({ bannerId, ativo }: { bannerId: string; ativo: boolean }) => {
       const { error } = await supabase
         .from("banner")
-        .update({ status })
+        .update({ ativo })
         .eq("id", bannerId);
 
       if (error) throw error;
@@ -78,10 +82,10 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
     );
   }
 
-  // Agrupar por status
-  const pendentes = banners.filter((b: any) => b.banner?.status === "pendente" || !b.banner?.status);
-  const aprovados = banners.filter((b: any) => b.banner?.status === "aprovado");
-  const rejeitados = banners.filter((b: any) => b.banner?.status === "rejeitado");
+  // Agrupar por status (usando campo 'ativo')
+  const ativos = banners.filter((b: any) => b.ativo === true);
+  const inativos = banners.filter((b: any) => b.ativo === false);
+  const pendentes = banners.filter((b: any) => b.ativo === null || b.ativo === undefined);
 
   const renderBannerTable = (items: any[], showActions: boolean = false) => (
     <div className="border rounded-lg">
@@ -106,10 +110,10 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
             items.map((item: any) => (
               <TableRow key={item.id}>
                 <TableCell>
-                  {item.banner?.imagem_url ? (
+                  {item.imagem_url ? (
                     <img
-                      src={item.banner.imagem_url}
-                      alt={item.banner.titulo}
+                      src={item.imagem_url}
+                      alt={item.titulo}
                       className="w-16 h-10 object-cover rounded"
                     />
                   ) : (
@@ -119,17 +123,15 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
                   )}
                 </TableCell>
                 <TableCell className="font-medium">
-                  {item.banner?.titulo || "Sem título"}
+                  {item.titulo || "Sem título"}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">
-                    {item.banner?.dias_comprados || 0} dias
+                    {item.dias_comprados || 0} dias
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {item.banner?.created_at
-                    ? new Date(item.banner.created_at).toLocaleDateString("pt-BR")
-                    : "—"}
+                  {new Date(item.created_at).toLocaleDateString("pt-BR")}
                 </TableCell>
                 {showActions && (
                   <TableCell>
@@ -140,14 +142,14 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
                         className="text-green-600 hover:text-green-700 hover:bg-green-50"
                         onClick={() =>
                           updateStatusMutation.mutate({
-                            bannerId: item.banner_id,
-                            status: "aprovado",
+                            bannerId: item.id,
+                            ativo: true,
                           })
                         }
                         disabled={updateStatusMutation.isPending}
                       >
                         <CheckCircle className="h-4 w-4 mr-1" />
-                        Aprovar
+                        Ativar
                       </Button>
                       <Button
                         size="sm"
@@ -155,14 +157,14 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         onClick={() =>
                           updateStatusMutation.mutate({
-                            bannerId: item.banner_id,
-                            status: "rejeitado",
+                            bannerId: item.id,
+                            ativo: false,
                           })
                         }
                         disabled={updateStatusMutation.isPending}
                       >
                         <XCircle className="h-4 w-4 mr-1" />
-                        Recusar
+                        Desativar
                       </Button>
                     </div>
                   </TableCell>
@@ -179,20 +181,20 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
     <div className="space-y-4">
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 text-center">
-          <Clock className="h-6 w-6 mx-auto text-yellow-600 mb-2" />
+        <div className="bg-muted/50 border rounded-lg p-4 text-center">
+          <Clock className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
           <p className="text-2xl font-bold">{pendentes.length}</p>
-          <p className="text-sm text-muted-foreground">Aguardando</p>
+          <p className="text-sm text-muted-foreground">Pendentes</p>
         </div>
-        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 text-center">
+        <div className="bg-muted/50 border rounded-lg p-4 text-center">
           <CheckCircle className="h-6 w-6 mx-auto text-green-600 mb-2" />
-          <p className="text-2xl font-bold">{aprovados.length}</p>
-          <p className="text-sm text-muted-foreground">Aprovados</p>
+          <p className="text-2xl font-bold">{ativos.length}</p>
+          <p className="text-sm text-muted-foreground">Ativos</p>
         </div>
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 text-center">
+        <div className="bg-muted/50 border rounded-lg p-4 text-center">
           <XCircle className="h-6 w-6 mx-auto text-red-600 mb-2" />
-          <p className="text-2xl font-bold">{rejeitados.length}</p>
-          <p className="text-sm text-muted-foreground">Rejeitados</p>
+          <p className="text-2xl font-bold">{inativos.length}</p>
+          <p className="text-sm text-muted-foreground">Inativos</p>
         </div>
       </div>
 
@@ -201,15 +203,15 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="pendentes" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            Aguardando ({pendentes.length})
+            Pendentes ({pendentes.length})
           </TabsTrigger>
-          <TabsTrigger value="aprovados" className="flex items-center gap-2">
+          <TabsTrigger value="ativos" className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
-            Aprovados ({aprovados.length})
+            Ativos ({ativos.length})
           </TabsTrigger>
-          <TabsTrigger value="rejeitados" className="flex items-center gap-2">
+          <TabsTrigger value="inativos" className="flex items-center gap-2">
             <XCircle className="h-4 w-4" />
-            Rejeitados ({rejeitados.length})
+            Inativos ({inativos.length})
           </TabsTrigger>
         </TabsList>
 
@@ -217,12 +219,12 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
           {renderBannerTable(pendentes, true)}
         </TabsContent>
 
-        <TabsContent value="aprovados" className="mt-4">
-          {renderBannerTable(aprovados)}
+        <TabsContent value="ativos" className="mt-4">
+          {renderBannerTable(ativos, true)}
         </TabsContent>
 
-        <TabsContent value="rejeitados" className="mt-4">
-          {renderBannerTable(rejeitados)}
+        <TabsContent value="inativos" className="mt-4">
+          {renderBannerTable(inativos, true)}
         </TabsContent>
       </Tabs>
     </div>
