@@ -450,7 +450,8 @@ const AuthPage = () => {
 
             <Button 
               type="submit" 
-              className="w-full h-12 text-base font-semibold" 
+              variant="dark"
+              className="w-full h-12 text-base font-semibold rounded-xl" 
               disabled={loading}
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
@@ -612,7 +613,8 @@ const AuthPage = () => {
 
             <Button 
               type="submit" 
-              className="w-full h-12 text-base font-semibold mt-2" 
+              variant="dark"
+              className="w-full h-12 text-base font-semibold mt-2 rounded-xl" 
               disabled={loading || uploading}
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
