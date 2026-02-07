@@ -73,6 +73,7 @@ const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false); // Flag to prevent auto-redirect during signup
   
   // Form states
   const [email, setEmail] = useState("");
@@ -102,10 +103,11 @@ const AuthPage = () => {
   });
 
   useEffect(() => {
-    if (!authLoading && user) {
+    // Only redirect if user is logged in AND we're not in the middle of signup
+    if (!authLoading && user && !isSigningUp) {
       navigate(homePath);
     }
-  }, [user, authLoading, navigate, homePath]);
+  }, [user, authLoading, navigate, homePath, isSigningUp]);
 
   const formatCpf = (value: string) => {
     return value
@@ -302,9 +304,9 @@ const AuthPage = () => {
   const handleSignupConfirm = async () => {
     setShowPrivacyModal(false);
     setLoading(true);
+    setIsSigningUp(true); // Block auto-redirect
     
     try {
-
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -316,11 +318,13 @@ const AuthPage = () => {
           description: authError.message.includes("already") ? "Email já cadastrado" : authError.message, 
           variant: "destructive" 
         });
+        setIsSigningUp(false);
         return;
       }
 
       if (!authData.user) {
         toast({ title: "Erro", description: "Erro ao criar conta", variant: "destructive" });
+        setIsSigningUp(false);
         return;
       }
 
@@ -336,6 +340,7 @@ const AuthPage = () => {
       if (profileError) {
         // If profile creation fails, sign out the user to avoid orphan auth
         await supabase.auth.signOut();
+        setIsSigningUp(false);
         
         let errorMessage = profileError.message;
         if (profileError.message.includes("profile_cpf_key") || profileError.message.includes("duplicate")) {
@@ -345,9 +350,12 @@ const AuthPage = () => {
         return;
       }
 
+      // Success! Now allow redirect
+      setIsSigningUp(false);
       toast({ title: "Bem-vindo!", description: "Conta criada com sucesso" });
       navigate(`/cidade/${slug}`);
     } catch (error: any) {
+      setIsSigningUp(false);
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
