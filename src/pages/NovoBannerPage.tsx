@@ -171,7 +171,7 @@ const NovoBannerPage = () => {
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b pt-safe">
         <div className="flex items-center gap-3 px-4 h-14">
           <button
-            onClick={() => navigate(`/cidade/${slug}/anunciar`)}
+            onClick={() => navigate(`/cidade/${slug}`)}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
