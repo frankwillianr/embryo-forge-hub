@@ -143,83 +143,70 @@ const CidadePage = () => {
         </div>
       </main>
 
-      {/* Bottom Navigation - Stylish */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50">
-        {/* Background with blur */}
-        <div className="absolute inset-0 bg-card/80 backdrop-blur-xl border-t border-border/50" />
-        
-        <div className="relative flex h-16 items-end justify-center max-w-md mx-auto px-2">
-          {/* Left items */}
-          <div className="flex flex-1 justify-around items-center pb-2">
+      {/* Bottom Navigation - Pill Style */}
+      <nav className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4 pb-safe">
+        <div className="relative flex items-center">
+          {/* Home Button - Floating outside */}
+          <button
+            onClick={() => setActiveTab("home")}
+            className={`absolute -left-6 z-10 flex items-center justify-center w-14 h-14 rounded-full shadow-xl transition-all duration-300 ${
+              activeTab === "home"
+                ? "bg-white"
+                : "bg-white"
+            }`}
+            style={{
+              boxShadow: "0 4px 20px -4px rgba(0,0,0,0.15)"
+            }}
+          >
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 ${
+              activeTab === "home"
+                ? "bg-gradient-to-br from-primary to-[#E80560]"
+                : "bg-muted"
+            }`}>
+              <Home className={`h-4 w-4 ${activeTab === "home" ? "text-white" : "text-muted-foreground"}`} />
+            </div>
+          </button>
+
+          {/* Dark Pill Container */}
+          <div className="flex items-center gap-1 bg-[#1a1a2e] rounded-full py-3 px-6 pl-12 shadow-2xl">
             <button
               onClick={() => setActiveTab("jornal")}
-              className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all duration-200 ${
+              className={`p-3 rounded-full transition-all duration-200 ${
                 activeTab === "jornal"
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
-              <Newspaper className="h-[18px] w-[18px]" />
-              <span className="text-[10px] font-medium">Jornal</span>
+              <Newspaper className="h-5 w-5" />
             </button>
 
             <button
               onClick={() => setActiveTab("cinema")}
-              className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all duration-200 ${
+              className={`p-3 rounded-full transition-all duration-200 ${
                 activeTab === "cinema"
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
-              <Film className="h-[18px] w-[18px]" />
-              <span className="text-[10px] font-medium">Cinema</span>
+              <Film className="h-5 w-5" />
             </button>
-          </div>
 
-          {/* Center Home Button - Floating */}
-          <div className="relative flex flex-col items-center -mt-2 mx-2">
-            <button
-              onClick={() => setActiveTab("home")}
-              className={`relative flex items-center justify-center w-11 h-11 rounded-full shadow-lg transition-all duration-300 ${
-                activeTab === "home"
-                  ? "bg-primary text-primary-foreground shadow-primary/30"
-                  : "bg-card text-muted-foreground border border-border hover:border-primary/50 hover:text-primary"
-              }`}
-              style={{
-                boxShadow: activeTab === "home" 
-                  ? "0 6px 16px -3px hsl(var(--primary) / 0.4)" 
-                  : "0 3px 8px -2px rgba(0,0,0,0.1)"
-              }}
-            >
-              <Home className="h-5 w-5" />
-            </button>
-            <span className={`text-[10px] font-medium mt-0.5 transition-colors ${
-              activeTab === "home" ? "text-primary" : "text-muted-foreground"
-            }`}>
-              Home
-            </span>
-          </div>
-
-          {/* Right items */}
-          <div className="flex flex-1 justify-around items-center pb-2">
             <button
               onClick={() => setActiveTab("prefeitura")}
-              className={`flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all duration-200 ${
+              className={`p-3 rounded-full transition-all duration-200 ${
                 activeTab === "prefeitura"
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-gray-400 hover:text-white"
               }`}
             >
-              <Megaphone className="h-[18px] w-[18px]" />
-              <span className="text-[10px] font-medium">Alô</span>
+              <Megaphone className="h-5 w-5" />
             </button>
 
             <button
               onClick={() => setMenuOpen(true)}
-              className="flex flex-col items-center gap-0.5 p-2 rounded-xl transition-all duration-200 text-muted-foreground hover:text-foreground"
+              className="p-3 rounded-full transition-all duration-200 text-gray-400 hover:text-white"
             >
-              <Menu className="h-[18px] w-[18px]" />
-              <span className="text-[10px] font-medium">Menu</span>
+              <Menu className="h-5 w-5" />
             </button>
           </div>
         </div>
