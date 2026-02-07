@@ -86,7 +86,7 @@ const AuthPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
-  const redirectTo = searchParams.get("redirect") || `/cidade/${slug}`;
+  const homePath = `/cidade/${slug}`;
 
   // Fetch city data for banner
   const { data: cidade } = useQuery({
@@ -103,9 +103,9 @@ const AuthPage = () => {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate(redirectTo);
+      navigate(homePath);
     }
-  }, [user, authLoading, navigate, redirectTo]);
+  }, [user, authLoading, navigate, homePath]);
 
   const formatCpf = (value: string) => {
     return value
