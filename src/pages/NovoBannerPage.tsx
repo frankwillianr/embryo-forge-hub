@@ -23,15 +23,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { BannerPreviewModal } from "@/components/banner/BannerPreviewModal";
+import { PaymentConfirmationModal } from "@/components/banner/PaymentConfirmationModal";
 
 const bannerSchema = z.object({
   titulo: z.string().min(3, "Título deve ter pelo menos 3 caracteres").max(100, "Título muito longo"),
@@ -59,7 +54,7 @@ const diasOptions = [
 const NovoBannerPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [imagemPrincipal, setImagemPrincipal] = useState<File | null>(null);
   const [imagemPrincipalPreview, setImagemPrincipalPreview] = useState<string | null>(null);
   const [imagensGaleria, setImagensGaleria] = useState<File[]>([]);
@@ -69,6 +64,11 @@ const NovoBannerPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customDias, setCustomDias] = useState<string>("");
   const [isCustomDias, setIsCustomDias] = useState(false);
+  
+  // Modal states
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [formData, setFormData] = useState<BannerFormData | null>(null);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -157,31 +157,50 @@ const NovoBannerPage = () => {
     }
   };
 
+  // Step 1: Validate form and show preview modal
   const onSubmit = async (data: BannerFormData) => {
     if (!imagemPrincipal) {
       toast.error("Selecione uma imagem principal para o banner.");
       return;
     }
+    
+    setFormData(data);
+    setShowPreviewModal(true);
+  };
 
+  // Step 2: Confirm and create banner with "aguardando_pagamento" status
+  const handleConfirmPublish = async () => {
+    if (!formData || !imagemPrincipal) return;
+    
     setIsSubmitting(true);
 
     try {
-      // Aqui seria feito o upload e salvamento no banco
-      // Por enquanto, apenas simulamos o sucesso
+      // TODO: Upload images and create banner in database with status "aguardando_pagamento"
+      // TODO: Create Stripe checkout session and send payment link via email
+      
       console.log("Banner data:", {
-        ...data,
+        ...formData,
+        status: "aguardando_pagamento",
         imagemPrincipal,
         imagensGaleria,
         videoFile: videoType === "upload" ? videoFile : null,
+        userEmail: user?.email,
       });
 
-      toast.success("Solicitação de banner enviada com sucesso! Aguarde aprovação.");
-      navigate(`/cidade/${slug}/anunciar`);
+      // Close preview modal and show payment confirmation
+      setShowPreviewModal(false);
+      setShowPaymentModal(true);
     } catch (error) {
-      toast.error("Erro ao enviar solicitação. Tente novamente.");
+      toast.error("Erro ao criar anúncio. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Step 3: Close payment modal and redirect
+  const handlePaymentModalClose = () => {
+    setShowPaymentModal(false);
+    navigate(`/cidade/${slug}`);
   };
 
   const diasComprados = form.watch("dias_comprados");
@@ -207,6 +226,19 @@ const NovoBannerPage = () => {
       form.setValue("dias_comprados", numValue);
     }
   };
+
+  // Prepare preview data for modal
+  const previewData = formData && imagemPrincipalPreview ? {
+    titulo: formData.titulo,
+    descricao: formData.descricao,
+    dias_comprados: formData.dias_comprados,
+    data_inicio: formData.data_inicio,
+    data_fim: formData.data_fim,
+    video_youtube_url: formData.video_youtube_url,
+    imagemPrincipalPreview,
+    imagensGaleriaPreview,
+    preco: selectedDias?.price || "",
+  } : null;
 
   if (authLoading) {
     return (
@@ -588,10 +620,10 @@ const NovoBannerPage = () => {
           <div className="bg-muted/50 rounded-xl p-4 space-y-2">
             <h3 className="font-semibold text-sm">Como funciona?</h3>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• Após enviar, sua solicitação será analisada pela equipe</li>
-              <li>• Você receberá uma confirmação por e-mail ou WhatsApp</li>
-              <li>• O pagamento é feito após aprovação do conteúdo</li>
-              <li>• Seu banner aparecerá no carrossel principal da cidade</li>
+              <li>• Revise seu anúncio antes de publicar</li>
+              <li>• Você receberá um link de pagamento por e-mail</li>
+              <li>• Após o pagamento, seu anúncio entra em análise</li>
+              <li>• Aprovação em poucas horas</li>
             </ul>
           </div>
 
@@ -602,10 +634,27 @@ const NovoBannerPage = () => {
             className="w-full h-12 text-base font-semibold rounded-xl"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Enviando..." : "Enviar Solicitação"}
+            Revisar Anúncio
           </Button>
         </form>
       </Form>
+
+      {/* Preview Modal */}
+      <BannerPreviewModal
+        open={showPreviewModal}
+        onOpenChange={setShowPreviewModal}
+        data={previewData}
+        onConfirm={handleConfirmPublish}
+        isSubmitting={isSubmitting}
+      />
+
+      {/* Payment Confirmation Modal */}
+      <PaymentConfirmationModal
+        open={showPaymentModal}
+        onOpenChange={setShowPaymentModal}
+        email={user?.email || profile?.email || ""}
+        onClose={handlePaymentModalClose}
+      />
     </div>
   );
 };
