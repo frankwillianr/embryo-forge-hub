@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 interface MenuSheetProps {
@@ -82,20 +83,22 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
             </div>
 
             {user ? (
-              <button 
+              <Button 
+                variant="dark"
                 onClick={handleLogoutClick}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#331D4A] text-white text-sm font-medium hover:bg-[#331D4A]/90 transition-colors flex items-center justify-center gap-2"
+                className="w-full rounded-xl"
               >
                 <LogOut className="h-4 w-4" />
                 Sair da conta
-              </button>
+              </Button>
             ) : (
-              <button 
+              <Button 
+                variant="dark"
                 onClick={handleLogin}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#331D4A] text-white text-sm font-medium hover:bg-[#331D4A]/90 transition-colors"
+                className="w-full rounded-xl"
               >
                 Fazer Login
-              </button>
+              </Button>
             )}
           </div>
 
