@@ -30,7 +30,7 @@ import { PaymentConfirmationModal } from "@/components/banner/PaymentConfirmatio
 
 const bannerSchema = z.object({
   titulo: z.string().min(3, "Título deve ter pelo menos 3 caracteres").max(100, "Título muito longo"),
-  descricao: z.string().max(1000, "Descrição muito longa").optional(),
+  descricao: z.string().min(1, "Descrição é obrigatória").max(1000, "Descrição muito longa"),
   dias_comprados: z.number().min(7, "Mínimo de 7 dias").max(365, "Máximo de 365 dias"),
   video_youtube_url: z.string().url("URL inválida").optional().or(z.literal("")),
   data_inicio: z.date({ required_error: "Selecione a data de início" }),
@@ -193,7 +193,16 @@ const NovoBannerPage = () => {
   };
 
   const diasComprados = form.watch("dias_comprados");
+  const titulo = form.watch("titulo");
+  const descricao = form.watch("descricao");
   const precoTotal = `R$ ${(diasComprados * PRECO_POR_DIA).toFixed(2).replace(".", ",")}`;
+
+  // Validate if form is complete for submit button
+  const isFormValid = 
+    titulo && titulo.length >= 3 && 
+    descricao && descricao.length >= 1 && 
+    imagemPrincipalPreview && 
+    diasComprados >= 7;
 
   // Prepare preview data for modal
   const previewData = formData && imagemPrincipalPreview ? {
@@ -577,7 +586,7 @@ const NovoBannerPage = () => {
             type="submit"
             variant="dark"
             className="w-full h-12 text-base font-semibold rounded-xl"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !isFormValid}
           >
             Revisar Anúncio
           </Button>
