@@ -3,12 +3,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Megaphone, Image, Video, Plus, X, Youtube, Upload, Calendar, Loader2 } from "lucide-react";
+import { format, addDays, differenceInDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { ArrowLeft, Megaphone, Image, Video, Plus, X, Youtube, Upload, Calendar, Loader2, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import {
   Form,
   FormControl,
@@ -33,6 +38,11 @@ const bannerSchema = z.object({
   descricao: z.string().max(1000, "Descrição muito longa").optional(),
   dias_comprados: z.number().min(7, "Mínimo de 7 dias").max(365, "Máximo de 365 dias"),
   video_youtube_url: z.string().url("URL inválida").optional().or(z.literal("")),
+  data_inicio: z.date({ required_error: "Selecione a data de início" }),
+  data_fim: z.date({ required_error: "Selecione a data de término" }),
+}).refine((data) => data.data_fim > data.data_inicio, {
+  message: "Data de término deve ser posterior à data de início",
+  path: ["data_fim"],
 });
 
 type BannerFormData = z.infer<typeof bannerSchema>;
@@ -67,6 +77,9 @@ const NovoBannerPage = () => {
     }
   }, [user, authLoading, navigate, slug]);
 
+  const tomorrow = addDays(new Date(), 1);
+  const defaultEndDate = addDays(tomorrow, 6); // 7 days total
+
   const form = useForm<BannerFormData>({
     resolver: zodResolver(bannerSchema),
     defaultValues: {
@@ -74,8 +87,25 @@ const NovoBannerPage = () => {
       descricao: "",
       dias_comprados: 7,
       video_youtube_url: "",
+      data_inicio: tomorrow,
+      data_fim: defaultEndDate,
     },
   });
+
+  const dataInicio = form.watch("data_inicio");
+  const dataFim = form.watch("data_fim");
+
+  // Update dias_comprados when dates change
+  useEffect(() => {
+    if (dataInicio && dataFim) {
+      const days = differenceInDays(dataFim, dataInicio) + 1;
+      if (days >= 7 && days <= 365) {
+        form.setValue("dias_comprados", days);
+        setIsCustomDias(true);
+        setCustomDias(String(days));
+      }
+    }
+  }, [dataInicio, dataFim, form]);
 
   const handleImagemPrincipalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -421,63 +451,121 @@ const NovoBannerPage = () => {
           </div>
 
           {/* Período de Exibição */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Label className="flex items-center gap-2 text-base font-semibold">
               <Calendar className="h-5 w-5" />
               Período de Exibição *
             </Label>
 
-            <FormField
-              control={form.control}
-              name="dias_comprados"
-              render={({ field }) => (
-                <FormItem>
-                  <Select
-                    onValueChange={handleDiasChange}
-                    value={isCustomDias ? "-1" : String(field.value)}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o período" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {diasOptions.map((option) => (
-                        <SelectItem key={option.value} value={String(option.value)}>
-                          <div className="flex items-center justify-between w-full gap-4">
-                            <span>{option.label}</span>
-                            {option.price && (
-                              <span className="text-primary font-semibold">{option.price}</span>
+            {/* Date Pickers */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Data Início */}
+              <FormField
+                control={form.control}
+                name="data_inicio"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data de Início</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
                             )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                          >
+                            {field.value ? (
+                              format(field.value, "dd/MM/yyyy", { locale: ptBR })
+                            ) : (
+                              <span>Selecione</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {isCustomDias && (
-              <div className="space-y-2">
-                <Label htmlFor="custom-dias">Quantos dias?</Label>
-                <Input
-                  id="custom-dias"
-                  type="number"
-                  inputMode="numeric"
-                  min={7}
-                  max={365}
-                  placeholder="Ex: 50"
-                  value={customDias}
-                  onChange={(e) => handleCustomDiasChange(e.target.value)}
-                  className="text-lg"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Mínimo 7 dias, máximo 365 dias
-                </p>
+              {/* Data Fim */}
+              <FormField
+                control={form.control}
+                name="data_fim"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data de Término</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "dd/MM/yyyy", { locale: ptBR })
+                            ) : (
+                              <span>Selecione</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < addDays(dataInicio || new Date(), 6)}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Quick Select Options */}
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Ou selecione um período:</Label>
+              <div className="flex flex-wrap gap-2">
+                {diasOptions.filter(d => d.value > 0).map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={diasComprados === option.value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      const newEndDate = addDays(dataInicio || tomorrow, option.value - 1);
+                      form.setValue("data_fim", newEndDate);
+                      form.setValue("dias_comprados", option.value);
+                      setIsCustomDias(false);
+                    }}
+                  >
+                    {option.label}
+                  </Button>
+                ))}
               </div>
-            )}
+            </div>
 
             {selectedDias && selectedDias.value > 0 && (
               <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
@@ -486,7 +574,11 @@ const NovoBannerPage = () => {
                   <span className="text-xl font-bold text-primary">{selectedDias.price}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Seu banner ficará ativo por {selectedDias.label}
+                  {dataInicio && dataFim && (
+                    <>
+                      De {format(dataInicio, "dd/MM/yyyy", { locale: ptBR })} até {format(dataFim, "dd/MM/yyyy", { locale: ptBR })} ({selectedDias.value} dias)
+                    </>
+                  )}
                 </p>
               </div>
             )}
