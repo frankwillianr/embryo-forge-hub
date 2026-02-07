@@ -43,6 +43,7 @@ const diasOptions = [
   { value: 30, label: "30 dias", price: "R$ 149,90" },
   { value: 60, label: "60 dias", price: "R$ 249,90" },
   { value: 90, label: "90 dias", price: "R$ 329,90" },
+  { value: -1, label: "Outro valor", price: "" },
 ];
 
 const NovoBannerPage = () => {
@@ -56,6 +57,8 @@ const NovoBannerPage = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoType, setVideoType] = useState<"youtube" | "upload">("youtube");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customDias, setCustomDias] = useState<string>("");
+  const [isCustomDias, setIsCustomDias] = useState(false);
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -151,7 +154,29 @@ const NovoBannerPage = () => {
     }
   };
 
-  const selectedDias = diasOptions.find(d => d.value === form.watch("dias_comprados"));
+  const diasComprados = form.watch("dias_comprados");
+  const selectedDias = isCustomDias 
+    ? { value: diasComprados, label: `${diasComprados} dias`, price: `R$ ${(diasComprados * 7.13).toFixed(2).replace(".", ",")}` }
+    : diasOptions.find(d => d.value === diasComprados);
+
+  const handleDiasChange = (value: string) => {
+    const numValue = Number(value);
+    if (numValue === -1) {
+      setIsCustomDias(true);
+      setCustomDias("");
+    } else {
+      setIsCustomDias(false);
+      form.setValue("dias_comprados", numValue);
+    }
+  };
+
+  const handleCustomDiasChange = (value: string) => {
+    const numValue = parseInt(value, 10);
+    setCustomDias(value);
+    if (!isNaN(numValue) && numValue >= 1 && numValue <= 365) {
+      form.setValue("dias_comprados", numValue);
+    }
+  };
 
   if (authLoading) {
     return (
@@ -408,8 +433,8 @@ const NovoBannerPage = () => {
               render={({ field }) => (
                 <FormItem>
                   <Select
-                    onValueChange={(value) => field.onChange(Number(value))}
-                    defaultValue={String(field.value)}
+                    onValueChange={handleDiasChange}
+                    value={isCustomDias ? "-1" : String(field.value)}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -421,7 +446,9 @@ const NovoBannerPage = () => {
                         <SelectItem key={option.value} value={String(option.value)}>
                           <div className="flex items-center justify-between w-full gap-4">
                             <span>{option.label}</span>
-                            <span className="text-primary font-semibold">{option.price}</span>
+                            {option.price && (
+                              <span className="text-primary font-semibold">{option.price}</span>
+                            )}
                           </div>
                         </SelectItem>
                       ))}
@@ -432,7 +459,27 @@ const NovoBannerPage = () => {
               )}
             />
 
-            {selectedDias && (
+            {isCustomDias && (
+              <div className="space-y-2">
+                <Label htmlFor="custom-dias">Quantos dias?</Label>
+                <Input
+                  id="custom-dias"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={365}
+                  placeholder="Ex: 50"
+                  value={customDias}
+                  onChange={(e) => handleCustomDiasChange(e.target.value)}
+                  className="text-lg"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Mínimo 1 dia, máximo 365 dias
+                </p>
+              </div>
+            )}
+
+            {selectedDias && selectedDias.value > 0 && (
               <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Total:</span>
