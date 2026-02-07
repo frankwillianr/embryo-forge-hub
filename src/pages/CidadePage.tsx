@@ -168,45 +168,49 @@ const CidadePage = () => {
           </button>
 
           {/* Dark Pill Container */}
-          <div className="flex items-center gap-1 bg-[#1a1a2e] rounded-full py-3 px-6 pl-12 shadow-2xl">
+          <div className="flex items-center gap-2 bg-[#1a1a2e] rounded-full py-2 px-5 pl-12 shadow-2xl">
             <button
               onClick={() => setActiveTab("jornal")}
-              className={`p-3 rounded-full transition-all duration-200 ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
                 activeTab === "jornal"
                   ? "text-primary"
                   : "text-gray-400 hover:text-white"
               }`}
             >
               <Newspaper className="h-5 w-5" />
+              <span className="text-[9px] font-medium">Jornal</span>
             </button>
 
             <button
               onClick={() => setActiveTab("cinema")}
-              className={`p-3 rounded-full transition-all duration-200 ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
                 activeTab === "cinema"
                   ? "text-primary"
                   : "text-gray-400 hover:text-white"
               }`}
             >
               <Film className="h-5 w-5" />
+              <span className="text-[9px] font-medium">Cinema</span>
             </button>
 
             <button
               onClick={() => setActiveTab("prefeitura")}
-              className={`p-3 rounded-full transition-all duration-200 ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
                 activeTab === "prefeitura"
                   ? "text-primary"
                   : "text-gray-400 hover:text-white"
               }`}
             >
               <Megaphone className="h-5 w-5" />
+              <span className="text-[9px] font-medium">Alô</span>
             </button>
 
             <button
               onClick={() => setMenuOpen(true)}
-              className="p-3 rounded-full transition-all duration-200 text-gray-400 hover:text-white"
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 text-gray-400 hover:text-white"
             >
               <Menu className="h-5 w-5" />
+              <span className="text-[9px] font-medium">Menu</span>
             </button>
           </div>
         </div>
