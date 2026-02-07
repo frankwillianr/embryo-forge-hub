@@ -9,3 +9,6 @@ max_rows = 1000
 
 [functions.send-push-notification]
 verify_jwt = false
+
+[functions.send-brevo-email]
+verify_jwt = false
