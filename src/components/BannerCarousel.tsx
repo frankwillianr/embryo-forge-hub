@@ -169,7 +169,7 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/cidade/${cidadeSlug}/anunciar`);
+            navigate(`/cidade/${cidadeSlug}/banner/novo`);
           }}
           className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/80 text-[10px] font-medium hover:bg-black/60 transition-colors"
         >
