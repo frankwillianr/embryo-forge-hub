@@ -10,6 +10,36 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 
+// CPF validation function (Brazilian algorithm)
+const isValidCpf = (cpf: string): boolean => {
+  const cleanCpf = cpf.replace(/\D/g, "");
+  
+  if (cleanCpf.length !== 11) return false;
+  
+  // Check for known invalid patterns
+  if (/^(\d)\1+$/.test(cleanCpf)) return false;
+  
+  // Validate first digit
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cleanCpf[i]) * (10 - i);
+  }
+  let remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(cleanCpf[9])) return false;
+  
+  // Validate second digit
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cleanCpf[i]) * (11 - i);
+  }
+  remainder = (sum * 10) % 11;
+  if (remainder === 10 || remainder === 11) remainder = 0;
+  if (remainder !== parseInt(cleanCpf[10])) return false;
+  
+  return true;
+};
+
 // Validation schemas
 const loginSchema = z.object({
   email: z.string().trim().email("Email inválido"),
@@ -19,9 +49,15 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   nome: z.string().trim().min(2, "Nome muito curto").max(100),
   email: z.string().trim().email("Email inválido"),
-  cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF inválido"),
+  cpf: z.string()
+    .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "Formato inválido")
+    .refine((val) => isValidCpf(val), "CPF inválido"),
   contato: z.string().regex(/^\(\d{2}\)\s?\d{4,5}-\d{4}$/, "Contato inválido"),
   password: z.string().min(6, "Mínimo 6 caracteres"),
+  confirmPassword: z.string().min(6, "Mínimo 6 caracteres"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Senhas não conferem",
+  path: ["confirmPassword"],
 });
 
 const AuthPage = () => {
@@ -42,6 +78,7 @@ const AuthPage = () => {
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [contato, setContato] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fotoUrl, setFotoUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -161,7 +198,7 @@ const AuthPage = () => {
       return;
     }
 
-    const result = signupSchema.safeParse({ nome, email, cpf, contato, password });
+    const result = signupSchema.safeParse({ nome, email, cpf, contato, password, confirmPassword });
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
       result.error.errors.forEach((err) => {
@@ -434,6 +471,28 @@ const AuthPage = () => {
                 </button>
               </div>
               {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Confirmar senha</Label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Digite a senha novamente"
+                  className="h-11 pr-10 bg-background border-border/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword}</p>}
             </div>
 
             <Button 
