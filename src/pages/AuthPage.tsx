@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { Camera, Loader2, Eye, EyeOff, ArrowRight, User, Mail, Phone, CreditCard } from "lucide-react";
+import { Camera, Loader2, Eye, EyeOff, ArrowRight, User, Mail, Phone, CreditCard, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 
 // Validation schemas
@@ -46,6 +47,19 @@ const AuthPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const redirectTo = searchParams.get("redirect") || `/cidade/${slug}`;
+
+  // Fetch city data for banner
+  const { data: cidade } = useQuery({
+    queryKey: ["cidade-auth", slug],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("cidade")
+        .select("nome, banner_url")
+        .eq("slug", slug)
+        .maybeSingle();
+      return data;
+    },
+  });
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -211,22 +225,42 @@ const AuthPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background flex flex-col">
-      {/* Logo/Brand Area */}
-      <div className="pt-safe px-6 pt-12 pb-8 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary to-[#E80560] flex items-center justify-center shadow-lg">
-          <span className="text-2xl font-bold text-white">GV</span>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header with Back Button */}
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b pt-safe">
+        <div className="flex items-center gap-3 px-4 h-14">
+          <button
+            onClick={() => navigate(`/cidade/${slug}`)}
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-lg font-semibold">
+            {isLogin ? "Entrar" : "Criar conta"}
+          </h1>
         </div>
-        <h1 className="text-2xl font-bold text-foreground">
-          {isLogin ? "Bem-vindo de volta" : "Criar conta"}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          {isLogin ? "Entre para continuar" : "Preencha seus dados"}
-        </p>
+      </header>
+
+      {/* City Banner */}
+      <div className="relative h-32 overflow-hidden">
+        {cidade?.banner_url ? (
+          <img 
+            src={cidade.banner_url} 
+            alt={cidade.nome || "Cidade"} 
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-primary to-[#E80560]" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute bottom-3 left-4 text-white">
+          <p className="text-xs opacity-80">Bem-vindo a</p>
+          <h2 className="text-xl font-bold">{cidade?.nome || slug?.toUpperCase()}</h2>
+        </div>
       </div>
 
-      {/* Form Container */}
-      <div className="flex-1 px-6 pb-8">
+      {/* Form Area */}
+      <div className="flex-1 px-6 py-6">
         {isLogin ? (
           /* Login Form */
           <form onSubmit={handleLogin} className="space-y-5">
