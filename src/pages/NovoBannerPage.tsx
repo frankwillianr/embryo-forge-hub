@@ -561,6 +561,17 @@ const NovoBannerPage = () => {
                           selected={field.value}
                           onSelect={field.onChange}
                           disabled={(date) => date < addDays(dataInicio || new Date(), 6)}
+                          modifiers={{
+                            range: dataInicio && field.value 
+                              ? { from: dataInicio, to: field.value }
+                              : undefined,
+                          }}
+                          modifiersStyles={{
+                            range: { 
+                              backgroundColor: 'hsl(var(--primary) / 0.15)',
+                              borderRadius: 0,
+                            },
+                          }}
                           initialFocus
                           className={cn("p-3 pointer-events-auto")}
                         />
