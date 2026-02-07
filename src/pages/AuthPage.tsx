@@ -300,7 +300,11 @@ const AuthPage = () => {
       });
 
       if (profileError) {
-        toast({ title: "Erro", description: profileError.message, variant: "destructive" });
+        let errorMessage = profileError.message;
+        if (profileError.message.includes("profile_cpf_key") || profileError.message.includes("duplicate")) {
+          errorMessage = "Este CPF já está cadastrado";
+        }
+        toast({ title: "Erro", description: errorMessage, variant: "destructive" });
         return;
       }
 
