@@ -104,6 +104,11 @@ const CidadePage = () => {
 
   const isHome = activeTab === "home";
 
+  const handleHomeClick = () => {
+    setActiveTab("home");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const renderSection = () => {
     switch (activeTab) {
       case "home":
@@ -148,7 +153,7 @@ const CidadePage = () => {
         <div className="relative flex items-center">
           {/* Home Button - Floating outside */}
           <button
-            onClick={() => setActiveTab("home")}
+            onClick={handleHomeClick}
             className={`absolute -left-6 z-10 flex items-center justify-center w-14 h-14 rounded-full shadow-xl transition-all duration-300 ${
               activeTab === "home"
                 ? "bg-white"
