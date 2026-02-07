@@ -243,7 +243,7 @@ const AuthPage = () => {
     }
   };
 
-  const handleSignupClick = (e: React.FormEvent) => {
+  const handleSignupClick = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
 
@@ -262,16 +262,9 @@ const AuthPage = () => {
       return;
     }
 
-    // Show privacy policy modal
-    setShowPrivacyModal(true);
-  };
-
-  const handleSignupConfirm = async () => {
-    setShowPrivacyModal(false);
+    // Check if CPF already exists BEFORE opening modal
     setLoading(true);
-    
     try {
-      // Check if CPF already exists BEFORE creating auth user
       const { data: existingCpf } = await supabase
         .from("profiles")
         .select("id")
@@ -279,7 +272,7 @@ const AuthPage = () => {
         .maybeSingle();
 
       if (existingCpf) {
-        toast({ title: "Erro", description: "Este CPF já está cadastrado", variant: "destructive" });
+        setErrors((prev) => ({ ...prev, cpf: "Este CPF já está cadastrado" }));
         setLoading(false);
         return;
       }
@@ -292,10 +285,25 @@ const AuthPage = () => {
         .maybeSingle();
 
       if (existingEmail) {
-        toast({ title: "Erro", description: "Este email já está cadastrado", variant: "destructive" });
+        setErrors((prev) => ({ ...prev, email: "Este email já está cadastrado" }));
         setLoading(false);
         return;
       }
+
+      setLoading(false);
+      // Show privacy policy modal
+      setShowPrivacyModal(true);
+    } catch (error) {
+      setLoading(false);
+      toast({ title: "Erro", description: "Erro ao verificar dados", variant: "destructive" });
+    }
+  };
+
+  const handleSignupConfirm = async () => {
+    setShowPrivacyModal(false);
+    setLoading(true);
+    
+    try {
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
