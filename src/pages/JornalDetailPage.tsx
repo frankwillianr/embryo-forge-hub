@@ -296,7 +296,7 @@ const JornalDetailPage = () => {
                 <div className="w-full flex-shrink-0">
                   <iframe
                     src={embedUrl}
-                    className="w-full aspect-video"
+                    className="w-full aspect-[16/10]"
                     allowFullScreen
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   />
@@ -306,7 +306,7 @@ const JornalDetailPage = () => {
                 <div className="w-full flex-shrink-0">
                   <video
                     src={jornal.video_url!}
-                    className="w-full aspect-video object-contain bg-black"
+                    className="w-full aspect-[16/10] object-contain bg-black"
                     controls
                     preload="metadata"
                   />
