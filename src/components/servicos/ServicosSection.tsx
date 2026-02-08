@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, Car, ShoppingBag, Users, Bike, Scissors, Wrench, Sparkles, PawPrint, HardHat } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-// Import icons
+// Import icons para grid
 import veiculosIcon from "@/assets/icons/veiculos.png";
 import desapegaIcon from "@/assets/icons/desapega.png";
 import entregadorIcon from "@/assets/icons/entregador.png";
@@ -12,11 +12,6 @@ import reparosIcon from "@/assets/icons/reparos.png";
 import limpezaIcon from "@/assets/icons/limpeza.png";
 import petIcon from "@/assets/icons/pet.png";
 import obrasIcon from "@/assets/icons/obras.png";
-
-// Import ilustrações destaque
-import ilustraVeiculos from "@/assets/ilustra-veiculos.png";
-import ilustraDesapega from "@/assets/ilustra-desapega.png";
-import ilustraInfluencer from "@/assets/ilustra-influencer.png";
 
 interface ServicosSectionProps {
   cidadeSlug?: string;
@@ -72,69 +67,72 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </button>
       </div>
 
-      {/* Serviços em Destaque - 3 cards premium */}
+      {/* Serviços em Destaque - 3 cards estilo QuickAccess */}
       <div className="px-5 mb-5">
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-3 gap-2">
           {/* Veículos */}
           <button
             onClick={() => handleClick("veiculos")}
-            className="relative overflow-hidden rounded-2xl h-28 transition-all active:scale-95 group"
-            style={{
-              background: "linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)"
-            }}
+            className="aspect-square rounded-2xl bg-gradient-to-br from-slate-800 to-slate-600 p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
           >
-            <img 
-              src={ilustraVeiculos} 
-              alt="Veículos"
-              className="absolute bottom-0 right-0 w-20 h-20 object-contain opacity-80 group-hover:scale-110 transition-transform"
-            />
-            <div className="absolute inset-0 p-3 flex flex-col justify-end">
-              <span className="text-[11px] font-bold text-white">
-                Veículos
-              </span>
-              <span className="text-[9px] text-white/60">Compra e venda</span>
+            {/* Background decoration */}
+            <div className="absolute -right-3 -bottom-3 opacity-20">
+              <Car className="w-14 h-14" strokeWidth={1} />
+            </div>
+            
+            {/* Icon */}
+            <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <Car className="w-4 h-4 text-white" />
+            </div>
+            
+            {/* Text */}
+            <div className="text-left relative z-10">
+              <h3 className="text-[10px] font-bold leading-tight">Veículos</h3>
+              <p className="text-[8px] opacity-80 mt-0.5 line-clamp-1">Compra e venda</p>
             </div>
           </button>
 
           {/* Desapega */}
           <button
             onClick={() => handleClick("desapega")}
-            className="relative overflow-hidden rounded-2xl h-28 transition-all active:scale-95 group"
-            style={{
-              background: "linear-gradient(135deg, #E80560 0%, #ff6b9d 100%)"
-            }}
+            className="aspect-square rounded-2xl bg-gradient-to-br from-pink-500 to-rose-400 p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
           >
-            <img 
-              src={ilustraDesapega} 
-              alt="Desapega"
-              className="absolute -bottom-2 -right-2 w-20 h-20 object-contain opacity-90 group-hover:scale-110 transition-transform"
-            />
-            <div className="absolute inset-0 p-3 flex flex-col justify-end">
-              <span className="text-[11px] font-bold text-white">
-                Desapega
-              </span>
-              <span className="text-[9px] text-white/80">Marketplace</span>
+            {/* Background decoration */}
+            <div className="absolute -right-3 -bottom-3 opacity-20">
+              <ShoppingBag className="w-14 h-14" strokeWidth={1} />
+            </div>
+            
+            {/* Icon */}
+            <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <ShoppingBag className="w-4 h-4 text-white" />
+            </div>
+            
+            {/* Text */}
+            <div className="text-left relative z-10">
+              <h3 className="text-[10px] font-bold leading-tight">Desapega</h3>
+              <p className="text-[8px] opacity-80 mt-0.5 line-clamp-1">Marketplace</p>
             </div>
           </button>
 
           {/* Influenciadores */}
           <button
             onClick={() => handleClick("influenciadores")}
-            className="relative overflow-hidden rounded-2xl h-28 transition-all active:scale-95 group"
-            style={{
-              background: "linear-gradient(135deg, #331D4A 0%, #5c3d7a 100%)"
-            }}
+            className="aspect-square rounded-2xl bg-gradient-to-br from-purple-600 to-violet-400 p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
           >
-            <img 
-              src={ilustraInfluencer} 
-              alt="Influenciadores"
-              className="absolute bottom-0 right-0 w-16 h-16 object-contain opacity-70 group-hover:scale-110 transition-transform"
-            />
-            <div className="absolute inset-0 p-3 flex flex-col justify-end">
-              <span className="text-[11px] font-bold text-white">
-                Influencers
-              </span>
-              <span className="text-[9px] text-white/60">Parcerias</span>
+            {/* Background decoration */}
+            <div className="absolute -right-3 -bottom-3 opacity-20">
+              <Users className="w-14 h-14" strokeWidth={1} />
+            </div>
+            
+            {/* Icon */}
+            <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+              <Users className="w-4 h-4 text-white" />
+            </div>
+            
+            {/* Text */}
+            <div className="text-left relative z-10">
+              <h3 className="text-[10px] font-bold leading-tight">Influencers</h3>
+              <p className="text-[8px] opacity-80 mt-0.5 line-clamp-1">Parcerias</p>
             </div>
           </button>
         </div>
