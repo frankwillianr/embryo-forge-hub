@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cidade } from "@/types/cidade";
 import AdminCidadeJornal from "@/components/admin/cidade/AdminCidadeJornal";
@@ -11,6 +10,15 @@ import AdminCidadeCinema from "@/components/admin/cidade/AdminCidadeCinema";
 import AdminCidadeAloPrefeitura from "@/components/admin/cidade/AdminCidadeAloPrefeitura";
 import AdminCidadeBanners from "@/components/admin/cidade/AdminCidadeBanners";
 import AdminCidadePrecificacao from "@/components/admin/cidade/AdminCidadePrecificacao";
+import { cn } from "@/lib/utils";
+
+const tabs = [
+  { id: "jornal", label: "Jornal", icon: Newspaper },
+  { id: "cinema", label: "Cinema", icon: Film },
+  { id: "alo-prefeitura", label: "Alô Prefeitura", icon: Phone },
+  { id: "banners", label: "Banners", icon: Megaphone },
+  { id: "precificacao", label: "Precificação", icon: DollarSign },
+];
 
 const AdminCidadeDetail = () => {
   const { cidadeId } = useParams<{ cidadeId: string }>();
@@ -36,7 +44,7 @@ const AdminCidadeDetail = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-muted-foreground">Carregando...</div>
+        <div className="text-gray-400">Carregando...</div>
       </div>
     );
   }
@@ -44,8 +52,12 @@ const AdminCidadeDetail = () => {
   if (!cidade) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <div className="text-muted-foreground">Cidade não encontrada</div>
-        <Button variant="outline" onClick={() => navigate("/admin/cidades")}>
+        <div className="text-gray-400">Cidade não encontrada</div>
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate("/admin/cidades")}
+          className="text-gray-600"
+        >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
@@ -57,7 +69,12 @@ const AdminCidadeDetail = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/admin/cidades")}>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate("/admin/cidades")}
+          className="text-gray-600 hover:text-gray-900"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex items-center gap-4">
@@ -69,57 +86,42 @@ const AdminCidadeDetail = () => {
             />
           )}
           <div>
-            <h1 className="text-2xl font-bold text-foreground">{cidade.nome}</h1>
-            <p className="text-muted-foreground text-sm">/{cidade.slug}</p>
+            <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">{cidade.nome}</h1>
+            <p className="text-gray-400 text-sm">/{cidade.slug}</p>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full grid grid-cols-5 h-12">
-          <TabsTrigger value="jornal" className="flex items-center gap-2">
-            <Newspaper className="h-4 w-4" />
-            <span className="hidden sm:inline">Jornal</span>
-          </TabsTrigger>
-          <TabsTrigger value="cinema" className="flex items-center gap-2">
-            <Film className="h-4 w-4" />
-            <span className="hidden sm:inline">Cinema</span>
-          </TabsTrigger>
-          <TabsTrigger value="alo-prefeitura" className="flex items-center gap-2">
-            <Phone className="h-4 w-4" />
-            <span className="hidden sm:inline">Alô Prefeitura</span>
-          </TabsTrigger>
-          <TabsTrigger value="banners" className="flex items-center gap-2">
-            <Megaphone className="h-4 w-4" />
-            <span className="hidden sm:inline">Banners</span>
-          </TabsTrigger>
-          <TabsTrigger value="precificacao" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            <span className="hidden sm:inline">Precificação</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* Tab Buttons */}
+      <div className="flex gap-2 flex-wrap">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                activeTab === tab.id
+                  ? "bg-black text-white"
+                  : "bg-white text-gray-600 hover:bg-gray-100"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
-        <TabsContent value="jornal" className="mt-6">
-          <AdminCidadeJornal cidadeId={cidadeId!} />
-        </TabsContent>
-
-        <TabsContent value="cinema" className="mt-6">
-          <AdminCidadeCinema cidadeId={cidadeId!} />
-        </TabsContent>
-
-        <TabsContent value="alo-prefeitura" className="mt-6">
-          <AdminCidadeAloPrefeitura cidadeId={cidadeId!} />
-        </TabsContent>
-
-        <TabsContent value="banners" className="mt-6">
-          <AdminCidadeBanners cidadeId={cidadeId!} />
-        </TabsContent>
-
-        <TabsContent value="precificacao" className="mt-6">
-          <AdminCidadePrecificacao cidadeId={cidadeId!} />
-        </TabsContent>
-      </Tabs>
+      {/* Tab Content */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        {activeTab === "jornal" && <AdminCidadeJornal cidadeId={cidadeId!} />}
+        {activeTab === "cinema" && <AdminCidadeCinema cidadeId={cidadeId!} />}
+        {activeTab === "alo-prefeitura" && <AdminCidadeAloPrefeitura cidadeId={cidadeId!} />}
+        {activeTab === "banners" && <AdminCidadeBanners cidadeId={cidadeId!} />}
+        {activeTab === "precificacao" && <AdminCidadePrecificacao cidadeId={cidadeId!} />}
+      </div>
     </div>
   );
 };

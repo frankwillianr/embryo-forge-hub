@@ -3,14 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -18,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, Upload, X, Image } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image, ChevronRight } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cidade, CidadeInsert } from "@/types/cidade";
@@ -227,48 +219,53 @@ const AdminCidades = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Cidades</h1>
-          <p className="text-muted-foreground mt-1">Gerencie as cidades do sistema</p>
+          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Cidades</h1>
+          <p className="text-gray-500 mt-1 text-sm">Gerencie as cidades do sistema</p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => resetForm()}>
+            <Button 
+              onClick={() => resetForm()}
+              className="bg-black text-white hover:bg-gray-800 rounded-lg"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Nova Cidade
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>
+              <DialogTitle className="text-gray-900">
                 {editingCidade ? "Editar Cidade" : "Nova Cidade"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome</Label>
+                <Label htmlFor="nome" className="text-gray-700">Nome</Label>
                 <Input
                   id="nome"
                   value={nome}
                   onChange={(e) => handleNomeChange(e.target.value)}
                   placeholder="Nome da cidade"
                   required
+                  className="border-gray-200 focus:border-gray-400 focus:ring-0"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
+                <Label htmlFor="slug" className="text-gray-700">Slug</Label>
                 <Input
                   id="slug"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="slug-da-cidade"
                   required
+                  className="border-gray-200 focus:border-gray-400 focus:ring-0"
                 />
               </div>
               
               {/* Banner Upload */}
               <div className="space-y-2">
-                <Label>Banner</Label>
+                <Label className="text-gray-700">Banner</Label>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -282,7 +279,7 @@ const AdminCidades = () => {
                     <img
                       src={bannerPreview}
                       alt="Preview do banner"
-                      className="w-full h-32 object-cover rounded-lg border"
+                      className="w-full h-32 object-cover rounded-lg border border-gray-200"
                     />
                     <Button
                       type="button"
@@ -297,23 +294,29 @@ const AdminCidades = () => {
                 ) : (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                    className="w-full h-32 border-2 border-dashed border-gray-200 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-gray-300 transition-colors bg-white"
                   >
-                    <Image className="h-8 w-8 text-muted-foreground mb-2" />
-                    <span className="text-sm text-muted-foreground">
+                    <Image className="h-8 w-8 text-gray-300 mb-2" />
+                    <span className="text-sm text-gray-400">
                       Clique para fazer upload
                     </span>
                   </div>
                 )}
               </div>
 
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={resetForm}>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  onClick={resetForm}
+                  className="text-gray-600 hover:text-gray-900"
+                >
                   Cancelar
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={createMutation.isPending || updateMutation.isPending || isUploading}
+                  className="bg-black text-white hover:bg-gray-800"
                 >
                   {isUploading ? (
                     <>
@@ -328,85 +331,67 @@ const AdminCidades = () => {
         </Dialog>
       </div>
 
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[80px]">Banner</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Criado em</TableHead>
-              <TableHead className="w-[100px]">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  Carregando...
-                </TableCell>
-              </TableRow>
-            ) : cidades?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  Nenhuma cidade cadastrada
-                </TableCell>
-              </TableRow>
-            ) : (
-              cidades?.map((cidade) => (
-                <TableRow 
-                  key={cidade.id} 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate(`/admin/cidades/${cidade.id}`)}
-                >
-                  <TableCell>
-                    {cidade.banner_url ? (
-                      <img
-                        src={cidade.banner_url}
-                        alt={cidade.nome}
-                        className="w-16 h-10 object-cover rounded"
-                      />
-                    ) : (
-                      <div className="w-16 h-10 bg-muted rounded flex items-center justify-center">
-                        <Image className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{cidade.nome}</TableCell>
-                  <TableCell className="text-muted-foreground">{cidade.slug}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {new Date(cidade.created_at).toLocaleDateString("pt-BR")}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(cidade);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteMutation.mutate(cidade.id);
-                        }}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+      {/* Cards da lista */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        {isLoading ? (
+          <div className="text-center py-12 text-gray-400">Carregando...</div>
+        ) : cidades?.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">Nenhuma cidade cadastrada</div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {cidades?.map((cidade) => (
+              <div
+                key={cidade.id}
+                className="flex items-center justify-between p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => navigate(`/admin/cidades/${cidade.id}`)}
+              >
+                <div className="flex items-center gap-4">
+                  {cidade.banner_url ? (
+                    <img
+                      src={cidade.banner_url}
+                      alt={cidade.nome}
+                      className="w-14 h-9 object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-14 h-9 bg-gray-100 rounded-lg flex items-center justify-center">
+                      <Image className="h-4 w-4 text-gray-300" />
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                  )}
+                  <div>
+                    <p className="font-medium text-gray-900">{cidade.nome}</p>
+                    <p className="text-sm text-gray-400">/{cidade.slug}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-400 hover:text-gray-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(cidade);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-400 hover:text-red-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteMutation.mutate(cidade.id);
+                    }}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <ChevronRight className="h-4 w-4 text-gray-300" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
