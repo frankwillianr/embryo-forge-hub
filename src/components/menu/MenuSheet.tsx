@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Phone, Mail, MapPin, LogOut, Car, ShoppingBag, Megaphone, Briefcase, ChevronRight } from "lucide-react";
+import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Sheet,
@@ -63,6 +63,14 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
       path: `/cidade/${cidadeSlug}/meus-anuncios`,
       color: "text-primary",
       bgColor: "bg-primary/10",
+    },
+    {
+      icon: Building2,
+      label: "Empresas",
+      description: "Guia de serviços",
+      path: `/cidade/${cidadeSlug}/minhas-empresas`,
+      color: "text-purple-600",
+      bgColor: "bg-purple-500/10",
     },
     {
       icon: Car,

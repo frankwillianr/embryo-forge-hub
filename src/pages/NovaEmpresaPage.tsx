@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Clock, Plus, X } from "lucide-react";
+import { ArrowLeft, Loader2, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import ImageUpload from "@/components/shared/ImageUpload";
 import VideoUpload from "@/components/shared/VideoUpload";
+import EmpresaPricingInfo from "@/components/servicos/EmpresaPricingInfo";
+import EmpresaPreviewModal from "@/components/servicos/EmpresaPreviewModal";
 
 interface HorarioFuncionamento {
   dia: string;
@@ -33,6 +36,7 @@ const NovaEmpresaPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Form state
   const [nome, setNome] = useState("");
@@ -48,6 +52,7 @@ const NovaEmpresaPage = () => {
   const [bannerOferta, setBannerOferta] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [loadingCep, setLoadingCep] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [horarios, setHorarios] = useState<HorarioFuncionamento[]>(
     diasSemana.map((dia) => ({
       dia,
@@ -57,13 +62,13 @@ const NovaEmpresaPage = () => {
     }))
   );
 
-  // Buscar cidade
+  // Buscar cidade com preço
   const { data: cidade } = useQuery({
     queryKey: ["cidade", slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cidade")
-        .select("id, nome")
+        .select("id, nome, valor_empresa_anual")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -130,11 +135,13 @@ const NovaEmpresaPage = () => {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!cidade?.id) throw new Error("Cidade não encontrada");
+      if (!user?.id) throw new Error("Usuário não autenticado");
 
       const { data: empresa, error: empresaError } = await supabase
         .from("rel_cidade_servico_empresa")
         .insert({
           cidade_id: cidade.id,
+          user_id: user.id,
           categoria: categoriaId,
           nome: nome.trim(),
           descricao: descricao.trim() || null,
@@ -148,6 +155,7 @@ const NovaEmpresaPage = () => {
           horario_funcionamento: horarios,
           banner_oferta_url: bannerOferta[0] || null,
           video_url: videoUrl || null,
+          status: "aguardando_pagamento",
         })
         .select()
         .single();
@@ -168,6 +176,8 @@ const NovaEmpresaPage = () => {
 
         if (fotosError) throw fotosError;
       }
+
+      // TODO: Enviar e-mail com link de pagamento
 
       return empresa;
     },
@@ -426,6 +436,11 @@ const NovaEmpresaPage = () => {
             ))}
           </div>
         </div>
+
+        {/* Pricing Info Card */}
+        {cidade?.valor_empresa_anual && cidade.valor_empresa_anual > 0 && (
+          <EmpresaPricingInfo valorAnual={cidade.valor_empresa_anual} />
+        )}
       </main>
 
       {/* Footer */}
@@ -433,19 +448,35 @@ const NovaEmpresaPage = () => {
         <Button
           className="w-full bg-[#331D4A] hover:bg-[#331D4A]/90 text-white rounded-xl"
           size="lg"
-          disabled={!isValid || createMutation.isPending}
-          onClick={() => createMutation.mutate()}
+          disabled={!isValid}
+          onClick={() => setShowPreviewModal(true)}
         >
-          {createMutation.isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Cadastrando...
-            </>
-          ) : (
-            "Cadastrar empresa"
-          )}
+          Cadastrar empresa
         </Button>
       </div>
+
+      {/* Preview Modal */}
+      <EmpresaPreviewModal
+        open={showPreviewModal}
+        onOpenChange={setShowPreviewModal}
+        onConfirm={() => createMutation.mutate()}
+        isLoading={createMutation.isPending}
+        empresa={{
+          nome,
+          descricao,
+          whatsapp,
+          instagram,
+          endereco: {
+            cep,
+            rua: endereco,
+            numero,
+            bairro,
+            complemento,
+          },
+          horarios,
+          fotos,
+        }}
+      />
     </div>
   );
 };
