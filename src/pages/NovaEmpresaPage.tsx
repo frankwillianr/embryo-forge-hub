@@ -180,7 +180,7 @@ const NovaEmpresaPage = () => {
       // Enviar e-mail com link de pagamento
       try {
         const { error: emailError } = await supabase.functions.invoke(
-          "send-empresa-payment-email",
+          "send-banner-payment-email",
           {
             body: { empresa_id: empresa.id },
           }

@@ -21,6 +21,8 @@ interface PaymentEmailRequest {
   // Alternative: pass banner_id (and optionally cidade_id) and we fetch everything
   banner_id?: string;
   cidade_id?: string;  // Can be passed to avoid rel_cidade_banner lookup
+  // NEW: Support for empresa payments
+  empresa_id?: string;
 }
 
 const logStep = (step: string, details?: any) => {
@@ -288,19 +290,211 @@ serve(async (req) => {
     logStep("Request received", { 
       banner_id: requestData.banner_id, 
       cidade_id: requestData.cidade_id,
+      empresa_id: requestData.empresa_id,
       to: requestData.to,
       bannerTitulo: requestData.bannerTitulo 
     });
 
     let emailData: EmailData;
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // If empresa_id is provided, handle empresa payment
+    if (requestData.empresa_id) {
+      logStep("Processing empresa payment", { empresa_id: requestData.empresa_id });
+
+      // Fetch empresa data with cidade info
+      const { data: empresa, error: empresaError } = await supabase
+        .from("rel_cidade_servico_empresa")
+        .select(`
+          id,
+          nome,
+          user_id,
+          cidade_id,
+          status,
+          cidade:cidade_id (
+            id,
+            nome,
+            slug,
+            valor_empresa_anual
+          )
+        `)
+        .eq("id", requestData.empresa_id)
+        .maybeSingle();
+
+      if (empresaError || !empresa) {
+        logStep("Empresa not found", { error: empresaError?.message });
+        throw new Error("Empresa não encontrada");
+      }
+
+      logStep("Empresa found", { nome: empresa.nome });
+
+      // Check if already paid
+      if (empresa.status === "ativo" || empresa.status === "pendente") {
+        throw new Error("Esta empresa já foi paga ou está em análise!");
+      }
+
+      // Fetch user email
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(empresa.user_id);
+      
+      if (userError || !userData.user?.email) {
+        logStep("User not found", { error: userError?.message, user_id: empresa.user_id });
+        throw new Error("Usuário não encontrado");
+      }
+
+      const userEmail = userData.user.email;
+      const userName = userData.user.user_metadata?.name || userEmail.split("@")[0];
+
+      logStep("User found", { email: userEmail, name: userName });
+
+      const cidadeData = empresa.cidade as { id: string; nome: string; slug: string; valor_empresa_anual: number };
+      const valorTotal = cidadeData.valor_empresa_anual || 300;
+
+      // Create Stripe checkout session
+      const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+      if (!stripeKey) {
+        throw new Error("STRIPE_SECRET_KEY not configured");
+      }
+
+      const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+      
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card", "boleto"],
+        line_items: [
+          {
+            price_data: {
+              currency: "brl",
+              product_data: {
+                name: `Cadastro de Empresa: ${empresa.nome}`,
+                description: `Anuidade no guia de serviços de ${cidadeData.nome} - 12 meses`,
+              },
+              unit_amount: Math.round(valorTotal * 100),
+            },
+            quantity: 1,
+          },
+        ],
+        mode: "payment",
+        success_url: `https://embryo-forge-hub.lovable.app/cidade/${cidadeData.slug}/minhas-empresas?success=true`,
+        cancel_url: `https://embryo-forge-hub.lovable.app/cidade/${cidadeData.slug}/minhas-empresas?canceled=true`,
+        customer_email: userEmail,
+        metadata: {
+          type: "empresa",
+          empresa_id: empresa.id,
+          cidade_id: cidadeData.id,
+          user_id: empresa.user_id,
+        },
+        expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour
+      });
+
+      logStep("Stripe session created for empresa", { session_id: session.id });
+
+      const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString();
+
+      // Send email via Brevo with empresa template
+      const valorMensal = (valorTotal / 12).toFixed(2).replace(".", ",");
+      const valorFormatado = valorTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+      const expiresFormatted = new Date(expiresAt).toLocaleString("pt-BR", {
+        day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+      });
+
+      const empresaEmailHtml = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagamento da Empresa - ${cidadeData.nome}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #331D4A 0%, #4A2D6A 100%); padding: 40px 40px 30px;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">📍 ${cidadeData.nome}</h1>
+              <p style="margin: 8px 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">Guia de Serviços</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 16px; color: #1a1a1a; font-size: 22px;">Olá, ${userName}! 👋</h2>
+              <p style="margin: 0 0 24px; color: #4a4a4a; font-size: 16px; line-height: 1.6;">
+                Sua empresa <strong>${empresa.nome}</strong> foi cadastrada! Para ativá-la no guia de serviços, realize o pagamento através do link abaixo.
+              </p>
+              <table role="presentation" style="width: 100%; background-color: #f8f7fa; border-radius: 12px; margin-bottom: 24px;">
+                <tr><td style="padding: 24px;">
+                  <p style="margin: 0; color: #666; font-size: 12px; text-transform: uppercase;">Empresa</p>
+                  <p style="margin: 4px 0 16px; color: #1a1a1a; font-size: 18px; font-weight: 600;">🏪 ${empresa.nome}</p>
+                  <p style="margin: 0; color: #666; font-size: 12px; text-transform: uppercase;">Período</p>
+                  <p style="margin: 4px 0 16px; color: #1a1a1a; font-size: 16px;">📅 12 meses</p>
+                  <p style="margin: 0; color: #666; font-size: 12px; text-transform: uppercase;">Valor Total</p>
+                  <p style="margin: 4px 0 0; color: #331D4A; font-size: 28px; font-weight: 700;">${valorFormatado}</p>
+                  <p style="margin: 4px 0 0; color: #888; font-size: 13px;">equivalente a R$ ${valorMensal}/mês</p>
+                </td></tr>
+              </table>
+              <table role="presentation" style="width: 100%;"><tr><td align="center" style="padding: 8px 0 24px;">
+                <a href="${session.url}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #331D4A 0%, #4A2D6A 100%); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 12px; font-size: 18px; font-weight: 600;">💳 Realizar Pagamento</a>
+              </td></tr></table>
+              <table role="presentation" style="width: 100%; background-color: #FFF8E6; border-radius: 12px; border-left: 4px solid #F5A623;">
+                <tr><td style="padding: 16px 20px;">
+                  <p style="margin: 0; color: #8B6914; font-size: 14px; font-weight: 600;">⏰ Link válido por 1 hora</p>
+                  <p style="margin: 8px 0 0; color: #A67C00; font-size: 13px;">Expira em ${expiresFormatted}</p>
+                </td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f8f7fa; padding: 24px 40px; border-top: 1px solid #e5e5e5;">
+              <p style="margin: 0; color: #999; font-size: 12px; text-align: center;">© ${new Date().getFullYear()} ${cidadeData.nome}. Todos os direitos reservados.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+      const emailPayload = {
+        sender: { name: cidadeData.nome, email: "noreply@gvalley.com.br" },
+        to: [{ email: userEmail, name: userName }],
+        subject: `🏪 Finalize o cadastro da sua empresa - ${cidadeData.nome}`,
+        htmlContent: empresaEmailHtml,
+      };
+
+      logStep("Sending empresa email via Brevo", { to: userEmail });
+
+      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "api-key": brevoApiKey,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(emailPayload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        logStep("Brevo API error", result);
+        throw new Error(result.message || "Failed to send email");
+      }
+
+      logStep("Empresa email sent successfully", { messageId: result.messageId });
+
+      return new Response(
+        JSON.stringify({ success: true, messageId: result.messageId, payment_url: session.url }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // If banner_id is provided, fetch all data from database
     if (requestData.banner_id) {
       logStep("Fetching data from database for banner_id", { banner_id: requestData.banner_id });
-
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
       // Fetch banner data first
       const { data: banner, error: bannerError } = await supabase
