@@ -103,7 +103,10 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
           </p>
         </div>
         <button
-          onClick={() => navigate(`/cidade/${cidadeSlug}/servicos`)}
+          onClick={() => {
+            navigate(`/cidade/${cidadeSlug}/servicos`);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
           className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
         >
           Ver todos
