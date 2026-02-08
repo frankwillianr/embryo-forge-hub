@@ -89,11 +89,11 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       {/* Serviços */}
       <ServicosSection cidadeSlug={cidadeSlug} />
 
-      {/* Alô Prefeitura */}
-      <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
-
       {/* Ofertas da Cidade */}
       <OfertasSection cidadeSlug={cidadeSlug} />
+
+      {/* Alô Prefeitura */}
+      <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
 
       {/* Quick Access Cards */}
       <QuickAccessCards cidadeSlug={cidadeSlug} />
