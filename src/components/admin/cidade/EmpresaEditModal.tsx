@@ -77,19 +77,26 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
   // Populate form when data loads
   useEffect(() => {
     if (empresa) {
+      console.log("Empresa data loaded:", empresa);
       setNome(empresa.nome || "");
       setDescricao(empresa.descricao || "");
-      setWhatsapp(empresa.whatsapp || "");
+      // Format whatsapp for display
+      const whatsappNumbers = (empresa.whatsapp || "").replace(/\D/g, "");
+      if (whatsappNumbers.length === 11) {
+        setWhatsapp(`(${whatsappNumbers.slice(0, 2)}) ${whatsappNumbers.slice(2, 7)}-${whatsappNumbers.slice(7)}`);
+      } else {
+        setWhatsapp(empresa.whatsapp || "");
+      }
       setInstagram(empresa.instagram || "");
       setCategoria(empresa.categoria || "");
-      setStatus(empresa.status || "aguardando_pagamento");
+      setStatus((empresa.status as EmpresaStatus) || "aguardando_pagamento");
       setCep(empresa.endereco_cep || "");
       setEndereco(empresa.endereco_rua || "");
       setNumero(empresa.endereco_numero || "");
       setBairro(empresa.endereco_bairro || "");
       setComplemento(empresa.endereco_complemento || "");
-      setDataInicio(empresa.data_inicio ? new Date(empresa.data_inicio) : undefined);
-      setDataFim(empresa.data_fim ? new Date(empresa.data_fim) : undefined);
+      setDataInicio(empresa.data_inicio ? new Date(empresa.data_inicio + "T00:00:00") : undefined);
+      setDataFim(empresa.data_fim ? new Date(empresa.data_fim + "T00:00:00") : undefined);
     }
   }, [empresa]);
 
@@ -98,28 +105,37 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
     mutationFn: async () => {
       if (!empresaId) throw new Error("ID da empresa não encontrado");
 
-      const { error } = await supabase
+      const updateData = {
+        nome: nome.trim(),
+        descricao: descricao.trim() || null,
+        whatsapp: whatsapp.replace(/\D/g, ""),
+        instagram: instagram || null,
+        categoria,
+        status,
+        endereco_cep: cep.replace(/\D/g, "") || null,
+        endereco_rua: endereco || null,
+        endereco_numero: numero || null,
+        endereco_bairro: bairro || null,
+        endereco_complemento: complemento || null,
+        data_inicio: dataInicio ? dataInicio.toISOString().split("T")[0] : null,
+        data_fim: dataFim ? dataFim.toISOString().split("T")[0] : null,
+      };
+
+      console.log("Updating empresa with:", updateData);
+
+      const { data, error } = await supabase
         .from("rel_cidade_servico_empresa")
-        .update({
-          nome: nome.trim(),
-          descricao: descricao.trim() || null,
-          whatsapp: whatsapp.replace(/\D/g, ""),
-          instagram: instagram || null,
-          categoria,
-          status,
-          endereco_cep: cep.replace(/\D/g, "") || null,
-          endereco_rua: endereco || null,
-          endereco_numero: numero || null,
-          endereco_bairro: bairro || null,
-          endereco_complemento: complemento || null,
-          data_inicio: dataInicio ? dataInicio.toISOString().split("T")[0] : null,
-          data_fim: dataFim ? dataFim.toISOString().split("T")[0] : null,
-        })
-        .eq("id", empresaId);
+        .update(updateData)
+        .eq("id", empresaId)
+        .select();
+
+      console.log("Update result:", { data, error });
 
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Update successful:", data);
       queryClient.invalidateQueries({ queryKey: ["admin-cidade-empresas", cidadeId] });
       queryClient.invalidateQueries({ queryKey: ["admin-empresa-detail", empresaId] });
       toast.success("Empresa atualizada com sucesso!");
@@ -127,7 +143,7 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
     },
     onError: (error) => {
       console.error("Erro ao atualizar empresa:", error);
-      toast.error("Erro ao atualizar empresa");
+      toast.error("Erro ao atualizar empresa: " + (error as Error).message);
     },
   });
 
