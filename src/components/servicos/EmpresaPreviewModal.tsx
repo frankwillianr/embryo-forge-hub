@@ -57,107 +57,84 @@ const EmpresaPreviewModal = ({
     empresa.endereco.rua,
     empresa.endereco.numero,
     empresa.endereco.bairro,
-    empresa.endereco.complemento,
   ]
     .filter(Boolean)
     .join(", ");
 
+  // Conta quantos dias abertos
+  const diasAbertos = empresa.horarios.filter((h) => h.aberto).length;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100%-32px)] max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-        <DialogHeader>
-          <DialogTitle>Confirmar Cadastro</DialogTitle>
-          <DialogDescription>
-            Revise as informações antes de confirmar
+      <DialogContent className="w-[calc(100vw-32px)] max-w-[360px] max-h-[85vh] overflow-y-auto overflow-x-hidden p-4">
+        <DialogHeader className="pr-6">
+          <DialogTitle className="text-base">Confirmar Cadastro</DialogTitle>
+          <DialogDescription className="text-xs">
+            Revise as informações
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Fotos */}
+        <div className="space-y-3 text-sm">
+          {/* Fotos em grid */}
           {empresa.fotos.length > 0 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {empresa.fotos.slice(0, 3).map((foto, index) => (
+            <div className="grid grid-cols-4 gap-1">
+              {empresa.fotos.slice(0, 4).map((foto, index) => (
                 <img
                   key={index}
                   src={foto}
                   alt={`Foto ${index + 1}`}
-                  className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                  className="w-full aspect-square rounded object-cover"
                 />
               ))}
-              {empresa.fotos.length > 3 && (
-                <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm text-muted-foreground">
-                    +{empresa.fotos.length - 3}
-                  </span>
-                </div>
-              )}
             </div>
           )}
 
           {/* Nome */}
           <div>
-            <h3 className="font-semibold text-lg text-foreground">
+            <h3 className="font-semibold text-foreground break-words">
               {empresa.nome}
             </h3>
             {empresa.descricao && (
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                 {empresa.descricao}
               </p>
             )}
           </div>
 
-          {/* Contato */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm">
-              <Phone className="h-4 w-4 text-muted-foreground" />
-              <span>{formatWhatsapp(empresa.whatsapp)}</span>
+          {/* Contato e Endereço */}
+          <div className="space-y-1.5 text-xs">
+            <div className="flex items-center gap-2">
+              <Phone className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+              <span className="truncate">{formatWhatsapp(empresa.whatsapp)}</span>
             </div>
             {empresa.instagram && (
-              <div className="flex items-center gap-2 text-sm">
-                <Instagram className="h-4 w-4 text-muted-foreground" />
-                <span>@{empresa.instagram}</span>
+              <div className="flex items-center gap-2">
+                <Instagram className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <span className="truncate">@{empresa.instagram}</span>
               </div>
             )}
-          </div>
-
-          {/* Endereço */}
-          {endereco && (
-            <div className="flex items-start gap-2 text-sm">
-              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-              <span>{endereco}</span>
-            </div>
-          )}
-
-          {/* Horários */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span>Horário de Funcionamento</span>
-            </div>
-            <div className="space-y-1 text-xs">
-              {empresa.horarios.map((h) => (
-                <div key={h.dia} className="flex justify-between gap-2">
-                  <span className="text-muted-foreground">{h.dia}</span>
-                  <span className="text-right whitespace-nowrap">
-                    {h.aberto ? `${h.abertura} - ${h.fechamento}` : "Fechado"}
-                  </span>
-                </div>
-              ))}
+            {endereco && (
+              <div className="flex items-start gap-2">
+                <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <span className="break-words">{endereco}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+              <span>{diasAbertos} dias abertos por semana</span>
             </div>
           </div>
 
-          {/* Aviso de e-mail */}
-          <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-            <div className="flex items-start gap-3">
-              <Mail className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-foreground">
+          {/* Aviso de e-mail - simplificado */}
+          <div className="p-3 bg-primary/10 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Mail className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-foreground">
                   Link de pagamento por e-mail
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Após confirmar, você receberá o link de pagamento no seu
-                  e-mail cadastrado. A empresa ficará ativa após a confirmação
-                  do pagamento e aprovação pela administração.
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Você receberá o link no seu e-mail após confirmar.
                 </p>
               </div>
             </div>
@@ -169,16 +146,18 @@ const EmpresaPreviewModal = ({
             onClick={onConfirm}
             disabled={isLoading}
             className="w-full bg-[#331D4A] hover:bg-[#331D4A]/90"
+            size="sm"
           >
             {isLoading ? "Cadastrando..." : "Confirmar cadastro"}
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
-            className="w-full"
+            className="w-full text-muted-foreground"
+            size="sm"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-3 w-3 mr-1" />
             Voltar e editar
           </Button>
         </DialogFooter>
