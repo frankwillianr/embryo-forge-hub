@@ -268,8 +268,8 @@ const JornalDetailPage = () => {
         <span className="text-sm text-muted-foreground">Notícia</span>
       </header>
 
-      {/* Media - Imagens com swipe ou Vídeo */}
-      {imagens.length > 0 ? (
+      {/* Media - Imagens com swipe */}
+      {imagens.length > 0 && (
         <div 
           ref={containerRef}
           className="relative overflow-hidden"
@@ -278,15 +278,23 @@ const JornalDetailPage = () => {
         >
           <div 
             className="flex transition-transform duration-300 ease-out"
-            style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+            style={{ 
+              transform: `translateX(-${currentImageIndex * 100}%)`,
+              width: `${imagens.length * 100}%`
+            }}
           >
             {imagens.map((img, idx) => (
-              <img
-                key={img.id}
-                src={img.imagem_url}
-                alt={`${jornal.titulo} - Imagem ${idx + 1}`}
-                className="w-full aspect-video object-cover flex-shrink-0"
-              />
+              <div 
+                key={img.id} 
+                className="flex-shrink-0"
+                style={{ width: `${100 / imagens.length}%` }}
+              >
+                <img
+                  src={img.imagem_url}
+                  alt={`${jornal.titulo} - Imagem ${idx + 1}`}
+                  className="w-full aspect-video object-cover"
+                />
+              </div>
             ))}
           </div>
           {/* Dots de navegação */}
@@ -306,21 +314,33 @@ const JornalDetailPage = () => {
             </div>
           )}
         </div>
-      ) : embedUrl ? (
-        <iframe
-          src={embedUrl}
-          className="w-full aspect-video"
-          allowFullScreen
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        />
-      ) : isDirectVideo ? (
-        <video
-          src={jornal.video_url!}
-          className="w-full aspect-video object-contain bg-black"
-          controls
-          preload="metadata"
-        />
-      ) : (
+      )}
+
+      {/* Vídeo - Exibido abaixo das imagens ou sozinho */}
+      {embedUrl && (
+        <div className={imagens.length > 0 ? "px-4 pt-4" : ""}>
+          <iframe
+            src={embedUrl}
+            className={`w-full aspect-video ${imagens.length > 0 ? "rounded-xl" : ""}`}
+            allowFullScreen
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          />
+        </div>
+      )}
+
+      {isDirectVideo && (
+        <div className={imagens.length > 0 ? "px-4 pt-4" : ""}>
+          <video
+            src={jornal.video_url!}
+            className={`w-full aspect-video object-contain bg-black ${imagens.length > 0 ? "rounded-xl" : ""}`}
+            controls
+            preload="metadata"
+          />
+        </div>
+      )}
+
+      {/* Placeholder quando não há mídia */}
+      {imagens.length === 0 && !embedUrl && !isDirectVideo && (
         <div className="w-full aspect-video bg-muted flex items-center justify-center">
           <span className="text-muted-foreground">Sem mídia</span>
         </div>
