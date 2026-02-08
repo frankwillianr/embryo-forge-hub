@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 // Import icons
 import veiculosIcon from "@/assets/icons/veiculos.png";
@@ -14,9 +17,15 @@ interface ServicosSectionProps {
   cidadeSlug?: string;
 }
 
-const allServicos = [
+// Serviços em destaque (3)
+const servicosDestaque = [
   { id: "veiculos", nome: "Veículos", icon: veiculosIcon },
   { id: "desapega", nome: "Desapega", icon: desapegaIcon },
+  { id: "influenciadores", nome: "Influenciadores", icon: salaoIcon },
+];
+
+// Outros serviços (2 linhas de 4 = 8 itens)
+const outrosServicos = [
   { id: "entregador", nome: "Entregador", icon: entregadorIcon },
   { id: "salao", nome: "Salão", icon: salaoIcon },
   { id: "reparos", nome: "Reparos", icon: reparosIcon },
@@ -27,6 +36,7 @@ const allServicos = [
 
 const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleClick = (servicoId: string) => {
     if (servicoId === "veiculos") {
@@ -35,6 +45,12 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
       navigate(`/cidade/${cidadeSlug}/desapega`);
     } else {
       navigate(`/cidade/${cidadeSlug}/servicos/${servicoId}`);
+    }
+  };
+
+  const handleSearch = () => {
+    if (searchTerm.trim()) {
+      navigate(`/cidade/${cidadeSlug}/servicos?q=${encodeURIComponent(searchTerm)}`);
     }
   };
 
@@ -58,23 +74,56 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </button>
       </div>
 
-      {/* Grid de Categorias - Estilo iFood */}
+      {/* Serviços em Destaque - 3 colunas */}
+      <div className="px-5 mb-4">
+        <div className="grid grid-cols-3 gap-3">
+          {servicosDestaque.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleClick(item.id)}
+              className="flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/15 hover:to-primary/10 border border-primary/20 rounded-2xl py-4 px-3 transition-all active:scale-95 group"
+            >
+              <img 
+                src={item.icon} 
+                alt={item.nome}
+                className="w-12 h-12 mb-2 group-hover:scale-110 transition-transform object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
+              />
+              <span className="text-xs font-semibold text-foreground text-center leading-tight">
+                {item.nome}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Campo de Busca */}
+      <div className="px-5 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="O que você está procurando?"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="pl-10 bg-muted/50 border-0 rounded-xl h-11"
+          />
+        </div>
+      </div>
+
+      {/* Grid de Outros Serviços - 4 colunas, 2 linhas */}
       <div className="px-5">
         <div className="grid grid-cols-4 gap-2">
-          {allServicos.map((item) => (
+          {outrosServicos.map((item) => (
             <button
               key={item.id}
               onClick={() => handleClick(item.id)}
               className="flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-xl py-2.5 px-2 transition-all active:scale-95 group"
             >
-              {/* Icon */}
               <img 
                 src={item.icon} 
                 alt={item.nome}
                 className="w-10 h-10 mb-1 group-hover:scale-110 transition-transform object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
               />
-              
-              {/* Nome */}
               <span className="text-[10px] font-medium text-foreground text-center leading-tight">
                 {item.nome}
               </span>
