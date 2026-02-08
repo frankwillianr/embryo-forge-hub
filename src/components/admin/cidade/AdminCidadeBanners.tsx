@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Megaphone, Clock, CheckCircle, XCircle, CreditCard, Pencil } from "lucide-react";
+import { Megaphone, Clock, CheckCircle, XCircle, CreditCard, Pencil, CalendarCheck, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -25,7 +25,7 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
   const queryClient = useQueryClient();
   const [editingBanner, setEditingBanner] = useState<any>(null);
 
-  const { data: banners, isLoading } = useQuery({
+  const { data: bannersWithDias, isLoading } = useQuery({
     queryKey: ["admin-cidade-banners", cidadeId],
     queryFn: async () => {
       // Busca os banner_ids vinculados a esta cidade
@@ -47,7 +47,24 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
         .order("created_at", { ascending: false });
 
       if (bannersError) throw bannersError;
-      return bannersData || [];
+
+      // Buscar dias de exibição para cada banner
+      const bannersWithDiasData = await Promise.all(
+        (bannersData || []).map(async (banner) => {
+          const { data: dias } = await supabase
+            .from("rel_banner_dias")
+            .select("data_exibicao")
+            .eq("banner_id", banner.id)
+            .order("data_exibicao", { ascending: true });
+
+          return {
+            ...banner,
+            dias_exibicao: dias || [],
+          };
+        })
+      );
+
+      return bannersWithDiasData;
     },
   });
 
@@ -81,7 +98,7 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
     return <div className="text-center py-8 text-muted-foreground">Carregando...</div>;
   }
 
-  if (!banners || banners.length === 0) {
+  if (!bannersWithDias || bannersWithDias.length === 0) {
     return (
       <div className="text-center py-12 border rounded-lg bg-muted/30">
         <Megaphone className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -93,18 +110,30 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
     );
   }
 
+  // Data de hoje para comparações
+  const hoje = new Date().toISOString().split("T")[0];
+
   // Agrupar por status
-  const aguardandoPagamento = banners.filter((b: any) => b.status === "aguardando_pagamento");
-  const pendentes = banners.filter((b: any) => 
+  const aguardandoPagamento = bannersWithDias.filter((b: any) => b.status === "aguardando_pagamento");
+  const pendentes = bannersWithDias.filter((b: any) => 
     b.status === "pendente" || 
     (b.status !== "aguardando_pagamento" && (b.ativo === null || b.ativo === undefined))
   );
-  const ativos = banners.filter((b: any) => 
-    b.ativo === true && 
-    b.status !== "aguardando_pagamento" && 
-    b.status !== "pendente"
-  );
-  const inativos = banners.filter((b: any) => 
+  
+  // Ativos Futuros: banners ativos com pelo menos um dia de exibição >= hoje
+  const ativosFuturos = bannersWithDias.filter((b: any) => {
+    if (b.ativo !== true || b.status === "aguardando_pagamento" || b.status === "pendente") return false;
+    return b.dias_exibicao?.some((d: any) => d.data_exibicao >= hoje);
+  });
+  
+  // Ativos Passados (Finalizados): banners ativos onde todos os dias são < hoje
+  const ativosPassados = bannersWithDias.filter((b: any) => {
+    if (b.ativo !== true || b.status === "aguardando_pagamento" || b.status === "pendente") return false;
+    if (!b.dias_exibicao || b.dias_exibicao.length === 0) return false;
+    return b.dias_exibicao.every((d: any) => d.data_exibicao < hoje);
+  });
+  
+  const inativos = bannersWithDias.filter((b: any) => 
     b.ativo === false && 
     b.status !== "aguardando_pagamento"
   );
@@ -212,47 +241,56 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
   return (
     <div className="space-y-4">
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="bg-muted/50 border rounded-lg p-4 text-center">
-          <CreditCard className="h-6 w-6 mx-auto text-amber-600 mb-2" />
-          <p className="text-2xl font-bold">{aguardandoPagamento.length}</p>
-          <p className="text-sm text-muted-foreground">Aguardando Pagamento</p>
+      <div className="grid grid-cols-5 gap-3">
+        <div className="bg-muted/50 border rounded-lg p-3 text-center">
+          <CreditCard className="h-5 w-5 mx-auto text-amber-600 mb-1" />
+          <p className="text-xl font-bold">{aguardandoPagamento.length}</p>
+          <p className="text-xs text-muted-foreground">Aguardando Pag.</p>
         </div>
-        <div className="bg-muted/50 border rounded-lg p-4 text-center">
-          <Clock className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
-          <p className="text-2xl font-bold">{pendentes.length}</p>
-          <p className="text-sm text-muted-foreground">Pendentes</p>
+        <div className="bg-muted/50 border rounded-lg p-3 text-center">
+          <Clock className="h-5 w-5 mx-auto text-blue-600 mb-1" />
+          <p className="text-xl font-bold">{pendentes.length}</p>
+          <p className="text-xs text-muted-foreground">Pendentes</p>
         </div>
-        <div className="bg-muted/50 border rounded-lg p-4 text-center">
-          <CheckCircle className="h-6 w-6 mx-auto text-green-600 mb-2" />
-          <p className="text-2xl font-bold">{ativos.length}</p>
-          <p className="text-sm text-muted-foreground">Ativos</p>
+        <div className="bg-muted/50 border rounded-lg p-3 text-center">
+          <CalendarCheck className="h-5 w-5 mx-auto text-green-600 mb-1" />
+          <p className="text-xl font-bold">{ativosFuturos.length}</p>
+          <p className="text-xs text-muted-foreground">Ativos/Futuros</p>
         </div>
-        <div className="bg-muted/50 border rounded-lg p-4 text-center">
-          <XCircle className="h-6 w-6 mx-auto text-red-600 mb-2" />
-          <p className="text-2xl font-bold">{inativos.length}</p>
-          <p className="text-sm text-muted-foreground">Inativos</p>
+        <div className="bg-muted/50 border rounded-lg p-3 text-center">
+          <History className="h-5 w-5 mx-auto text-gray-500 mb-1" />
+          <p className="text-xl font-bold">{ativosPassados.length}</p>
+          <p className="text-xs text-muted-foreground">Finalizados</p>
+        </div>
+        <div className="bg-muted/50 border rounded-lg p-3 text-center">
+          <XCircle className="h-5 w-5 mx-auto text-red-600 mb-1" />
+          <p className="text-xl font-bold">{inativos.length}</p>
+          <p className="text-xs text-muted-foreground">Recusados</p>
         </div>
       </div>
 
       {/* Tabs por status */}
-      <Tabs defaultValue="aguardando_pagamento">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="aguardando_pagamento" className="flex items-center gap-2">
+      <Tabs defaultValue="pendentes">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="aguardando_pagamento" className="flex flex-col items-center gap-1 text-xs py-2">
             <CreditCard className="h-4 w-4" />
-            Aguardando ({aguardandoPagamento.length})
+            <span>Aguardando ({aguardandoPagamento.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="pendentes" className="flex items-center gap-2">
+          <TabsTrigger value="pendentes" className="flex flex-col items-center gap-1 text-xs py-2">
             <Clock className="h-4 w-4" />
-            Pendentes ({pendentes.length})
+            <span>Pendentes ({pendentes.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="ativos" className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" />
-            Ativos ({ativos.length})
+          <TabsTrigger value="ativos_futuros" className="flex flex-col items-center gap-1 text-xs py-2">
+            <CalendarCheck className="h-4 w-4" />
+            <span>Ativos ({ativosFuturos.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="inativos" className="flex items-center gap-2">
+          <TabsTrigger value="ativos_passados" className="flex flex-col items-center gap-1 text-xs py-2">
+            <History className="h-4 w-4" />
+            <span>Finalizados ({ativosPassados.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="inativos" className="flex flex-col items-center gap-1 text-xs py-2">
             <XCircle className="h-4 w-4" />
-            Inativos ({inativos.length})
+            <span>Recusados ({inativos.length})</span>
           </TabsTrigger>
         </TabsList>
 
@@ -264,12 +302,16 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
           {renderBannerTable(pendentes, true)}
         </TabsContent>
 
-        <TabsContent value="ativos" className="mt-4">
-          {renderBannerTable(ativos, true)}
+        <TabsContent value="ativos_futuros" className="mt-4">
+          {renderBannerTable(ativosFuturos, true)}
+        </TabsContent>
+
+        <TabsContent value="ativos_passados" className="mt-4">
+          {renderBannerTable(ativosPassados, false)}
         </TabsContent>
 
         <TabsContent value="inativos" className="mt-4">
-          {renderBannerTable(inativos, true)}
+          {renderBannerTable(inativos, false)}
         </TabsContent>
       </Tabs>
 
