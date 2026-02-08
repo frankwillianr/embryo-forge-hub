@@ -148,6 +148,25 @@ const JornalDetailPage = () => {
     enabled: !!jornalId,
   });
 
+  // Verifica se usuário está bloqueado de comentar
+  const { data: usuarioBloqueado } = useQuery({
+    queryKey: ["usuario-bloqueado", jornal?.cidade_id, user?.id],
+    queryFn: async () => {
+      if (!jornal?.cidade_id || !user?.id) return false;
+      
+      const { data, error } = await supabase
+        .from("rel_cidade_jornal_comentarios_bloqueados")
+        .select("id")
+        .eq("cidade_id", jornal.cidade_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) return false;
+      return !!data;
+    },
+    enabled: !!jornal?.cidade_id && !!user?.id,
+  });
+
   // Mutation para reagir
   const reactMutation = useMutation({
     mutationFn: async ({ tipo, currentReaction }: { tipo: "like" | "dislike"; currentReaction: "like" | "dislike" | null | undefined }) => {
@@ -230,6 +249,10 @@ const JornalDetailPage = () => {
   const handleComentarClick = () => {
     if (!user) {
       navigate(`/cidade/${slug}/auth`);
+      return;
+    }
+    if (usuarioBloqueado) {
+      toast.error("Você está bloqueado de comentar nesta cidade");
       return;
     }
     setMostrarFormComentario(true);
