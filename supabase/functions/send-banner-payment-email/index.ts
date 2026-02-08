@@ -67,7 +67,7 @@ const generateEmailTemplate = (data: EmailData): string => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pagamento do Banner - Open City</title>
+  <title>Pagamento do Banner - ${data.cidadeNome}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -82,10 +82,10 @@ const generateEmailTemplate = (data: EmailData): string => {
                 <tr>
                   <td>
                     <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
-                      🎯 Open City
+                      📍 ${data.cidadeNome}
                     </h1>
                     <p style="margin: 8px 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">
-                      Sua cidade na palma da mão
+                      Anuncie na sua cidade
                     </p>
                   </td>
                 </tr>
