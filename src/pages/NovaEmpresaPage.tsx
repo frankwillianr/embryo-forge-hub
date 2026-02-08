@@ -177,7 +177,22 @@ const NovaEmpresaPage = () => {
         if (fotosError) throw fotosError;
       }
 
-      // TODO: Enviar e-mail com link de pagamento
+      // Enviar e-mail com link de pagamento
+      try {
+        const { error: emailError } = await supabase.functions.invoke(
+          "send-empresa-payment-email",
+          {
+            body: { empresa_id: empresa.id },
+          }
+        );
+
+        if (emailError) {
+          console.error("Erro ao enviar e-mail de pagamento:", emailError);
+          // Não bloqueia o cadastro se o e-mail falhar
+        }
+      } catch (emailErr) {
+        console.error("Erro ao chamar função de e-mail:", emailErr);
+      }
 
       return empresa;
     },
@@ -185,7 +200,7 @@ const NovaEmpresaPage = () => {
       queryClient.invalidateQueries({ queryKey: ["servico-empresas"] });
       toast({
         title: "Empresa cadastrada!",
-        description: "Sua empresa foi adicionada com sucesso.",
+        description: "Você receberá o link de pagamento por e-mail em instantes.",
       });
       navigate(`/cidade/${slug}/servicos/${categoriaId}`);
     },
