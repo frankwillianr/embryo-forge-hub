@@ -74,25 +74,59 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </button>
       </div>
 
-      {/* Serviços em Destaque - 3 colunas */}
-      <div className="px-5 mb-4">
+      {/* Serviços em Destaque - 3 cards premium */}
+      <div className="px-5 mb-5">
         <div className="grid grid-cols-3 gap-3">
-          {servicosDestaque.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleClick(item.id)}
-              className="flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 hover:from-primary/15 hover:to-primary/10 border border-primary/20 rounded-2xl py-4 px-3 transition-all active:scale-95 group"
-            >
-              <img 
-                src={item.icon} 
-                alt={item.nome}
-                className="w-12 h-12 mb-2 group-hover:scale-110 transition-transform object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
-              />
-              <span className="text-xs font-semibold text-foreground text-center leading-tight">
-                {item.nome}
-              </span>
-            </button>
-          ))}
+          {/* Veículos */}
+          <button
+            onClick={() => handleClick("veiculos")}
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a1a2e] to-[#16213e] p-4 pb-3 transition-all active:scale-95 group shadow-lg"
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/20 rounded-full blur-2xl" />
+            <img 
+              src={veiculosIcon} 
+              alt="Veículos"
+              className="w-11 h-11 mb-2 group-hover:scale-110 transition-transform object-contain drop-shadow-lg"
+            />
+            <span className="text-[11px] font-semibold text-white block">
+              Veículos
+            </span>
+            <span className="text-[9px] text-white/60">Compra e venda</span>
+          </button>
+
+          {/* Desapega */}
+          <button
+            onClick={() => handleClick("desapega")}
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#E80560] to-[#c70450] p-4 pb-3 transition-all active:scale-95 group shadow-lg"
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-white/20 rounded-full blur-2xl" />
+            <img 
+              src={desapegaIcon} 
+              alt="Desapega"
+              className="w-11 h-11 mb-2 group-hover:scale-110 transition-transform object-contain drop-shadow-lg"
+            />
+            <span className="text-[11px] font-semibold text-white block">
+              Desapega
+            </span>
+            <span className="text-[9px] text-white/70">Marketplace</span>
+          </button>
+
+          {/* Influenciadores */}
+          <button
+            onClick={() => handleClick("influenciadores")}
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#331D4A] to-[#4a2c6a] p-4 pb-3 transition-all active:scale-95 group shadow-lg"
+          >
+            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/30 rounded-full blur-2xl" />
+            <img 
+              src={salaoIcon} 
+              alt="Influenciadores"
+              className="w-11 h-11 mb-2 group-hover:scale-110 transition-transform object-contain drop-shadow-lg"
+            />
+            <span className="text-[11px] font-semibold text-white block">
+              Influencers
+            </span>
+            <span className="text-[9px] text-white/60">Parcerias</span>
+          </button>
         </div>
       </div>
 
