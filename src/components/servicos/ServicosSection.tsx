@@ -119,7 +119,8 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
           {/* Veículos */}
           <button
             onClick={() => handleClick("veiculos")}
-            className="aspect-square rounded-2xl bg-gradient-to-br from-slate-800 to-slate-600 p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
+            className="aspect-square rounded-2xl p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
+            style={{ backgroundColor: "#331D4A" }}
           >
             <div className="absolute -right-3 -bottom-3 opacity-20">
               <Car className="w-14 h-14" strokeWidth={1} />
@@ -136,7 +137,8 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
           {/* Desapega */}
           <button
             onClick={() => handleClick("desapega")}
-            className="aspect-square rounded-2xl bg-gradient-to-br from-pink-500 to-rose-400 p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
+            className="aspect-square rounded-2xl p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
+            style={{ backgroundColor: "#331D4A" }}
           >
             <div className="absolute -right-3 -bottom-3 opacity-20">
               <ShoppingBag className="w-14 h-14" strokeWidth={1} />
@@ -153,7 +155,8 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
           {/* Influenciadores */}
           <button
             onClick={() => handleClick("influenciadores")}
-            className="aspect-square rounded-2xl bg-gradient-to-br from-purple-600 to-violet-400 p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
+            className="aspect-square rounded-2xl p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
+            style={{ backgroundColor: "#331D4A" }}
           >
             <div className="absolute -right-3 -bottom-3 opacity-20">
               <Users className="w-14 h-14" strokeWidth={1} />
