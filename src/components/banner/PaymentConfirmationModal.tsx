@@ -22,7 +22,7 @@ export function PaymentConfirmationModal({
 }: PaymentConfirmationModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm mx-auto rounded-[10px]">
+      <DialogContent className="max-w-sm">
         <DialogHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <Mail className="h-8 w-8 text-primary" />
