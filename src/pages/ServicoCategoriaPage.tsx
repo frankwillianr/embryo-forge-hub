@@ -5,7 +5,7 @@ import { ArrowLeft, Plus, Search, MapPin, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
+import { useAuth } from "@/hooks/useAuth";
 const categoriasMeta: Record<string, { nome: string; icone: string }> = {
   entregador: { nome: "Entregador", icone: "🚴" },
   motorista: { nome: "Motorista", icone: "🚗" },
@@ -41,7 +41,16 @@ const categoriasMeta: Record<string, { nome: string; icone: string }> = {
 const ServicoCategoriaPage = () => {
   const { slug, categoriaId } = useParams<{ slug: string; categoriaId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
+
+  const handleAddEmpresa = () => {
+    if (!user) {
+      navigate(`/auth?redirect=/cidade/${slug}/servicos/${categoriaId}/novo`);
+      return;
+    }
+    navigate(`/cidade/${slug}/servicos/${categoriaId}/novo`);
+  };
 
   const categoriaMeta = categoriasMeta[categoriaId || ""] || {
     nome: categoriaId,
@@ -107,7 +116,7 @@ const ServicoCategoriaPage = () => {
         </div>
         <Button
           size="sm"
-          onClick={() => navigate(`/cidade/${slug}/servicos/${categoriaId}/novo`)}
+          onClick={handleAddEmpresa}
           className="gap-1.5 bg-[#331D4A] hover:bg-[#331D4A]/90 text-white rounded-xl"
         >
           <Plus className="h-4 w-4" />
@@ -221,7 +230,7 @@ const ServicoCategoriaPage = () => {
               Seja o primeiro a anunciar!
             </p>
             <Button
-              onClick={() => navigate(`/cidade/${slug}/servicos/${categoriaId}/novo`)}
+              onClick={handleAddEmpresa}
               className="gap-2 bg-[#331D4A] hover:bg-[#331D4A]/90 text-white rounded-xl"
             >
               <Plus className="h-4 w-4" />
