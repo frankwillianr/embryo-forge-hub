@@ -315,11 +315,11 @@ const JornalDetailPage = () => {
               
               {/* Imagens */}
               {imagens.map((img, idx) => (
-                <div key={img.id} className="w-full flex-shrink-0">
+                <div key={img.id} className="w-full flex-shrink-0 bg-muted/30">
                   <img
                     src={img.imagem_url}
                     alt={`${jornal.titulo} - Imagem ${idx + 1}`}
-                    className="w-full aspect-video object-cover"
+                    className="w-full aspect-[4/3] object-contain"
                   />
                 </div>
               ))}
