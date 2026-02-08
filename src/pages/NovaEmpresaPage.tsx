@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import ImageUpload from "@/components/shared/ImageUpload";
+import VideoUpload from "@/components/shared/VideoUpload";
 
 interface HorarioFuncionamento {
   dia: string;
@@ -45,6 +46,7 @@ const NovaEmpresaPage = () => {
   const [complemento, setComplemento] = useState("");
   const [fotos, setFotos] = useState<string[]>([]);
   const [bannerOferta, setBannerOferta] = useState<string[]>([]);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [loadingCep, setLoadingCep] = useState(false);
   const [horarios, setHorarios] = useState<HorarioFuncionamento[]>(
     diasSemana.map((dia) => ({
@@ -145,6 +147,7 @@ const NovaEmpresaPage = () => {
           endereco_complemento: complemento || null,
           horario_funcionamento: horarios,
           banner_oferta_url: bannerOferta[0] || null,
+          video_url: videoUrl || null,
         })
         .select()
         .single();
@@ -230,6 +233,21 @@ const NovaEmpresaPage = () => {
             maxImages={1}
             bucket="servicos"
             folder="banners"
+          />
+        </div>
+
+        {/* Vídeo da empresa */}
+        <div className="space-y-2">
+          <Label>Vídeo da empresa (opcional)</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Mostre seu trabalho em um vídeo curto
+          </p>
+          <VideoUpload
+            videoUrl={videoUrl}
+            onChange={setVideoUrl}
+            bucket="servicos"
+            folder="videos"
+            maxSizeMB={50}
           />
         </div>
 
