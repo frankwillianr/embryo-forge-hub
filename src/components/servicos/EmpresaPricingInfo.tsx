@@ -32,19 +32,19 @@ const EmpresaPricingInfo = ({ valorAnual }: EmpresaPricingInfoProps) => {
   ];
 
   return (
-    <Card className="border-green-500/30 bg-green-50">
+    <Card className="border-green-300 bg-green-50/50">
       <CardContent className="p-4 space-y-4">
         {/* Preço */}
         <div className="text-center">
-          <div className="text-sm text-green-700">
+          <div className="text-sm text-muted-foreground">
             Investimento anual
           </div>
           <div className="text-3xl font-bold text-green-600">
             R$ {valorAnual.toFixed(2).replace(".", ",")}
           </div>
-          <div className="text-sm text-green-700">
+          <div className="text-sm text-muted-foreground">
             equivalente a{" "}
-            <span className="font-semibold text-green-800">
+            <span className="font-semibold text-foreground">
               R$ {valorMensal.toFixed(2).replace(".", ",")}
             </span>{" "}
             por mês
@@ -59,10 +59,10 @@ const EmpresaPricingInfo = ({ valorAnual }: EmpresaPricingInfoProps) => {
                 <beneficio.icon className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-green-800">
+                <p className="text-sm font-medium text-foreground">
                   {beneficio.title}
                 </p>
-                <p className="text-xs text-green-700 leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   {beneficio.text}
                 </p>
               </div>
@@ -71,7 +71,7 @@ const EmpresaPricingInfo = ({ valorAnual }: EmpresaPricingInfoProps) => {
         </div>
 
         {/* Selo de garantia */}
-        <div className="flex items-center justify-center gap-2 pt-2 text-xs text-green-700 bg-green-100 rounded-lg py-2">
+        <div className="flex items-center justify-center gap-2 pt-2 text-xs text-foreground bg-green-100/50 rounded-lg py-2">
           <Check className="h-4 w-4 text-green-600" />
           <span>Validade de 1 ano a partir da aprovação</span>
         </div>
