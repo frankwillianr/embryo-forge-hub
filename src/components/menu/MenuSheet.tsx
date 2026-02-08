@@ -236,7 +236,7 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
 
       {/* Logout Confirmation Modal */}
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
-        <AlertDialogContent className="max-w-[90vw] sm:max-w-sm rounded-[10px]">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Sair da conta?</AlertDialogTitle>
             <AlertDialogDescription>
