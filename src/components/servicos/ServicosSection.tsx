@@ -13,16 +13,14 @@ import limpezaIcon from "@/assets/icons/limpeza.png";
 import petIcon from "@/assets/icons/pet.png";
 import obrasIcon from "@/assets/icons/obras.png";
 
+// Import ilustrações destaque
+import ilustraVeiculos from "@/assets/ilustra-veiculos.png";
+import ilustraDesapega from "@/assets/ilustra-desapega.png";
+import ilustraInfluencer from "@/assets/ilustra-influencer.png";
+
 interface ServicosSectionProps {
   cidadeSlug?: string;
 }
-
-// Serviços em destaque (3)
-const servicosDestaque = [
-  { id: "veiculos", nome: "Veículos", icon: veiculosIcon },
-  { id: "desapega", nome: "Desapega", icon: desapegaIcon },
-  { id: "influenciadores", nome: "Influenciadores", icon: salaoIcon },
-];
 
 // Outros serviços (2 linhas de 4 = 8 itens)
 const outrosServicos = [
@@ -76,56 +74,68 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
 
       {/* Serviços em Destaque - 3 cards premium */}
       <div className="px-5 mb-5">
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2.5">
           {/* Veículos */}
           <button
             onClick={() => handleClick("veiculos")}
-            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a1a2e] to-[#16213e] p-4 pb-3 transition-all active:scale-95 group shadow-lg"
+            className="relative overflow-hidden rounded-2xl h-28 transition-all active:scale-95 group"
+            style={{
+              background: "linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)"
+            }}
           >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/20 rounded-full blur-2xl" />
             <img 
-              src={veiculosIcon} 
+              src={ilustraVeiculos} 
               alt="Veículos"
-              className="w-11 h-11 mb-2 group-hover:scale-110 transition-transform object-contain drop-shadow-lg"
+              className="absolute bottom-0 right-0 w-20 h-20 object-contain opacity-80 group-hover:scale-110 transition-transform"
             />
-            <span className="text-[11px] font-semibold text-white block">
-              Veículos
-            </span>
-            <span className="text-[9px] text-white/60">Compra e venda</span>
+            <div className="absolute inset-0 p-3 flex flex-col justify-end">
+              <span className="text-[11px] font-bold text-white">
+                Veículos
+              </span>
+              <span className="text-[9px] text-white/60">Compra e venda</span>
+            </div>
           </button>
 
           {/* Desapega */}
           <button
             onClick={() => handleClick("desapega")}
-            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#E80560] to-[#c70450] p-4 pb-3 transition-all active:scale-95 group shadow-lg"
+            className="relative overflow-hidden rounded-2xl h-28 transition-all active:scale-95 group"
+            style={{
+              background: "linear-gradient(135deg, #E80560 0%, #ff6b9d 100%)"
+            }}
           >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-white/20 rounded-full blur-2xl" />
             <img 
-              src={desapegaIcon} 
+              src={ilustraDesapega} 
               alt="Desapega"
-              className="w-11 h-11 mb-2 group-hover:scale-110 transition-transform object-contain drop-shadow-lg"
+              className="absolute -bottom-2 -right-2 w-20 h-20 object-contain opacity-90 group-hover:scale-110 transition-transform"
             />
-            <span className="text-[11px] font-semibold text-white block">
-              Desapega
-            </span>
-            <span className="text-[9px] text-white/70">Marketplace</span>
+            <div className="absolute inset-0 p-3 flex flex-col justify-end">
+              <span className="text-[11px] font-bold text-white">
+                Desapega
+              </span>
+              <span className="text-[9px] text-white/80">Marketplace</span>
+            </div>
           </button>
 
           {/* Influenciadores */}
           <button
             onClick={() => handleClick("influenciadores")}
-            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#331D4A] to-[#4a2c6a] p-4 pb-3 transition-all active:scale-95 group shadow-lg"
+            className="relative overflow-hidden rounded-2xl h-28 transition-all active:scale-95 group"
+            style={{
+              background: "linear-gradient(135deg, #331D4A 0%, #5c3d7a 100%)"
+            }}
           >
-            <div className="absolute top-0 right-0 w-16 h-16 bg-primary/30 rounded-full blur-2xl" />
             <img 
-              src={salaoIcon} 
+              src={ilustraInfluencer} 
               alt="Influenciadores"
-              className="w-11 h-11 mb-2 group-hover:scale-110 transition-transform object-contain drop-shadow-lg"
+              className="absolute bottom-0 right-0 w-16 h-16 object-contain opacity-70 group-hover:scale-110 transition-transform"
             />
-            <span className="text-[11px] font-semibold text-white block">
-              Influencers
-            </span>
-            <span className="text-[9px] text-white/60">Parcerias</span>
+            <div className="absolute inset-0 p-3 flex flex-col justify-end">
+              <span className="text-[11px] font-bold text-white">
+                Influencers
+              </span>
+              <span className="text-[9px] text-white/60">Parcerias</span>
+            </div>
           </button>
         </div>
       </div>
