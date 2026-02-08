@@ -64,7 +64,7 @@ const EmpresaPreviewModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[calc(100%-20px)] max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="w-[calc(100%-32px)] max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Confirmar Cadastro</DialogTitle>
           <DialogDescription>
@@ -134,11 +134,11 @@ const EmpresaPreviewModal = ({
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>Horário de Funcionamento</span>
             </div>
-            <div className="grid grid-cols-2 gap-1 text-xs">
+            <div className="space-y-1 text-xs">
               {empresa.horarios.map((h) => (
-                <div key={h.dia} className="flex justify-between">
+                <div key={h.dia} className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{h.dia}</span>
-                  <span>
+                  <span className="text-right whitespace-nowrap">
                     {h.aberto ? `${h.abertura} - ${h.fechamento}` : "Fechado"}
                   </span>
                 </div>
@@ -164,22 +164,22 @@ const EmpresaPreviewModal = ({
           </div>
         </div>
 
-        <DialogFooter className="flex-row gap-2 sm:gap-0">
+        <DialogFooter className="flex-col gap-2 pt-2">
+          <Button
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="w-full bg-[#331D4A] hover:bg-[#331D4A]/90"
+          >
+            {isLoading ? "Cadastrando..." : "Confirmar cadastro"}
+          </Button>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
-            className="flex-1 sm:flex-none"
+            className="w-full"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar e editar
-          </Button>
-          <Button
-            onClick={onConfirm}
-            disabled={isLoading}
-            className="flex-1 sm:flex-none bg-[#331D4A] hover:bg-[#331D4A]/90"
-          >
-            {isLoading ? "Cadastrando..." : "Confirmar cadastro"}
           </Button>
         </DialogFooter>
       </DialogContent>
