@@ -25,14 +25,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, X, Image, Video } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Image, Video, Youtube, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Jornal, JornalInsert, JornalImagem } from "@/types/jornal";
 import type { Cidade } from "@/types/cidade";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import VideoUpload from "@/components/shared/VideoUpload";
 
 const AdminJornal = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -42,6 +44,8 @@ const AdminJornal = () => {
   const [descricao, setDescricao] = useState("");
   const [fonte, setFonte] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
+  const [videoType, setVideoType] = useState<"youtube" | "upload">("youtube");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<JornalImagem[]>([]);
@@ -243,6 +247,8 @@ const AdminJornal = () => {
     setDescricao("");
     setFonte("");
     setVideoUrl("");
+    setUploadedVideoUrl(null);
+    setVideoType("youtube");
     setImageFiles([]);
     setImagePreviews([]);
     setExistingImages([]);
@@ -252,6 +258,9 @@ const AdminJornal = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Determina qual URL de vídeo usar baseado no tipo selecionado
+    const finalVideoUrl = videoType === "upload" ? uploadedVideoUrl : (videoUrl || null);
 
     if (editingJornal) {
       updateMutation.mutate({
@@ -260,7 +269,7 @@ const AdminJornal = () => {
         titulo,
         descricao,
         fonte: fonte || null,
-        video_url: videoUrl || null,
+        video_url: finalVideoUrl,
       });
     } else {
       createMutation.mutate({
@@ -268,7 +277,7 @@ const AdminJornal = () => {
         titulo,
         descricao,
         fonte: fonte || undefined,
-        video_url: videoUrl || undefined,
+        video_url: finalVideoUrl || undefined,
       });
     }
   };
@@ -279,7 +288,23 @@ const AdminJornal = () => {
     setTitulo(jornal.titulo);
     setDescricao(jornal.descricao);
     setFonte(jornal.fonte || "");
-    setVideoUrl(jornal.video_url || "");
+    
+    // Detecta se é URL do YouTube ou upload direto
+    const isYoutubeUrl = jornal.video_url?.includes("youtube.com") || jornal.video_url?.includes("youtu.be");
+    if (isYoutubeUrl) {
+      setVideoType("youtube");
+      setVideoUrl(jornal.video_url || "");
+      setUploadedVideoUrl(null);
+    } else if (jornal.video_url) {
+      setVideoType("upload");
+      setUploadedVideoUrl(jornal.video_url);
+      setVideoUrl("");
+    } else {
+      setVideoType("youtube");
+      setVideoUrl("");
+      setUploadedVideoUrl(null);
+    }
+    
     setExistingImages(jornal.imagens || []);
     setImageFiles([]);
     setImagePreviews([]);
@@ -377,26 +402,47 @@ const AdminJornal = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fonte">Fonte (opcional)</Label>
-                  <Input
-                    id="fonte"
-                    value={fonte}
-                    onChange={(e) => setFonte(e.target.value)}
-                    placeholder="Ex: G1, Jornal Local"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="fonte">Fonte (opcional)</Label>
+                <Input
+                  id="fonte"
+                  value={fonte}
+                  onChange={(e) => setFonte(e.target.value)}
+                  placeholder="Ex: G1, Jornal Local"
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="video">Vídeo YouTube (opcional)</Label>
-                  <Input
-                    id="video"
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    placeholder="https://youtube.com/watch?v=..."
-                  />
-                </div>
+              {/* Vídeo - Abas YouTube ou Upload */}
+              <div className="space-y-2">
+                <Label>Vídeo (opcional)</Label>
+                <Tabs value={videoType} onValueChange={(v) => setVideoType(v as "youtube" | "upload")}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="youtube" className="flex items-center gap-2">
+                      <Youtube className="h-4 w-4" />
+                      YouTube
+                    </TabsTrigger>
+                    <TabsTrigger value="upload" className="flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Upload
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="youtube" className="mt-3">
+                    <Input
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                      placeholder="https://youtube.com/watch?v=..."
+                    />
+                  </TabsContent>
+                  <TabsContent value="upload" className="mt-3">
+                    <VideoUpload
+                      videoUrl={uploadedVideoUrl}
+                      onChange={setUploadedVideoUrl}
+                      bucket="jornal-videos"
+                      folder="uploads"
+                      maxSizeMB={50}
+                    />
+                  </TabsContent>
+                </Tabs>
               </div>
 
               {/* Imagens */}
