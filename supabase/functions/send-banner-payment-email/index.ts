@@ -18,8 +18,9 @@ interface PaymentEmailRequest {
   valorTotal?: number;
   paymentUrl?: string;
   expiresAt?: string;
-  // Alternative: just pass banner_id and we fetch everything
+  // Alternative: pass banner_id (and optionally cidade_id) and we fetch everything
   banner_id?: string;
+  cidade_id?: string;  // Can be passed to avoid rel_cidade_banner lookup
 }
 
 const logStep = (step: string, details?: any) => {
@@ -333,20 +334,29 @@ serve(async (req) => {
       let diasComprados: number;
 
       if (!pagamento) {
-        logStep("No payment record found, fetching from rel_cidade_banner");
+        logStep("No payment record found");
 
-        // Get cidade from rel_cidade_banner
-        const { data: relData, error: relError } = await supabase
-          .from("rel_cidade_banner")
-          .select("cidade_id")
-          .eq("banner_id", requestData.banner_id)
-          .maybeSingle();
+        // Try to get cidade_id from request first, then from rel_cidade_banner
+        let foundCidadeId: string | null = requestData.cidade_id || null;
 
-        if (relError || !relData) {
+        if (!foundCidadeId) {
+          // Get cidade from rel_cidade_banner
+          const { data: relData, error: relError } = await supabase
+            .from("rel_cidade_banner")
+            .select("cidade_id")
+            .eq("banner_id", requestData.banner_id)
+            .maybeSingle();
+
+          if (relData) {
+            foundCidadeId = relData.cidade_id;
+          }
+        }
+
+        if (!foundCidadeId) {
           throw new Error("Banner não está vinculado a nenhuma cidade. Vincule primeiro no painel admin.");
         }
 
-        cidadeId = relData.cidade_id;
+        cidadeId = foundCidadeId;
         diasComprados = banner.dias_comprados || 7;
 
         // Get cidade info including price
@@ -362,7 +372,20 @@ serve(async (req) => {
 
         valorTotal = (cidadeData.valor_dia_banner || 10) * diasComprados;
 
-        // We'll create a new payment record after getting user info
+        // Create the rel_cidade_banner link if it doesn't exist
+        const { error: linkError } = await supabase
+          .from("rel_cidade_banner")
+          .upsert(
+            { cidade_id: cidadeId, banner_id: requestData.banner_id },
+            { onConflict: "cidade_id,banner_id", ignoreDuplicates: true }
+          );
+
+        if (linkError) {
+          logStep("Warning: could not create rel_cidade_banner link", { error: linkError.message });
+        } else {
+          logStep("Created rel_cidade_banner link", { cidadeId, bannerId: requestData.banner_id });
+        }
+
         logStep("Will create new payment", { cidadeId, diasComprados, valorTotal });
       } else {
         logStep("Pagamento found", { 
