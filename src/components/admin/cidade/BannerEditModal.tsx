@@ -28,7 +28,6 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { format, parseISO, differenceInDays, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import type { DateRange } from "react-day-picker";
 
 const formSchema = z.object({
   titulo: z.string().min(1, "Título é obrigatório").max(100),
@@ -48,8 +47,8 @@ interface BannerEditModalProps {
 
 const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditModalProps) => {
   const queryClient = useQueryClient();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [bannerDias, setBannerDias] = useState<any[]>([]);
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [isLoadingDias, setIsLoadingDias] = useState(false);
 
   const form = useForm<FormValues>({
@@ -90,14 +89,12 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
 
       if (error) throw error;
 
-      setBannerDias(data || []);
-
       if (data && data.length > 0) {
-        const firstDate = parseISO(data[0].data_exibicao);
-        const lastDate = parseISO(data[data.length - 1].data_exibicao);
-        setDateRange({ from: firstDate, to: lastDate });
+        setStartDate(parseISO(data[0].data_exibicao));
+        setEndDate(parseISO(data[data.length - 1].data_exibicao));
       } else {
-        setDateRange(undefined);
+        setStartDate(undefined);
+        setEndDate(undefined);
       }
     } catch (error) {
       console.error("Erro ao carregar dias do banner:", error);
@@ -107,7 +104,7 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
   };
 
   const updateBannerMutation = useMutation({
-    mutationFn: async (values: FormValues & { dateRange?: DateRange }) => {
+    mutationFn: async (values: FormValues) => {
       // Atualizar dados do banner
       const { error: bannerError } = await supabase
         .from("banner")
@@ -121,8 +118,8 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
 
       if (bannerError) throw bannerError;
 
-      // Se as datas mudaram, atualizar rel_banner_dias
-      if (values.dateRange?.from && values.dateRange?.to) {
+      // Se as datas foram definidas, atualizar rel_banner_dias
+      if (startDate && endDate) {
         // Deletar dias existentes
         const { error: deleteError } = await supabase
           .from("rel_banner_dias")
@@ -133,8 +130,8 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
 
         // Criar novos dias
         const dias = [];
-        let currentDate = values.dateRange.from;
-        while (currentDate <= values.dateRange.to) {
+        let currentDate = startDate;
+        while (currentDate <= endDate) {
           dias.push({
             banner_id: banner.id,
             data_exibicao: format(currentDate, "yyyy-MM-dd"),
@@ -171,12 +168,29 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
   });
 
   const onSubmit = (values: FormValues) => {
-    updateBannerMutation.mutate({ ...values, dateRange });
+    updateBannerMutation.mutate(values);
   };
 
-  const diasSelecionados = dateRange?.from && dateRange?.to
-    ? differenceInDays(dateRange.to, dateRange.from) + 1
+  const diasSelecionados = startDate && endDate
+    ? differenceInDays(endDate, startDate) + 1
     : 0;
+
+  // Garantir que endDate não seja antes de startDate
+  const handleStartDateChange = (date: Date | undefined) => {
+    setStartDate(date);
+    if (date && endDate && endDate < date) {
+      setEndDate(date);
+    }
+  };
+
+  const handleEndDateChange = (date: Date | undefined) => {
+    if (date && startDate && date < startDate) {
+      // Se a data fim for antes da data início, ajustar
+      setEndDate(startDate);
+    } else {
+      setEndDate(date);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -254,8 +268,8 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
               )}
             />
 
-            {/* Seleção de datas */}
-            <div className="space-y-2">
+            {/* Seleção de datas - 2 date pickers separados */}
+            <div className="space-y-3">
               <FormLabel>Período de Exibição</FormLabel>
               {isLoadingDias ? (
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -263,50 +277,85 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
                   Carregando datas...
                 </div>
               ) : (
-                <>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !dateRange && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateRange?.from ? (
-                          dateRange.to ? (
-                            <>
-                              {format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
-                              {format(dateRange.to, "dd/MM/yyyy", { locale: ptBR })}
-                            </>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Data Início */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Data Início
+                    </label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !startDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {startDate ? (
+                            format(startDate, "dd/MM/yyyy", { locale: ptBR })
                           ) : (
-                            format(dateRange.from, "dd/MM/yyyy", { locale: ptBR })
-                          )
-                        ) : (
-                          "Selecione o período"
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={dateRange?.from}
-                        selected={dateRange}
-                        onSelect={setDateRange}
-                        numberOfMonths={2}
-                        locale={ptBR}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {diasSelecionados > 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      {diasSelecionados} dia{diasSelecionados > 1 ? "s" : ""} selecionado
-                      {diasSelecionados > 1 ? "s" : ""}
-                    </p>
-                  )}
-                </>
+                            "Selecione"
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 bg-background z-50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={startDate}
+                          onSelect={handleStartDateChange}
+                          initialFocus
+                          locale={ptBR}
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Data Fim */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Data Fim
+                    </label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !endDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {endDate ? (
+                            format(endDate, "dd/MM/yyyy", { locale: ptBR })
+                          ) : (
+                            "Selecione"
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 bg-background z-50" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={endDate}
+                          onSelect={handleEndDateChange}
+                          disabled={(date) => startDate ? date < startDate : false}
+                          initialFocus
+                          locale={ptBR}
+                          className="p-3 pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              )}
+              
+              {diasSelecionados > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {diasSelecionados} dia{diasSelecionados > 1 ? "s" : ""} selecionado
+                  {diasSelecionados > 1 ? "s" : ""}
+                </p>
               )}
             </div>
 
