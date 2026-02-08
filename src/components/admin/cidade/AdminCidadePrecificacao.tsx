@@ -15,6 +15,7 @@ interface AdminCidadePrecificacaoProps {
 const AdminCidadePrecificacao = ({ cidadeId }: AdminCidadePrecificacaoProps) => {
   const queryClient = useQueryClient();
   const [valorDiaBanner, setValorDiaBanner] = useState<string>("");
+  const [valorEmpresaAnual, setValorEmpresaAnual] = useState<string>("");
 
   // Fetch current pricing from cidade
   const { data: cidade, isLoading } = useQuery({
@@ -22,7 +23,7 @@ const AdminCidadePrecificacao = ({ cidadeId }: AdminCidadePrecificacaoProps) => 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cidade")
-        .select("id, nome, valor_dia_banner")
+        .select("id, nome, valor_dia_banner, valor_empresa_anual")
         .eq("id", cidadeId)
         .maybeSingle();
 
@@ -41,10 +42,13 @@ const AdminCidadePrecificacao = ({ cidadeId }: AdminCidadePrecificacaoProps) => 
 
   // Update pricing mutation
   const updatePricing = useMutation({
-    mutationFn: async (valorDia: number) => {
+    mutationFn: async (values: { valorDiaBanner: number; valorEmpresaAnual: number }) => {
       const { error } = await supabase
         .from("cidade")
-        .update({ valor_dia_banner: valorDia })
+        .update({ 
+          valor_dia_banner: values.valorDiaBanner,
+          valor_empresa_anual: values.valorEmpresaAnual,
+        })
         .eq("id", cidadeId);
 
       if (error) throw error;
@@ -60,17 +64,30 @@ const AdminCidadePrecificacao = ({ cidadeId }: AdminCidadePrecificacaoProps) => 
   });
 
   const handleSave = () => {
-    const valor = parseFloat(valorDiaBanner.replace(",", "."));
-    if (isNaN(valor) || valor < 0) {
-      toast.error("Valor inválido");
+    const valorBanner = parseFloat(valorDiaBanner.replace(",", "."));
+    const valorEmpresa = parseFloat(valorEmpresaAnual.replace(",", "."));
+    
+    if (isNaN(valorBanner) || valorBanner < 0) {
+      toast.error("Valor do banner inválido");
       return;
     }
-    updatePricing.mutate(valor);
+    if (isNaN(valorEmpresa) || valorEmpresa < 0) {
+      toast.error("Valor da empresa inválido");
+      return;
+    }
+    
+    updatePricing.mutate({ 
+      valorDiaBanner: valorBanner, 
+      valorEmpresaAnual: valorEmpresa 
+    });
   };
 
   // Update local state when data loads
   if (cidade?.valor_dia_banner !== undefined && valorDiaBanner === "") {
     setValorDiaBanner(cidade.valor_dia_banner?.toString() || "0");
+  }
+  if (cidade?.valor_empresa_anual !== undefined && valorEmpresaAnual === "") {
+    setValorEmpresaAnual(cidade.valor_empresa_anual?.toString() || "0");
   }
 
   if (isLoading) {
@@ -146,6 +163,62 @@ const AdminCidadePrecificacao = ({ cidadeId }: AdminCidadePrecificacaoProps) => 
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Card de Precificação de Empresas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Cadastro de Empresas</CardTitle>
+          <CardDescription>
+            Configure o valor anual para cadastro de empresas no guia de serviços
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="valor-empresa">Valor anual (R$)</Label>
+            <div className="flex gap-3">
+              <div className="relative flex-1 max-w-xs">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  R$
+                </span>
+                <Input
+                  id="valor-empresa"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
+                  value={valorEmpresaAnual}
+                  onChange={(e) => setValorEmpresaAnual(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button 
+                onClick={handleSave} 
+                disabled={updatePricing.isPending}
+              >
+                {updatePricing.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
+                Salvar
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Este valor será cobrado anualmente para manter a empresa ativa no guia de serviços
+            </p>
+          </div>
+
+          {/* Preview mensal */}
+          <div className="mt-6 pt-6 border-t">
+            <Label className="text-sm font-medium">Equivalência mensal</Label>
+            <div className="mt-3 p-4 bg-muted/50 rounded-lg inline-block">
+              <div className="text-sm text-muted-foreground">Por mês</div>
+              <div className="text-2xl font-semibold text-primary">
+                R$ {((parseFloat(valorEmpresaAnual.replace(",", ".")) || 0) / 12).toFixed(2).replace(".", ",")}
+              </div>
             </div>
           </div>
         </CardContent>
