@@ -58,23 +58,23 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
   const menuItems = [
     {
       icon: Megaphone,
-      label: "Meus Anúncios",
-      description: "Banners promocionais",
+      label: "Banners",
+      description: "Anúncios promocionais",
       path: `/cidade/${cidadeSlug}/meus-anuncios`,
       color: "text-primary",
       bgColor: "bg-primary/10",
     },
     {
       icon: Car,
-      label: "Meus Veículos",
+      label: "Veículos",
       description: "Carros e motos à venda",
       path: `/cidade/${cidadeSlug}/meus-veiculos`,
       color: "text-blue-600",
       bgColor: "bg-blue-500/10",
     },
     {
-      icon: Megaphone,
-      label: "Minhas Denúncias",
+      icon: Phone,
+      label: "Denúncias",
       description: "Alô Prefeitura",
       path: `/cidade/${cidadeSlug}/minhas-denuncias`,
       color: "text-red-600",
@@ -82,8 +82,8 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
     },
     {
       icon: Briefcase,
-      label: "Minhas Vagas",
-      description: "Vagas de emprego",
+      label: "Vagas",
+      description: "Oportunidades de emprego",
       path: `/cidade/${cidadeSlug}/minhas-vagas`,
       color: "text-green-600",
       bgColor: "bg-green-500/10",
@@ -149,7 +149,7 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
             <>
               <div className="px-6 py-4">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Minha Conta
+                  Minhas Postagens
                 </h3>
 
                 <div className="space-y-2">
