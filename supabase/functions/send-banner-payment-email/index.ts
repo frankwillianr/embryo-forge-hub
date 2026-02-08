@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -323,20 +324,18 @@ serve(async (req) => {
         stripe_session_id: pagamento.stripe_session_id 
       });
 
-      // Check if there's a valid payment URL
-      if (!pagamento.stripe_session_id) {
-        throw new Error("Este banner não possui sessão de pagamento. Crie um novo link de pagamento.");
-      }
-
       // Check if payment is still pending
       if (pagamento.status !== "pendente") {
         throw new Error(`Pagamento já está com status: ${pagamento.status}`);
       }
 
-      // Check if payment link has expired
-      if (pagamento.expira_em && new Date(pagamento.expira_em) < new Date()) {
-        throw new Error("O link de pagamento expirou. Crie um novo anúncio.");
-      }
+      // Check if payment link has expired - if so, we'll create a new one
+      const isExpired = pagamento.expira_em && new Date(pagamento.expira_em) < new Date();
+      logStep("Checking expiration", { 
+        expira_em: pagamento.expira_em, 
+        isExpired,
+        now: new Date().toISOString() 
+      });
 
       // Fetch banner data
       const { data: banner, error: bannerError } = await supabase
@@ -349,10 +348,10 @@ serve(async (req) => {
         throw new Error("Banner não encontrado");
       }
 
-      // Fetch cidade data
+      // Fetch cidade data (including slug for URLs)
       const { data: cidade, error: cidadeError } = await supabase
         .from("cidade")
-        .select("nome")
+        .select("nome, slug")
         .eq("id", pagamento.cidade_id)
         .maybeSingle();
 
@@ -380,9 +379,83 @@ serve(async (req) => {
         throw new Error("Não foi possível encontrar o email do usuário");
       }
 
-      // Construct payment URL from stripe session
-      // The URL format for Stripe Checkout is: https://checkout.stripe.com/c/pay/{session_id}
-      const paymentUrl = `https://checkout.stripe.com/c/pay/${pagamento.stripe_session_id}`;
+      let paymentUrl: string;
+      let finalExpiresAt: string;
+
+      // If link is not expired, use existing session
+      if (!isExpired && pagamento.stripe_session_id) {
+        paymentUrl = `https://checkout.stripe.com/c/pay/${pagamento.stripe_session_id}`;
+        finalExpiresAt = pagamento.expira_em || new Date(Date.now() + 3600000).toISOString();
+        logStep("Using existing payment link (not expired)", { paymentUrl, expiresAt: finalExpiresAt });
+      } else {
+        // Link expired or doesn't exist - create a new Stripe session
+        logStep("Creating new payment link (expired or missing)", { isExpired, hasSession: !!pagamento.stripe_session_id });
+
+        // Initialize Stripe
+        const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+        if (!stripeKey) throw new Error("STRIPE_SECRET_KEY not configured");
+        const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+        // Check if a Stripe customer record exists for this user
+        const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+        let customerId: string | undefined;
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id;
+        }
+
+        // Calculate expiration (1 hour from now)
+        const expiresAt = Math.floor(Date.now() / 1000) + 3600;
+        const expiresAtDate = new Date(expiresAt * 1000);
+
+        // Create new Stripe Checkout Session
+        const session = await stripe.checkout.sessions.create({
+          customer: customerId,
+          customer_email: customerId ? undefined : userEmail,
+          line_items: [
+            {
+              price_data: {
+                currency: "brl",
+                product_data: {
+                  name: `Banner: ${banner.titulo}`,
+                  description: `${pagamento.dias_comprados} dias de exibição em ${cidade.nome}`,
+                },
+                unit_amount: Math.round(pagamento.valor * 100),
+              },
+              quantity: 1,
+            },
+          ],
+          mode: "payment",
+          success_url: `https://embryo-forge-hub.lovable.app/cidade/${cidade.slug || 'gv'}/banner/sucesso?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `https://embryo-forge-hub.lovable.app/cidade/${cidade.slug || 'gv'}/banner/cancelado`,
+          expires_at: expiresAt,
+          metadata: {
+            banner_id: requestData.banner_id,
+            cidade_id: pagamento.cidade_id,
+            user_id: pagamento.user_id,
+            dias_comprados: pagamento.dias_comprados.toString(),
+          },
+        });
+
+        logStep("New Stripe session created", { sessionId: session.id });
+
+        // Update payment record with new session
+        const { error: updateError } = await supabase
+          .from("pagamento_banner")
+          .update({
+            stripe_session_id: session.id,
+            expira_em: expiresAtDate.toISOString(),
+          })
+          .eq("id", pagamento.id);
+
+        if (updateError) {
+          logStep("Error updating payment record", { error: updateError.message });
+        }
+
+        paymentUrl = session.url || `https://checkout.stripe.com/c/pay/${session.id}`;
+        finalExpiresAt = expiresAtDate.toISOString();
+
+        logStep("New payment link generated", { paymentUrl, expiresAt: finalExpiresAt });
+      }
 
       emailData = {
         to: userEmail,
@@ -392,7 +465,7 @@ serve(async (req) => {
         diasComprados: pagamento.dias_comprados,
         valorTotal: pagamento.valor,
         paymentUrl: paymentUrl,
-        expiresAt: pagamento.expira_em || new Date(Date.now() + 3600000).toISOString(),
+        expiresAt: finalExpiresAt,
       };
     } else {
       // Use directly provided fields (original behavior)
