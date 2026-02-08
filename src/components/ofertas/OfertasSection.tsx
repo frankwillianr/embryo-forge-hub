@@ -95,7 +95,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
                   `/cidade/${cidadeSlug}/servicos/${oferta.categoria}/${oferta.id}`
                 )
               }
-              className="relative flex-shrink-0 w-64 h-28 rounded-2xl overflow-hidden shadow-md transition-transform active:scale-[0.98]"
+              className="relative flex-shrink-0 w-64 h-[152px] rounded-2xl overflow-hidden shadow-md transition-transform active:scale-[0.98]"
             >
               <img
                 src={oferta.banner_oferta_url!}
