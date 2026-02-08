@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, Newspaper, Film, Megaphone, Menu, ArrowLeft, Bell, Mail } from "lucide-react";
+import { Home, Newspaper, Film, Megaphone, Menu, ArrowLeft, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CidadeBanner from "@/components/CidadeBanner";
 import HomeSection from "@/components/sections/HomeSection";
@@ -9,7 +9,6 @@ import CinemaSection from "@/components/sections/CinemaSection";
 import AloPrefeituraSection from "@/components/sections/AloPrefeituraSection";
 import MenuSheet from "@/components/menu/MenuSheet";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -33,8 +32,6 @@ const CidadePage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [testEmail, setTestEmail] = useState("");
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const { profile } = useAuth();
 
   // Get first name from profile
@@ -103,33 +100,6 @@ const CidadePage = () => {
     }
   };
 
-  // Função para testar email via Brevo
-  const handleTestEmail = async () => {
-    if (!testEmail.trim()) {
-      toast.error("Digite um email para enviar o teste");
-      return;
-    }
-
-    setIsSendingEmail(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("send-brevo-email", {
-        body: { to: testEmail },
-      });
-
-      if (error) {
-        throw new Error(error.message || "Erro ao enviar email");
-      }
-
-      toast.success(`Email enviado para ${testEmail}!`);
-      setTestEmail("");
-    } catch (error: any) {
-      console.error("Erro ao enviar email:", error);
-      toast.error(error.message || "Erro ao enviar email");
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
   const isHome = activeTab === "home";
 
   const handleHomeClick = () => {
@@ -173,31 +143,6 @@ const CidadePage = () => {
           {renderSection()}
         </div>
 
-        {/* Teste de Email - Temporário */}
-        {isHome && (
-          <div className="p-4 mx-4 my-4 bg-card border border-border rounded-xl space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Mail className="h-4 w-4" />
-              Teste de Email (Brevo)
-            </div>
-            <div className="flex gap-2">
-              <Input
-                type="email"
-                placeholder="seu@email.com"
-                value={testEmail}
-                onChange={(e) => setTestEmail(e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                onClick={handleTestEmail}
-                disabled={isSendingEmail}
-                className="bg-[#331D4A] hover:bg-[#331D4A]/90"
-              >
-                {isSendingEmail ? "Enviando..." : "Enviar"}
-              </Button>
-            </div>
-          </div>
-        )}
       </main>
 
       {/* Bottom Navigation - Pill Style */}
