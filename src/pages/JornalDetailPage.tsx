@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle } from "lucide-react";
+import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -194,6 +194,25 @@ const JornalDetailPage = () => {
     },
     onError: () => {
       toast.error("Erro ao publicar comentário");
+    },
+  });
+
+  // Mutation para deletar comentário
+  const deletarComentarioMutation = useMutation({
+    mutationFn: async (comentarioId: string) => {
+      const { error } = await supabase
+        .from("rel_cidade_jornal_comentarios")
+        .delete()
+        .eq("id", comentarioId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jornal-comentarios", jornalId] });
+      toast.success("Comentário excluído!");
+    },
+    onError: () => {
+      toast.error("Erro ao excluir comentário");
     },
   });
 
@@ -468,6 +487,16 @@ const JornalDetailPage = () => {
                       <span className="text-[10px] text-muted-foreground">
                         {format(new Date(comentario.created_at), "dd/MM 'às' HH:mm")}
                       </span>
+                      {user?.id === comentario.user_id && (
+                        <button
+                          onClick={() => deletarComentarioMutation.mutate(comentario.id)}
+                          disabled={deletarComentarioMutation.isPending}
+                          className="ml-auto text-muted-foreground hover:text-destructive transition-colors p-1"
+                          title="Excluir comentário"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                     <p className="text-sm text-foreground/80 mt-1 break-words">
                       {comentario.comentario}
