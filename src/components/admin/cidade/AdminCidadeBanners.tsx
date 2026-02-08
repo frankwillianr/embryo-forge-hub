@@ -87,9 +87,19 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
 
   // Agrupar por status
   const aguardandoPagamento = banners.filter((b: any) => b.status === "aguardando_pagamento");
-  const pendentes = banners.filter((b: any) => b.status === "pendente" || b.ativo === null || b.ativo === undefined);
-  const ativos = banners.filter((b: any) => b.ativo === true && b.status !== "aguardando_pagamento");
-  const inativos = banners.filter((b: any) => b.ativo === false && b.status !== "aguardando_pagamento");
+  const pendentes = banners.filter((b: any) => 
+    b.status === "pendente" || 
+    (b.status !== "aguardando_pagamento" && (b.ativo === null || b.ativo === undefined))
+  );
+  const ativos = banners.filter((b: any) => 
+    b.ativo === true && 
+    b.status !== "aguardando_pagamento" && 
+    b.status !== "pendente"
+  );
+  const inativos = banners.filter((b: any) => 
+    b.ativo === false && 
+    b.status !== "aguardando_pagamento"
+  );
 
   const renderBannerTable = (items: any[], showActions: boolean = false) => (
     <div className="border rounded-lg">
