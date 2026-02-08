@@ -57,9 +57,9 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
 
   const menuItems = [
     {
-      icon: ShoppingBag,
+      icon: Megaphone,
       label: "Meus Anúncios",
-      description: "Desapega e ofertas",
+      description: "Banners promocionais",
       path: `/cidade/${cidadeSlug}/meus-anuncios`,
       color: "text-primary",
       bgColor: "bg-primary/10",
