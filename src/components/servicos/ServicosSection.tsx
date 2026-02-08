@@ -1,7 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Car, ShoppingBag, Users, Bike, Scissors, Wrench, Sparkles, PawPrint, HardHat } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from "@/components/ui/command";
 
 // Import icons para grid
 import veiculosIcon from "@/assets/icons/veiculos.png";
@@ -17,19 +24,55 @@ interface ServicosSectionProps {
   cidadeSlug?: string;
 }
 
-// Outros serviços (2 linhas de 4 = 8 itens)
-const outrosServicos = [
+// Todos os serviços disponíveis para o grid (8 itens = 2 linhas de 4)
+const todosServicos = [
   { id: "entregador", nome: "Entregador", icon: entregadorIcon },
   { id: "salao", nome: "Salão", icon: salaoIcon },
   { id: "reparos", nome: "Reparos", icon: reparosIcon },
   { id: "limpeza", nome: "Limpeza", icon: limpezaIcon },
   { id: "pet", nome: "Pet", icon: petIcon },
   { id: "obras", nome: "Obras", icon: obrasIcon },
+  { id: "eletricista", nome: "Eletricista", icon: reparosIcon },
+  { id: "encanador", nome: "Encanador", icon: obrasIcon },
+];
+
+// Lista completa para autocomplete
+const todosServicosAutocomplete = [
+  { id: "veiculos", nome: "Veículos" },
+  { id: "desapega", nome: "Desapega" },
+  { id: "influenciadores", nome: "Influenciadores" },
+  { id: "entregador", nome: "Entregador" },
+  { id: "salao", nome: "Salão de Beleza" },
+  { id: "reparos", nome: "Reparos" },
+  { id: "limpeza", nome: "Limpeza" },
+  { id: "pet", nome: "Pet Shop" },
+  { id: "obras", nome: "Obras e Construção" },
+  { id: "eletricista", nome: "Eletricista" },
+  { id: "encanador", nome: "Encanador" },
+  { id: "mecanico", nome: "Mecânico" },
+  { id: "pintor", nome: "Pintor" },
+  { id: "jardineiro", nome: "Jardineiro" },
+  { id: "personal", nome: "Personal Trainer" },
+  { id: "fotografo", nome: "Fotógrafo" },
 ];
 
 const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Randomiza os serviços do grid a cada renderização inicial
+  const servicosAleatorios = useMemo(() => {
+    return [...todosServicos].sort(() => Math.random() - 0.5);
+  }, []);
+
+  // Filtra serviços para autocomplete
+  const servicosFiltrados = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    return todosServicosAutocomplete.filter((s) =>
+      s.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm]);
 
   const handleClick = (servicoId: string) => {
     if (servicoId === "veiculos") {
@@ -41,10 +84,10 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
     }
   };
 
-  const handleSearch = () => {
-    if (searchTerm.trim()) {
-      navigate(`/cidade/${cidadeSlug}/servicos?q=${encodeURIComponent(searchTerm)}`);
-    }
+  const handleSelectServico = (servicoId: string) => {
+    setSearchTerm("");
+    setIsSearchFocused(false);
+    handleClick(servicoId);
   };
 
   return (
@@ -75,17 +118,12 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
             onClick={() => handleClick("veiculos")}
             className="aspect-square rounded-2xl bg-gradient-to-br from-slate-800 to-slate-600 p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
           >
-            {/* Background decoration */}
             <div className="absolute -right-3 -bottom-3 opacity-20">
               <Car className="w-14 h-14" strokeWidth={1} />
             </div>
-            
-            {/* Icon */}
             <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <Car className="w-4 h-4 text-white" />
             </div>
-            
-            {/* Text */}
             <div className="text-left relative z-10">
               <h3 className="text-[10px] font-bold leading-tight">Veículos</h3>
               <p className="text-[8px] opacity-80 mt-0.5 line-clamp-1">Compra e venda</p>
@@ -97,17 +135,12 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
             onClick={() => handleClick("desapega")}
             className="aspect-square rounded-2xl bg-gradient-to-br from-pink-500 to-rose-400 p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
           >
-            {/* Background decoration */}
             <div className="absolute -right-3 -bottom-3 opacity-20">
               <ShoppingBag className="w-14 h-14" strokeWidth={1} />
             </div>
-            
-            {/* Icon */}
             <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <ShoppingBag className="w-4 h-4 text-white" />
             </div>
-            
-            {/* Text */}
             <div className="text-left relative z-10">
               <h3 className="text-[10px] font-bold leading-tight">Desapega</h3>
               <p className="text-[8px] opacity-80 mt-0.5 line-clamp-1">Marketplace</p>
@@ -119,17 +152,12 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
             onClick={() => handleClick("influenciadores")}
             className="aspect-square rounded-2xl bg-gradient-to-br from-purple-600 to-violet-400 p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden"
           >
-            {/* Background decoration */}
             <div className="absolute -right-3 -bottom-3 opacity-20">
               <Users className="w-14 h-14" strokeWidth={1} />
             </div>
-            
-            {/* Icon */}
             <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <Users className="w-4 h-4 text-white" />
             </div>
-            
-            {/* Text */}
             <div className="text-left relative z-10">
               <h3 className="text-[10px] font-bold leading-tight">Influencers</h3>
               <p className="text-[8px] opacity-80 mt-0.5 line-clamp-1">Parcerias</p>
@@ -138,24 +166,48 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </div>
       </div>
 
-      {/* Campo de Busca */}
-      <div className="px-5 mb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="O que você está procurando?"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            className="pl-10 bg-muted/50 border-0 rounded-xl h-11"
-          />
-        </div>
+      {/* Campo de Busca com Autocomplete */}
+      <div className="px-5 mb-4 relative">
+        <Command className="rounded-xl border-0 bg-muted/50 overflow-visible">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
+            <CommandInput
+              placeholder="O que você está procurando?"
+              value={searchTerm}
+              onValueChange={setSearchTerm}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+              className="pl-10 h-11 border-0"
+            />
+          </div>
+          {isSearchFocused && searchTerm.trim() && (
+            <CommandList className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-xl shadow-lg z-50 max-h-[200px]">
+              {servicosFiltrados.length === 0 ? (
+                <CommandEmpty>Nenhum serviço encontrado</CommandEmpty>
+              ) : (
+                <CommandGroup>
+                  {servicosFiltrados.map((servico) => (
+                    <CommandItem
+                      key={servico.id}
+                      value={servico.nome}
+                      onSelect={() => handleSelectServico(servico.id)}
+                      className="cursor-pointer"
+                    >
+                      <Search className="mr-2 h-4 w-4 text-muted-foreground" />
+                      {servico.nome}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
+            </CommandList>
+          )}
+        </Command>
       </div>
 
-      {/* Grid de Outros Serviços - 4 colunas, 2 linhas */}
+      {/* Grid de Serviços - 4 colunas, 2 linhas (8 itens aleatórios) */}
       <div className="px-5">
         <div className="grid grid-cols-4 gap-2">
-          {outrosServicos.map((item) => (
+          {servicosAleatorios.map((item) => (
             <button
               key={item.id}
               onClick={() => handleClick(item.id)}
