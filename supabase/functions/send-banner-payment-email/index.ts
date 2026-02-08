@@ -300,6 +300,19 @@ serve(async (req) => {
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+      // Fetch banner data first
+      const { data: banner, error: bannerError } = await supabase
+        .from("banner")
+        .select("id, titulo, dias_comprados, admin_user_id")
+        .eq("id", requestData.banner_id)
+        .maybeSingle();
+
+      if (bannerError || !banner) {
+        throw new Error("Banner não encontrado");
+      }
+
+      logStep("Banner found", { titulo: banner.titulo, dias_comprados: banner.dias_comprados });
+
       // Fetch payment record
       const { data: pagamento, error: pagError } = await supabase
         .from("pagamento_banner")
@@ -314,56 +327,94 @@ serve(async (req) => {
         throw new Error("Erro ao buscar dados do pagamento: " + pagError.message);
       }
 
+      // If no payment record exists, we need cidade_id from rel_cidade_banner
+      let cidadeId: string;
+      let valorTotal: number;
+      let diasComprados: number;
+
       if (!pagamento) {
-        throw new Error("Nenhum registro de pagamento encontrado para este banner");
-      }
+        logStep("No payment record found, fetching from rel_cidade_banner");
 
-      logStep("Pagamento found", { 
-        pagamento_id: pagamento.id, 
-        status: pagamento.status,
-        stripe_session_id: pagamento.stripe_session_id 
-      });
+        // Get cidade from rel_cidade_banner
+        const { data: relData, error: relError } = await supabase
+          .from("rel_cidade_banner")
+          .select("cidade_id")
+          .eq("banner_id", requestData.banner_id)
+          .maybeSingle();
 
-      // Check if payment is still pending
-      if (pagamento.status !== "pendente") {
-        throw new Error(`Pagamento já está com status: ${pagamento.status}`);
+        if (relError || !relData) {
+          throw new Error("Banner não está vinculado a nenhuma cidade. Vincule primeiro no painel admin.");
+        }
+
+        cidadeId = relData.cidade_id;
+        diasComprados = banner.dias_comprados || 7;
+
+        // Get cidade info including price
+        const { data: cidadeData, error: cidadeErr } = await supabase
+          .from("cidade")
+          .select("nome, slug, valor_dia_banner")
+          .eq("id", cidadeId)
+          .maybeSingle();
+
+        if (cidadeErr || !cidadeData) {
+          throw new Error("Cidade não encontrada");
+        }
+
+        valorTotal = (cidadeData.valor_dia_banner || 10) * diasComprados;
+
+        // We'll create a new payment record after getting user info
+        logStep("Will create new payment", { cidadeId, diasComprados, valorTotal });
+      } else {
+        logStep("Pagamento found", { 
+          pagamento_id: pagamento.id, 
+          status: pagamento.status,
+          stripe_session_id: pagamento.stripe_session_id 
+        });
+
+        // Check if payment is already completed
+        if (pagamento.status === "pago") {
+          throw new Error("Este banner já foi pago!");
+        }
+
+        cidadeId = pagamento.cidade_id;
+        valorTotal = pagamento.valor;
+        diasComprados = pagamento.dias_comprados;
       }
 
       // Check if payment link has expired - if so, we'll create a new one
-      const isExpired = pagamento.expira_em && new Date(pagamento.expira_em) < new Date();
+      const isExpired = !pagamento || !pagamento.stripe_session_id || 
+        (pagamento.expira_em && new Date(pagamento.expira_em) < new Date());
+      
       logStep("Checking expiration", { 
-        expira_em: pagamento.expira_em, 
+        hasPagamento: !!pagamento,
+        expira_em: pagamento?.expira_em, 
         isExpired,
         now: new Date().toISOString() 
       });
 
-      // Fetch banner data
-      const { data: banner, error: bannerError } = await supabase
-        .from("banner")
-        .select("titulo")
-        .eq("id", requestData.banner_id)
-        .maybeSingle();
-
-      if (bannerError || !banner) {
-        throw new Error("Banner não encontrado");
-      }
-
       // Fetch cidade data (including slug for URLs)
       const { data: cidade, error: cidadeError } = await supabase
         .from("cidade")
-        .select("nome, slug")
-        .eq("id", pagamento.cidade_id)
+        .select("nome, slug, valor_dia_banner")
+        .eq("id", cidadeId)
         .maybeSingle();
 
       if (cidadeError || !cidade) {
         throw new Error("Cidade não encontrada");
       }
 
+      // Get user_id - from pagamento if exists, otherwise from banner.admin_user_id
+      const userId = pagamento?.user_id || banner.admin_user_id;
+      
+      if (!userId) {
+        throw new Error("Não foi possível identificar o proprietário do banner");
+      }
+
       // Fetch user profile for email and name
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("nome, email")
-        .eq("id", pagamento.user_id)
+        .eq("id", userId)
         .maybeSingle();
 
       // Get email from auth.users if not in profile
@@ -371,7 +422,7 @@ serve(async (req) => {
       let userName = profile?.nome || "Cliente";
 
       if (!userEmail) {
-        const { data: authUser } = await supabase.auth.admin.getUserById(pagamento.user_id);
+        const { data: authUser } = await supabase.auth.admin.getUserById(userId);
         userEmail = authUser?.user?.email;
       }
 
@@ -382,14 +433,14 @@ serve(async (req) => {
       let paymentUrl: string;
       let finalExpiresAt: string;
 
-      // If link is not expired, use existing session
-      if (!isExpired && pagamento.stripe_session_id) {
+      // If link is not expired and pagamento exists, use existing session
+      if (!isExpired && pagamento?.stripe_session_id) {
         paymentUrl = `https://checkout.stripe.com/c/pay/${pagamento.stripe_session_id}`;
         finalExpiresAt = pagamento.expira_em || new Date(Date.now() + 3600000).toISOString();
         logStep("Using existing payment link (not expired)", { paymentUrl, expiresAt: finalExpiresAt });
       } else {
         // Link expired or doesn't exist - create a new Stripe session
-        logStep("Creating new payment link (expired or missing)", { isExpired, hasSession: !!pagamento.stripe_session_id });
+        logStep("Creating new payment link (expired or missing)", { isExpired, hasSession: !!pagamento?.stripe_session_id });
 
         // Initialize Stripe
         const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -417,9 +468,9 @@ serve(async (req) => {
                 currency: "brl",
                 product_data: {
                   name: `Banner: ${banner.titulo}`,
-                  description: `${pagamento.dias_comprados} dias de exibição em ${cidade.nome}`,
+                  description: `${diasComprados} dias de exibição em ${cidade.nome}`,
                 },
-                unit_amount: Math.round(pagamento.valor * 100),
+                unit_amount: Math.round(valorTotal * 100),
               },
               quantity: 1,
             },
@@ -430,25 +481,55 @@ serve(async (req) => {
           expires_at: expiresAt,
           metadata: {
             banner_id: requestData.banner_id,
-            cidade_id: pagamento.cidade_id,
-            user_id: pagamento.user_id,
-            dias_comprados: pagamento.dias_comprados.toString(),
+            cidade_id: cidadeId,
+            user_id: userId,
+            dias_comprados: diasComprados.toString(),
           },
         });
 
         logStep("New Stripe session created", { sessionId: session.id });
 
-        // Update payment record with new session
-        const { error: updateError } = await supabase
-          .from("pagamento_banner")
-          .update({
-            stripe_session_id: session.id,
-            expira_em: expiresAtDate.toISOString(),
-          })
-          .eq("id", pagamento.id);
+        // Update or create payment record
+        if (pagamento) {
+          // Update existing payment record
+          const { error: updateError } = await supabase
+            .from("pagamento_banner")
+            .update({
+              stripe_session_id: session.id,
+              expira_em: expiresAtDate.toISOString(),
+            })
+            .eq("id", pagamento.id);
 
-        if (updateError) {
-          logStep("Error updating payment record", { error: updateError.message });
+          if (updateError) {
+            logStep("Error updating payment record", { error: updateError.message });
+          }
+        } else {
+          // Create new payment record
+          const { error: insertError } = await supabase
+            .from("pagamento_banner")
+            .insert({
+              banner_id: requestData.banner_id,
+              user_id: userId,
+              cidade_id: cidadeId,
+              valor: valorTotal,
+              dias_comprados: diasComprados,
+              valor_dia: cidade.valor_dia_banner || 10,
+              stripe_session_id: session.id,
+              status: "pendente",
+              expira_em: expiresAtDate.toISOString(),
+            });
+
+          if (insertError) {
+            logStep("Error creating payment record", { error: insertError.message });
+          } else {
+            logStep("New payment record created");
+          }
+
+          // Update banner status
+          await supabase
+            .from("banner")
+            .update({ status: "aguardando_pagamento" })
+            .eq("id", requestData.banner_id);
         }
 
         paymentUrl = session.url || `https://checkout.stripe.com/c/pay/${session.id}`;
@@ -462,8 +543,8 @@ serve(async (req) => {
         userName: userName,
         bannerTitulo: banner.titulo || "Sem título",
         cidadeNome: cidade.nome,
-        diasComprados: pagamento.dias_comprados,
-        valorTotal: pagamento.valor,
+        diasComprados: diasComprados,
+        valorTotal: valorTotal,
         paymentUrl: paymentUrl,
         expiresAt: finalExpiresAt,
       };
