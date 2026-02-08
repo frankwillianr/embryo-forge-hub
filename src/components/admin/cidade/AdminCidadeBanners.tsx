@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Megaphone, Clock, CheckCircle, XCircle, CreditCard } from "lucide-react";
+import { Megaphone, Clock, CheckCircle, XCircle, CreditCard, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import BannerEditModal from "./BannerEditModal";
 
 interface AdminCidadeBannersProps {
   cidadeId: string;
@@ -21,6 +23,7 @@ interface AdminCidadeBannersProps {
 
 const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
   const queryClient = useQueryClient();
+  const [editingBanner, setEditingBanner] = useState<any>(null);
 
   const { data: banners, isLoading } = useQuery({
     queryKey: ["admin-cidade-banners", cidadeId],
@@ -97,13 +100,13 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
             <TableHead>Título</TableHead>
             <TableHead>Dias</TableHead>
             <TableHead>Criado em</TableHead>
-            {showActions && <TableHead className="w-[200px]">Ações</TableHead>}
+            <TableHead className="w-[280px]">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={showActions ? 5 : 4} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                 Nenhum banner nesta categoria
               </TableCell>
             </TableRow>
@@ -134,42 +137,52 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
                 <TableCell className="text-muted-foreground">
                   {new Date(item.created_at).toLocaleDateString("pt-BR")}
                 </TableCell>
-                {showActions && (
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                        onClick={() =>
-                          updateStatusMutation.mutate({
-                            bannerId: item.id,
-                            ativo: true,
-                          })
-                        }
-                        disabled={updateStatusMutation.isPending}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Ativar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() =>
-                          updateStatusMutation.mutate({
-                            bannerId: item.id,
-                            ativo: false,
-                          })
-                        }
-                        disabled={updateStatusMutation.isPending}
-                      >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Desativar
-                      </Button>
-                    </div>
-                  </TableCell>
-                )}
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingBanner(item)}
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                    {showActions && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          onClick={() =>
+                            updateStatusMutation.mutate({
+                              bannerId: item.id,
+                              ativo: true,
+                            })
+                          }
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Ativar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() =>
+                            updateStatusMutation.mutate({
+                              bannerId: item.id,
+                              ativo: false,
+                            })
+                          }
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Desativar
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
             ))
           )}
@@ -241,6 +254,14 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
           {renderBannerTable(inativos, true)}
         </TabsContent>
       </Tabs>
+
+      {/* Modal de edição */}
+      <BannerEditModal
+        banner={editingBanner}
+        cidadeId={cidadeId}
+        open={!!editingBanner}
+        onOpenChange={(open) => !open && setEditingBanner(null)}
+      />
     </div>
   );
 };
