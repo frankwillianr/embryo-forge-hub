@@ -101,7 +101,7 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
         </button>
       </div>
       <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
-        Fique por dentro das últimas notícias da sua cidade
+        Fique por dentro das últimas notícias da cidade
       </p>
 
       {/* Scroll horizontal */}
