@@ -262,10 +262,15 @@ const NovoBannerPage = () => {
       }
 
       // 6. Link banner to city
-      await supabase.from("rel_cidade_banner").insert({
+      const { error: relCidadeError } = await supabase.from("rel_cidade_banner").insert({
         cidade_id: cidade.id,
         banner_id: bannerData.id,
       });
+
+      if (relCidadeError) {
+        console.error("Error linking banner to city:", relCidadeError);
+        throw new Error(`Erro ao vincular banner à cidade: ${relCidadeError.message}`);
+      }
 
       // 7. Create exhibition dates
       const diasExibicao = [];
@@ -277,7 +282,13 @@ const NovoBannerPage = () => {
           utilizado: false,
         });
       }
-      await supabase.from("rel_banner_dias").insert(diasExibicao);
+      
+      const { error: diasError } = await supabase.from("rel_banner_dias").insert(diasExibicao);
+      
+      if (diasError) {
+        console.error("Error creating exhibition dates:", diasError);
+        throw new Error(`Erro ao criar datas de exibição: ${diasError.message}`);
+      }
 
       // 8. Create Stripe payment session via edge function
       const valorTotal = formData.dias_comprados * precoPorDia;
