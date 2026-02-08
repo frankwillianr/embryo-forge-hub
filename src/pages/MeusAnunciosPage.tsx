@@ -106,10 +106,18 @@ const MeusAnunciosPage = () => {
 
   // Função para reenviar email de pagamento (gera novo link se expirado)
   const handleResendEmail = async (bannerId: string) => {
+    if (!cidade?.id) {
+      toast.error("Cidade não identificada");
+      return;
+    }
+    
     setSendingEmail(bannerId);
     try {
       const { data, error } = await supabase.functions.invoke("send-banner-payment-email", {
-        body: { banner_id: bannerId },
+        body: { 
+          banner_id: bannerId,
+          cidade_id: cidade.id,  // Passa a cidade atual
+        },
       });
 
       if (error) throw error;
