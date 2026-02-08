@@ -36,12 +36,13 @@ import {
   XCircle,
   Clock,
   CreditCard,
-  Eye,
+  Pencil,
   Filter,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import EmpresaEditModal from "./EmpresaEditModal";
 
 type EmpresaStatus = "aguardando_pagamento" | "pendente" | "ativo" | "recusado" | "expirado";
 
@@ -95,6 +96,7 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
   const [activeFilter, setActiveFilter] = useState<"all" | "ativos_hoje" | "expirados">("all");
   const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null);
   const [actionType, setActionType] = useState<"aprovar" | "recusar" | null>(null);
+  const [editingEmpresaId, setEditingEmpresaId] = useState<string | null>(null);
 
   // Fetch empresas for this city
   const { data: empresas, isLoading } = useQuery({
@@ -352,8 +354,12 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
                             </Button>
                           </>
                         )}
-                        <Button size="sm" variant="ghost">
-                          <Eye className="h-4 w-4" />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingEmpresaId(empresa.id)}
+                        >
+                          <Pencil className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -396,6 +402,14 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Modal */}
+      <EmpresaEditModal
+        empresaId={editingEmpresaId}
+        cidadeId={cidadeId}
+        open={!!editingEmpresaId}
+        onOpenChange={(open) => !open && setEditingEmpresaId(null)}
+      />
     </div>
   );
 };
