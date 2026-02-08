@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Home, Newspaper, Film, Megaphone, Menu, ArrowLeft, Bell, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CidadeBanner from "@/components/CidadeBanner";
 import HomeSection from "@/components/sections/HomeSection";
-import JornalSection from "@/components/sections/JornalSection";
 import CinemaSection from "@/components/sections/CinemaSection";
 import AloPrefeituraSection from "@/components/sections/AloPrefeituraSection";
 import MenuSheet from "@/components/menu/MenuSheet";
@@ -15,24 +14,23 @@ import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-type TabType = "home" | "jornal" | "cinema" | "prefeitura";
+type TabType = "home" | "cinema" | "prefeitura";
 
 const navItems = [
   { id: "home" as TabType, title: "Home", icon: Home },
-  { id: "jornal" as TabType, title: "Jornal", icon: Newspaper },
   { id: "cinema" as TabType, title: "Cinema", icon: Film },
   { id: "prefeitura" as TabType, title: "Prefeitura", icon: Megaphone },
 ];
 
 const sectionTitles: Record<TabType, string> = {
   home: "Home",
-  jornal: "jornal da cidade",
   cinema: "Cinema",
   prefeitura: "Alô Prefeitura",
 };
 
 const CidadePage = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const [menuOpen, setMenuOpen] = useState(false);
   const [testEmail, setTestEmail] = useState("");
@@ -143,8 +141,6 @@ const CidadePage = () => {
     switch (activeTab) {
       case "home":
         return <HomeSection cidadeSlug={slug} />;
-      case "jornal":
-        return <JornalSection cidadeSlug={slug} />;
       case "cinema":
         return <CinemaSection cidadeSlug={slug} />;
       case "prefeitura":
@@ -231,15 +227,8 @@ const CidadePage = () => {
           {/* Dark Pill Container */}
           <div className="flex items-center gap-2 bg-[#1a1a2e] rounded-full py-2 px-5 pl-12 shadow-2xl">
             <button
-              onClick={() => {
-                setActiveTab("jornal");
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
-                activeTab === "jornal"
-                  ? "text-primary"
-                  : "text-gray-400 hover:text-white"
-              }`}
+              onClick={() => navigate(`/cidade/${slug}/jornal`)}
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 text-gray-400 hover:text-white"
             >
               <Newspaper className="h-5 w-5" />
               <span className="text-[9px] font-medium">Jornal</span>
