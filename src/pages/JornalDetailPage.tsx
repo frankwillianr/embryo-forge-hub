@@ -270,36 +270,38 @@ const JornalDetailPage = () => {
 
       {/* Media - Imagens com swipe */}
       {imagens.length > 0 && (
-        <div 
-          ref={containerRef}
-          className="relative overflow-hidden"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={(e) => handleTouchEnd(e, imagens.length)}
-        >
+        <div>
           <div 
-            className="flex transition-transform duration-300 ease-out"
-            style={{ 
-              transform: `translateX(-${currentImageIndex * 100}%)`,
-              width: `${imagens.length * 100}%`
-            }}
+            ref={containerRef}
+            className="relative overflow-hidden"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={(e) => handleTouchEnd(e, imagens.length)}
           >
-            {imagens.map((img, idx) => (
-              <div 
-                key={img.id} 
-                className="flex-shrink-0"
-                style={{ width: `${100 / imagens.length}%` }}
-              >
-                <img
-                  src={img.imagem_url}
-                  alt={`${jornal.titulo} - Imagem ${idx + 1}`}
-                  className="w-full aspect-video object-cover"
-                />
-              </div>
-            ))}
+            <div 
+              className="flex transition-transform duration-300 ease-out"
+              style={{ 
+                transform: `translateX(-${currentImageIndex * 100}%)`,
+                width: `${imagens.length * 100}%`
+              }}
+            >
+              {imagens.map((img, idx) => (
+                <div 
+                  key={img.id} 
+                  className="flex-shrink-0"
+                  style={{ width: `${100 / imagens.length}%` }}
+                >
+                  <img
+                    src={img.imagem_url}
+                    alt={`${jornal.titulo} - Imagem ${idx + 1}`}
+                    className="w-full aspect-video object-cover"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
-          {/* Dots de navegação */}
+          {/* Dots de navegação - abaixo da imagem */}
           {imagens.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+            <div className="flex justify-center gap-1.5 py-3">
               {imagens.map((_, idx) => (
                 <button
                   key={idx}
@@ -307,7 +309,7 @@ const JornalDetailPage = () => {
                   className={`w-2 h-2 rounded-full transition-all duration-200 ${
                     idx === currentImageIndex 
                       ? "bg-primary w-4" 
-                      : "bg-white/60 hover:bg-white/80"
+                      : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
                   }`}
                 />
               ))}
