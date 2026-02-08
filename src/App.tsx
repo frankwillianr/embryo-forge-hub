@@ -39,6 +39,7 @@ import NovoBannerPage from "@/pages/NovoBannerPage";
 import AuthPage from "@/pages/AuthPage";
 import MeusAnunciosPage from "@/pages/MeusAnunciosPage";
 import MinhasEmpresasPage from "@/pages/MinhasEmpresasPage";
+import EditarEmpresaPage from "@/pages/EditarEmpresaPage";
 import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -148,6 +149,7 @@ const App = () => (
             {/* Minha Conta */}
             <Route path="/cidade/:slug/meus-anuncios" element={<MeusAnunciosPage />} />
             <Route path="/cidade/:slug/minhas-empresas" element={<MinhasEmpresasPage />} />
+            <Route path="/cidade/:slug/minhas-empresas/:empresaId/editar" element={<EditarEmpresaPage />} />
 
             {/* Auth */}
             <Route path="/cidade/:slug/auth" element={<AuthPage />} />

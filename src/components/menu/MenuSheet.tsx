@@ -67,7 +67,7 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
     {
       icon: Building2,
       label: "Empresas",
-      description: "Guia de serviços",
+      description: "Minhas empresas",
       path: `/cidade/${cidadeSlug}/minhas-empresas`,
       color: "text-purple-600",
       bgColor: "bg-purple-500/10",
