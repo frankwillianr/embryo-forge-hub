@@ -231,7 +231,10 @@ const CidadePage = () => {
           {/* Dark Pill Container */}
           <div className="flex items-center gap-2 bg-[#1a1a2e] rounded-full py-2 px-5 pl-12 shadow-2xl">
             <button
-              onClick={() => setActiveTab("jornal")}
+              onClick={() => {
+                setActiveTab("jornal");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
                 activeTab === "jornal"
                   ? "text-primary"
@@ -243,7 +246,10 @@ const CidadePage = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab("cinema")}
+              onClick={() => {
+                setActiveTab("cinema");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
                 activeTab === "cinema"
                   ? "text-primary"
@@ -255,7 +261,10 @@ const CidadePage = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab("prefeitura")}
+              onClick={() => {
+                setActiveTab("prefeitura");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
               className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
                 activeTab === "prefeitura"
                   ? "text-primary"
