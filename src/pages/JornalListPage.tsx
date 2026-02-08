@@ -106,14 +106,19 @@ const JornalListPage = () => {
               const hora = dataPublicacao.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
               const data = dataPublicacao.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
               
+              // Extrai um resumo da descrição (primeiros 100 caracteres)
+              const resumo = jornal.descricao 
+                ? jornal.descricao.substring(0, 100).trim() + (jornal.descricao.length > 100 ? "..." : "")
+                : null;
+              
               return (
                 <div
                   key={jornal.id}
                   onClick={() => navigate(`/cidade/${slug}/jornal/${jornal.id}`)}
-                  className="flex gap-3 cursor-pointer group"
+                  className="flex gap-4 cursor-pointer group bg-card rounded-2xl p-3 border border-border/40 shadow-sm hover:shadow-md transition-shadow"
                 >
                   {/* Thumbnail */}
-                  <div className="w-24 h-20 rounded-xl overflow-hidden bg-muted/30 flex-shrink-0">
+                  <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted/30 flex-shrink-0">
                     {primeiraImagem ? (
                       <img
                         src={primeiraImagem}
@@ -121,18 +126,30 @@ const JornalListPage = () => {
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-muted/20 to-muted/40" />
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+                        <span className="text-3xl">📰</span>
+                      </div>
                     )}
                   </div>
                   {/* Content */}
-                  <div className="flex-1 min-w-0 py-0.5">
-                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">
-                      {data} às {hora}
-                      {jornal.fonte && <span className="ml-1.5">· {jornal.fonte}</span>}
-                    </p>
-                    <h3 className="text-[13px] font-medium text-foreground line-clamp-2 leading-tight tracking-tight">
-                      {jornal.titulo}
-                    </h3>
+                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-1.5">
+                        {data} às {hora}
+                        {jornal.fonte && <span className="ml-1.5 text-primary/70">· {jornal.fonte}</span>}
+                      </p>
+                      <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug mb-1.5">
+                        {jornal.titulo}
+                      </h3>
+                      {resumo && (
+                        <p className="text-xs text-muted-foreground/80 line-clamp-2 leading-relaxed">
+                          {resumo}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] text-primary font-medium">Ler mais →</span>
+                    </div>
                   </div>
                 </div>
               );
