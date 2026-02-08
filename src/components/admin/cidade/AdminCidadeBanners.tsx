@@ -53,18 +53,26 @@ const AdminCidadeBanners = ({ cidadeId }: AdminCidadeBannersProps) => {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ bannerId, ativo }: { bannerId: string; ativo: boolean }) => {
+      // Update both 'ativo' field and 'status' field for consistency
+      const newStatus = ativo ? "ativo" : "inativo";
+      
       const { error } = await supabase
         .from("banner")
-        .update({ ativo })
+        .update({ 
+          ativo,
+          status: newStatus 
+        })
         .eq("id", bannerId);
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-cidade-banners", cidadeId] });
-      toast.success("Status atualizado com sucesso!");
+      const action = variables.ativo ? "ativado" : "desativado";
+      toast.success(`Banner ${action} com sucesso!`);
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Erro ao atualizar status:", error);
       toast.error("Erro ao atualizar status: " + error.message);
     },
   });
