@@ -11,6 +11,7 @@ import AdminCidadeDetail from "@/pages/admin/AdminCidadeDetail";
 import AdminJornal from "@/pages/admin/AdminJornal";
 import AdminCinema from "@/pages/admin/AdminCinema";
 import AdminAloPrefeitura from "@/pages/admin/AdminAloPrefeitura";
+import AdminEmpresas from "@/pages/admin/AdminEmpresas";
 import CidadePage from "@/pages/CidadePage";
 import BannerDetailPage from "@/pages/BannerDetailPage";
 import JornalDetailPage from "@/pages/JornalDetailPage";
@@ -37,6 +38,7 @@ import AnunciarPage from "@/pages/AnunciarPage";
 import NovoBannerPage from "@/pages/NovoBannerPage";
 import AuthPage from "@/pages/AuthPage";
 import MeusAnunciosPage from "@/pages/MeusAnunciosPage";
+import MinhasEmpresasPage from "@/pages/MinhasEmpresasPage";
 import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -106,6 +108,14 @@ const App = () => (
               </AdminLayout>
             }
           />
+          <Route
+            path="/admin/empresas"
+            element={
+              <AdminLayout>
+                <AdminEmpresas />
+              </AdminLayout>
+            }
+          />
 
           {/* Alô Prefeitura public routes */}
           <Route path="/cidade/:slug/alo-prefeitura" element={<AloPrefeituraListPage />} />
@@ -145,6 +155,7 @@ const App = () => (
 
             {/* Minha Conta */}
             <Route path="/cidade/:slug/meus-anuncios" element={<MeusAnunciosPage />} />
+            <Route path="/cidade/:slug/minhas-empresas" element={<MinhasEmpresasPage />} />
 
             {/* Auth */}
             <Route path="/cidade/:slug/auth" element={<AuthPage />} />
