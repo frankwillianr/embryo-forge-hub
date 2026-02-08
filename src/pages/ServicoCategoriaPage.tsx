@@ -46,7 +46,7 @@ const ServicoCategoriaPage = () => {
 
   const handleAddEmpresa = () => {
     if (!user) {
-      navigate(`/auth?redirect=/cidade/${slug}/servicos/${categoriaId}/novo`);
+      navigate(`/cidade/${slug}/auth?redirect=/cidade/${slug}/servicos/${categoriaId}/novo`);
       return;
     }
     navigate(`/cidade/${slug}/servicos/${categoriaId}/novo`);
