@@ -70,11 +70,41 @@ serve(async (req) => {
 
       // Only process if payment is successful
       if (session.payment_status === "paid") {
+        const paymentType = session.metadata?.type;
         const bannerId = session.metadata?.banner_id;
+        const empresaId = session.metadata?.empresa_id;
         const cidadeId = session.metadata?.cidade_id;
         const userId = session.metadata?.user_id;
         const diasComprados = parseInt(session.metadata?.dias_comprados || "0");
 
+        // Handle EMPRESA payment
+        if (paymentType === "empresa" && empresaId) {
+          logStep("Processing empresa payment", { empresaId, cidadeId, userId });
+
+          // Update empresa status to "pendente" (awaiting admin review)
+          const { error: empresaError } = await supabaseClient
+            .from("rel_cidade_servico_empresa")
+            .update({ 
+              status: "pendente",
+              data_inicio: new Date().toISOString().split("T")[0],
+              data_fim: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+            })
+            .eq("id", empresaId);
+
+          if (empresaError) {
+            logStep("Error updating empresa status", { error: empresaError });
+            throw new Error(`Failed to update empresa: ${empresaError.message}`);
+          }
+          
+          logStep("Empresa payment processed successfully - status updated to 'pendente'");
+          
+          return new Response(JSON.stringify({ received: true, type: "empresa" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          });
+        }
+
+        // Handle BANNER payment
         if (!bannerId) {
           logStep("No banner_id in metadata, skipping");
           return new Response(JSON.stringify({ received: true }), {
