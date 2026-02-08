@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, ThumbsUp, ThumbsDown, Share2, ExternalLink } from "lucide-react";
+import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { Jornal, JornalImagem } from "@/types/jornal";
 
@@ -22,12 +25,31 @@ const getFingerprint = () => {
   return hash.toString();
 };
 
+interface Comentario {
+  id: string;
+  jornal_id: string;
+  user_id: string;
+  comentario: string;
+  created_at: string;
+  profile?: {
+    nome: string;
+    foto_url: string | null;
+  };
+}
+
 const JornalDetailPage = () => {
   const { slug, jornalId } = useParams<{ slug: string; jornalId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user, profile } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [novoComentario, setNovoComentario] = useState("");
+  const [mostrarFormComentario, setMostrarFormComentario] = useState(false);
   const fingerprint = getFingerprint();
+
+  // Touch handling for swipe
+  const touchStartX = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Busca dados do jornal
   const { data: jornal, isLoading } = useQuery({
@@ -88,48 +110,130 @@ const JornalDetailPage = () => {
     enabled: !!jornalId,
   });
 
-  // Mutation para reagir
+  // Busca comentários
+  const { data: comentarios = [] } = useQuery({
+    queryKey: ["jornal-comentarios", jornalId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rel_cidade_jornal_comentarios")
+        .select(`
+          id,
+          jornal_id,
+          user_id,
+          comentario,
+          created_at,
+          profiles:user_id (nome, foto_url)
+        `)
+        .eq("jornal_id", jornalId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map((c: any) => ({
+        ...c,
+        profile: c.profiles,
+      })) as Comentario[];
+    },
+    enabled: !!jornalId,
+  });
+
+  // Mutation para reagir - CORRIGIDO
   const reactMutation = useMutation({
     mutationFn: async (tipo: "like" | "dislike") => {
+      // Se já tem a mesma reação, remove
       if (userReaction === tipo) {
-        // Remove reação
-        await supabase
+        const { error } = await supabase
           .from("rel_cidade_jornal_reacoes")
           .delete()
           .eq("jornal_id", jornalId)
           .eq("user_fingerprint", fingerprint);
+        if (error) throw error;
+        return null; // Retorna null indicando que removeu
       } else {
-        // Upsert reação
-        await supabase
+        // Upsert reação (adiciona ou troca)
+        const { error } = await supabase
           .from("rel_cidade_jornal_reacoes")
           .upsert(
             { jornal_id: jornalId, user_fingerprint: fingerprint, tipo },
             { onConflict: "jornal_id,user_fingerprint" }
           );
+        if (error) throw error;
+        return tipo;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jornal-detail", jornalId] });
-      queryClient.invalidateQueries({ queryKey: ["jornal-reaction", jornalId] });
+      queryClient.invalidateQueries({ queryKey: ["jornal-reaction", jornalId, fingerprint] });
     },
   });
 
-  const handleShare = async () => {
-    try {
-      await navigator.share({
-        title: jornal?.titulo,
-        text: jornal?.descricao,
-        url: window.location.href,
-      });
-    } catch {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copiado!");
+  // Mutation para comentar
+  const comentarMutation = useMutation({
+    mutationFn: async (comentario: string) => {
+      if (!user) throw new Error("Não autenticado");
+      
+      const { error } = await supabase
+        .from("rel_cidade_jornal_comentarios")
+        .insert({
+          jornal_id: jornalId,
+          user_id: user.id,
+          comentario,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jornal-comentarios", jornalId] });
+      setNovoComentario("");
+      setMostrarFormComentario(false);
+      toast.success("Comentário publicado!");
+    },
+    onError: () => {
+      toast.error("Erro ao publicar comentário");
+    },
+  });
+
+  const handleComentarClick = () => {
+    if (!user) {
+      navigate(`/cidade/${slug}/auth`);
+      return;
     }
+    setMostrarFormComentario(true);
+  };
+
+  const handleEnviarComentario = () => {
+    if (!novoComentario.trim()) {
+      toast.error("Digite um comentário");
+      return;
+    }
+    comentarMutation.mutate(novoComentario.trim());
   };
 
   const getYouTubeEmbedUrl = (url: string) => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
     return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  };
+
+  // Touch handlers for swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent, totalImages: number) => {
+    if (touchStartX.current === null) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX;
+    
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && currentImageIndex < totalImages - 1) {
+        setCurrentImageIndex((prev) => prev + 1);
+      } else if (diff < 0 && currentImageIndex > 0) {
+        setCurrentImageIndex((prev) => prev - 1);
+      }
+    }
+    
+    touchStartX.current = null;
   };
 
   if (isLoading) {
@@ -151,6 +255,8 @@ const JornalDetailPage = () => {
 
   const imagens = jornal.imagens || [];
   const embedUrl = jornal.video_url ? getYouTubeEmbedUrl(jornal.video_url) : null;
+  // Se não for URL do YouTube, pode ser vídeo direto
+  const isDirectVideo = jornal.video_url && !embedUrl;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -162,22 +268,38 @@ const JornalDetailPage = () => {
         <span className="text-sm text-muted-foreground">Notícia</span>
       </header>
 
-      {/* Media - Imagens ou Vídeo */}
+      {/* Media - Imagens com swipe ou Vídeo */}
       {imagens.length > 0 ? (
-        <div className="relative">
-          <img
-            src={imagens[currentImageIndex]?.imagem_url}
-            alt={jornal.titulo}
-            className="w-full aspect-video object-cover"
-          />
+        <div 
+          ref={containerRef}
+          className="relative overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={(e) => handleTouchEnd(e, imagens.length)}
+        >
+          <div 
+            className="flex transition-transform duration-300 ease-out"
+            style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+          >
+            {imagens.map((img, idx) => (
+              <img
+                key={img.id}
+                src={img.imagem_url}
+                alt={`${jornal.titulo} - Imagem ${idx + 1}`}
+                className="w-full aspect-video object-cover flex-shrink-0"
+              />
+            ))}
+          </div>
+          {/* Dots de navegação */}
           {imagens.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
               {imagens.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentImageIndex(idx)}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    idx === currentImageIndex ? "bg-primary" : "bg-white/50"
+                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                    idx === currentImageIndex 
+                      ? "bg-primary w-4" 
+                      : "bg-white/60 hover:bg-white/80"
                   }`}
                 />
               ))}
@@ -190,6 +312,13 @@ const JornalDetailPage = () => {
           className="w-full aspect-video"
           allowFullScreen
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        />
+      ) : isDirectVideo ? (
+        <video
+          src={jornal.video_url!}
+          className="w-full aspect-video object-contain bg-black"
+          controls
+          preload="metadata"
         />
       ) : (
         <div className="w-full aspect-video bg-muted flex items-center justify-center">
@@ -217,7 +346,7 @@ const JornalDetailPage = () => {
         </p>
 
         {/* Ações */}
-        <div className="flex items-center gap-4 pt-4 border-t border-border">
+        <div className="flex items-center gap-3 pt-4 border-t border-border">
           <Button
             variant={userReaction === "like" ? "default" : "outline"}
             size="sm"
@@ -236,11 +365,96 @@ const JornalDetailPage = () => {
             <ThumbsDown className="h-4 w-4 mr-1" />
             {jornal.dislikes_count}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleShare} className="ml-auto">
-            <Share2 className="h-4 w-4 mr-1" />
-            Compartilhar
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleComentarClick}
+            className="ml-auto"
+          >
+            <MessageCircle className="h-4 w-4 mr-1" />
+            Comentar
           </Button>
         </div>
+
+        {/* Form de Comentário */}
+        {mostrarFormComentario && (
+          <div className="space-y-3 p-4 bg-muted/30 rounded-xl border border-border">
+            <div className="flex items-start gap-3">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={profile?.foto_url || undefined} />
+                <AvatarFallback className="text-xs">
+                  {profile?.nome?.charAt(0).toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground mb-2">
+                  {profile?.nome?.split(" ")[0] || "Usuário"}
+                </p>
+                <Textarea
+                  placeholder="Escreva seu comentário..."
+                  value={novoComentario}
+                  onChange={(e) => setNovoComentario(e.target.value)}
+                  rows={3}
+                  className="resize-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  setMostrarFormComentario(false);
+                  setNovoComentario("");
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                size="sm"
+                onClick={handleEnviarComentario}
+                disabled={comentarMutation.isPending || !novoComentario.trim()}
+                className="bg-[#331D4A] hover:bg-[#331D4A]/90"
+              >
+                {comentarMutation.isPending ? "Enviando..." : "Publicar"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Lista de Comentários */}
+        {comentarios.length > 0 && (
+          <div className="space-y-4 pt-4 border-t border-border">
+            <h3 className="text-sm font-semibold text-foreground">
+              Comentários ({comentarios.length})
+            </h3>
+            <div className="space-y-4">
+              {comentarios.map((comentario) => (
+                <div key={comentario.id} className="flex gap-3">
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarImage src={comentario.profile?.foto_url || undefined} />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      {comentario.profile?.nome?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-foreground">
+                        {comentario.profile?.nome || "Usuário"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {format(new Date(comentario.created_at), "dd/MM 'às' HH:mm")}
+                      </span>
+                    </div>
+                    <p className="text-sm text-foreground/80 mt-1 break-words">
+                      {comentario.comentario}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
