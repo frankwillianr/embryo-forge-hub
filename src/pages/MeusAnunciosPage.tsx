@@ -112,13 +112,21 @@ const MeusAnunciosPage = () => {
     }
     
     setSendingEmail(bannerId);
+    console.log("[MeusAnuncios] Sending email request:", { 
+      banner_id: bannerId, 
+      cidade_id: cidade.id,
+      cidadeNome: cidade.nome 
+    });
+    
     try {
       const { data, error } = await supabase.functions.invoke("send-banner-payment-email", {
         body: { 
           banner_id: bannerId,
-          cidade_id: cidade.id,  // Passa a cidade atual
+          cidade_id: cidade.id,
         },
       });
+      
+      console.log("[MeusAnuncios] Function response:", { data, error });
 
       if (error) throw error;
       

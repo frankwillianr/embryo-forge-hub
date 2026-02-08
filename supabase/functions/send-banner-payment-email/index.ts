@@ -287,6 +287,7 @@ serve(async (req) => {
     const requestData: PaymentEmailRequest = await req.json();
     logStep("Request received", { 
       banner_id: requestData.banner_id, 
+      cidade_id: requestData.cidade_id,
       to: requestData.to,
       bannerTitulo: requestData.bannerTitulo 
     });
@@ -334,18 +335,30 @@ serve(async (req) => {
       let diasComprados: number;
 
       if (!pagamento) {
-        logStep("No payment record found");
+        logStep("No payment record found, checking for cidade_id in request", { 
+          requestCidadeId: requestData.cidade_id,
+          hasCidadeId: !!requestData.cidade_id
+        });
 
         // Try to get cidade_id from request first, then from rel_cidade_banner
-        let foundCidadeId: string | null = requestData.cidade_id || null;
+        let foundCidadeId: string | null = null;
+        
+        // Check request first
+        if (requestData.cidade_id && requestData.cidade_id.trim() !== '') {
+          foundCidadeId = requestData.cidade_id;
+          logStep("Using cidade_id from request", { foundCidadeId });
+        }
 
+        // If not in request, try rel_cidade_banner
         if (!foundCidadeId) {
-          // Get cidade from rel_cidade_banner
+          logStep("Cidade_id not in request, trying rel_cidade_banner");
           const { data: relData, error: relError } = await supabase
             .from("rel_cidade_banner")
             .select("cidade_id")
             .eq("banner_id", requestData.banner_id)
             .maybeSingle();
+
+          logStep("rel_cidade_banner result", { relData, relError: relError?.message });
 
           if (relData) {
             foundCidadeId = relData.cidade_id;
@@ -353,6 +366,7 @@ serve(async (req) => {
         }
 
         if (!foundCidadeId) {
+          logStep("ERROR: No cidade_id found anywhere!");
           throw new Error("Banner não está vinculado a nenhuma cidade. Vincule primeiro no painel admin.");
         }
 
