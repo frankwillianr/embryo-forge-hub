@@ -11,7 +11,7 @@ import AdminCidadeDetail from "@/pages/admin/AdminCidadeDetail";
 import AdminJornal from "@/pages/admin/AdminJornal";
 import AdminCinema from "@/pages/admin/AdminCinema";
 import AdminAloPrefeitura from "@/pages/admin/AdminAloPrefeitura";
-import AdminEmpresas from "@/pages/admin/AdminEmpresas";
+
 import CidadePage from "@/pages/CidadePage";
 import BannerDetailPage from "@/pages/BannerDetailPage";
 import JornalDetailPage from "@/pages/JornalDetailPage";
@@ -105,14 +105,6 @@ const App = () => (
             element={
               <AdminLayout>
                 <AdminAloPrefeitura />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/admin/empresas"
-            element={
-              <AdminLayout>
-                <AdminEmpresas />
               </AdminLayout>
             }
           />
