@@ -456,19 +456,19 @@ const NovaEmpresaPage = () => {
         {cidade?.valor_empresa_anual && cidade.valor_empresa_anual > 0 && (
           <EmpresaPricingInfo valorAnual={cidade.valor_empresa_anual} />
         )}
-      </main>
 
-      {/* Footer */}
-      <div className="sticky bottom-0 p-4 border-t border-border bg-card">
-        <Button
-          className="w-full bg-[#331D4A] hover:bg-[#331D4A]/90 text-white rounded-xl"
-          size="lg"
-          disabled={!isValid}
-          onClick={() => setShowPreviewModal(true)}
-        >
-          Cadastrar empresa
-        </Button>
-      </div>
+        {/* Botão de cadastro */}
+        <div className="pt-4 pb-8">
+          <Button
+            className="w-full bg-[#331D4A] hover:bg-[#331D4A]/90 text-white rounded-xl"
+            size="lg"
+            disabled={!isValid}
+            onClick={() => setShowPreviewModal(true)}
+          >
+            Cadastrar empresa
+          </Button>
+        </div>
+      </main>
 
       {/* Preview Modal */}
       <EmpresaPreviewModal
