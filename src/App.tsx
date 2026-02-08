@@ -36,6 +36,7 @@ import NovoPetPage from "@/pages/NovoPetPage";
 import AnunciarPage from "@/pages/AnunciarPage";
 import NovoBannerPage from "@/pages/NovoBannerPage";
 import AuthPage from "@/pages/AuthPage";
+import MeusAnunciosPage from "@/pages/MeusAnunciosPage";
 import NotFound from "@/pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -141,6 +142,9 @@ const App = () => (
             {/* Anunciar Hub */}
             <Route path="/cidade/:slug/anunciar" element={<AnunciarPage />} />
             <Route path="/cidade/:slug/banner/novo" element={<NovoBannerPage />} />
+
+            {/* Minha Conta */}
+            <Route path="/cidade/:slug/meus-anuncios" element={<MeusAnunciosPage />} />
 
             {/* Auth */}
             <Route path="/cidade/:slug/auth" element={<AuthPage />} />
