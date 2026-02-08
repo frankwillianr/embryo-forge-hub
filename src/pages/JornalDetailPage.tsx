@@ -8,6 +8,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { Jornal, JornalImagem } from "@/types/jornal";
@@ -488,14 +499,34 @@ const JornalDetailPage = () => {
                         {format(new Date(comentario.created_at), "dd/MM 'às' HH:mm")}
                       </span>
                       {user?.id === comentario.user_id && (
-                        <button
-                          onClick={() => deletarComentarioMutation.mutate(comentario.id)}
-                          disabled={deletarComentarioMutation.isPending}
-                          className="ml-auto text-muted-foreground hover:text-destructive transition-colors p-1"
-                          title="Excluir comentário"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button
+                              disabled={deletarComentarioMutation.isPending}
+                              className="ml-auto text-muted-foreground hover:text-destructive transition-colors p-1"
+                              title="Excluir comentário"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="w-[calc(100%-20px)] max-w-lg rounded-[10px]">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir comentário?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja apagar este comentário? Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deletarComentarioMutation.mutate(comentario.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                     <p className="text-sm text-foreground/80 mt-1 break-words">
