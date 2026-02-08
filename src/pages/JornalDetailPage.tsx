@@ -257,6 +257,10 @@ const JornalDetailPage = () => {
   const embedUrl = jornal.video_url ? getYouTubeEmbedUrl(jornal.video_url) : null;
   // Se não for URL do YouTube, pode ser vídeo direto
   const isDirectVideo = jornal.video_url && !embedUrl;
+  const hasVideo = embedUrl || isDirectVideo;
+  
+  // Total de itens na galeria (vídeo primeiro + imagens)
+  const totalMediaItems = (hasVideo ? 1 : 0) + imagens.length;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -268,27 +272,56 @@ const JornalDetailPage = () => {
         <span className="text-sm text-muted-foreground">Notícia</span>
       </header>
 
-      {/* Media - Imagens com swipe */}
-      {imagens.length > 0 && (
+      {/* Media Gallery - Vídeo primeiro + Imagens */}
+      {totalMediaItems > 0 ? (
         <div>
           <div 
             ref={containerRef}
             className="relative overflow-hidden"
             onTouchStart={handleTouchStart}
-            onTouchEnd={(e) => handleTouchEnd(e, imagens.length)}
+            onTouchEnd={(e) => handleTouchEnd(e, totalMediaItems)}
           >
             <div 
               className="flex transition-transform duration-300 ease-out"
               style={{ 
                 transform: `translateX(-${currentImageIndex * 100}%)`,
-                width: `${imagens.length * 100}%`
+                width: `${totalMediaItems * 100}%`
               }}
             >
+              {/* Vídeo como primeiro item */}
+              {embedUrl && (
+                <div 
+                  className="flex-shrink-0"
+                  style={{ width: `${100 / totalMediaItems}%` }}
+                >
+                  <iframe
+                    src={embedUrl}
+                    className="w-full aspect-video"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                </div>
+              )}
+              {isDirectVideo && (
+                <div 
+                  className="flex-shrink-0"
+                  style={{ width: `${100 / totalMediaItems}%` }}
+                >
+                  <video
+                    src={jornal.video_url!}
+                    className="w-full aspect-video object-contain bg-black"
+                    controls
+                    preload="metadata"
+                  />
+                </div>
+              )}
+              
+              {/* Imagens */}
               {imagens.map((img, idx) => (
                 <div 
                   key={img.id} 
                   className="flex-shrink-0"
-                  style={{ width: `${100 / imagens.length}%` }}
+                  style={{ width: `${100 / totalMediaItems}%` }}
                 >
                   <img
                     src={img.imagem_url}
@@ -299,10 +332,11 @@ const JornalDetailPage = () => {
               ))}
             </div>
           </div>
-          {/* Dots de navegação - abaixo da imagem */}
-          {imagens.length > 1 && (
+          
+          {/* Dots de navegação - abaixo da mídia */}
+          {totalMediaItems > 1 && (
             <div className="flex justify-center gap-1.5 py-3">
-              {imagens.map((_, idx) => (
+              {Array.from({ length: totalMediaItems }).map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentImageIndex(idx)}
@@ -316,33 +350,7 @@ const JornalDetailPage = () => {
             </div>
           )}
         </div>
-      )}
-
-      {/* Vídeo - Exibido abaixo das imagens ou sozinho */}
-      {embedUrl && (
-        <div className={imagens.length > 0 ? "px-4 pt-4" : ""}>
-          <iframe
-            src={embedUrl}
-            className={`w-full aspect-video ${imagens.length > 0 ? "rounded-xl" : ""}`}
-            allowFullScreen
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          />
-        </div>
-      )}
-
-      {isDirectVideo && (
-        <div className={imagens.length > 0 ? "px-4 pt-4" : ""}>
-          <video
-            src={jornal.video_url!}
-            className={`w-full aspect-video object-contain bg-black ${imagens.length > 0 ? "rounded-xl" : ""}`}
-            controls
-            preload="metadata"
-          />
-        </div>
-      )}
-
-      {/* Placeholder quando não há mídia */}
-      {imagens.length === 0 && !embedUrl && !isDirectVideo && (
+      ) : (
         <div className="w-full aspect-video bg-muted flex items-center justify-center">
           <span className="text-muted-foreground">Sem mídia</span>
         </div>
