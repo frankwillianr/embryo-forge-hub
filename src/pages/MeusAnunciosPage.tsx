@@ -104,19 +104,25 @@ const MeusAnunciosPage = () => {
     enabled: !!user?.id && !!cidade?.id,
   });
 
-  // Função para reenviar email de pagamento
+  // Função para reenviar email de pagamento (gera novo link se expirado)
   const handleResendEmail = async (bannerId: string) => {
     setSendingEmail(bannerId);
     try {
-      const { error } = await supabase.functions.invoke("send-banner-payment-email", {
+      const { data, error } = await supabase.functions.invoke("send-banner-payment-email", {
         body: { banner_id: bannerId },
       });
 
       if (error) throw error;
-      toast.success("Email reenviado com sucesso!");
+      
+      toast.success("Email enviado com sucesso! Verifique sua caixa de entrada.", {
+        description: "O link de pagamento é válido por 1 hora.",
+        duration: 5000,
+      });
     } catch (error: any) {
       console.error("Erro ao reenviar email:", error);
-      toast.error("Erro ao reenviar email: " + error.message);
+      toast.error("Erro ao enviar email", {
+        description: error.message || "Tente novamente mais tarde.",
+      });
     } finally {
       setSendingEmail(null);
     }
@@ -251,22 +257,32 @@ const MeusAnunciosPage = () => {
           </p>
         )}
 
-        {/* Botão de reenviar email */}
+        {/* Indicador de link expirado e botão de reenviar */}
         {showResendEmail && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full"
-            onClick={() => handleResendEmail(banner.id)}
-            disabled={sendingEmail === banner.id}
-          >
-            {sendingEmail === banner.id ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Mail className="h-4 w-4 mr-2" />
+          <div className="space-y-2">
+            {banner.pagamento?.expira_em && new Date(banner.pagamento.expira_em) < new Date() && (
+              <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 p-2 rounded-lg">
+                <Clock className="h-4 w-4" />
+                <span>Link de pagamento expirado. Clique abaixo para gerar um novo.</span>
+              </div>
             )}
-            Reenviar Link de Pagamento
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => handleResendEmail(banner.id)}
+              disabled={sendingEmail === banner.id}
+            >
+              {sendingEmail === banner.id ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Mail className="h-4 w-4 mr-2" />
+              )}
+              {banner.pagamento?.expira_em && new Date(banner.pagamento.expira_em) < new Date()
+                ? "Gerar Novo Link de Pagamento"
+                : "Reenviar Link de Pagamento"}
+            </Button>
+          </div>
         )}
       </div>
     );
