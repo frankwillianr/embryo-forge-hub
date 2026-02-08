@@ -413,7 +413,7 @@ const NovaEmpresaPage = () => {
       {/* Footer */}
       <div className="sticky bottom-0 p-4 border-t border-border bg-card">
         <Button
-          className="w-full"
+          className="w-full bg-[#331D4A] hover:bg-[#331D4A]/90 text-white rounded-xl"
           size="lg"
           disabled={!isValid || createMutation.isPending}
           onClick={() => createMutation.mutate()}

@@ -108,7 +108,7 @@ const ServicoCategoriaPage = () => {
         <Button
           size="sm"
           onClick={() => navigate(`/cidade/${slug}/servicos/${categoriaId}/novo`)}
-          className="gap-1.5"
+          className="gap-1.5 bg-[#331D4A] hover:bg-[#331D4A]/90 text-white rounded-xl"
         >
           <Plus className="h-4 w-4" />
           Adicionar
@@ -222,7 +222,7 @@ const ServicoCategoriaPage = () => {
             </p>
             <Button
               onClick={() => navigate(`/cidade/${slug}/servicos/${categoriaId}/novo`)}
-              className="gap-2"
+              className="gap-2 bg-[#331D4A] hover:bg-[#331D4A]/90 text-white rounded-xl"
             >
               <Plus className="h-4 w-4" />
               Adicionar minha empresa
