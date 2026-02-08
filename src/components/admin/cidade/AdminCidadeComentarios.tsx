@@ -89,19 +89,33 @@ const AdminCidadeComentarios = ({ cidadeId }: AdminCidadeComentariosProps) => {
     },
   });
 
-  // Buscar usuários bloqueados
-  const { data: usuariosBloqueados } = useQuery({
-    queryKey: ["admin-cidade-bloqueados", cidadeId],
+  // Buscar usuários bloqueados com dados do profile
+  const { data: usuariosBloqueadosData } = useQuery({
+    queryKey: ["admin-cidade-bloqueados-full", cidadeId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rel_cidade_jornal_comentarios_bloqueados")
-        .select("user_id")
+        .select("user_id, created_at")
         .eq("cidade_id", cidadeId);
 
       if (error) throw error;
-      return data?.map((b) => b.user_id) || [];
+      if (!data || data.length === 0) return [];
+
+      // Buscar profiles
+      const userIds = data.map((b) => b.user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, nome, foto_url")
+        .in("id", userIds);
+
+      return data.map((b) => ({
+        ...b,
+        profile: profiles?.find((p) => p.id === b.user_id),
+      }));
     },
   });
+
+  const usuariosBloqueados = usuariosBloqueadosData?.map((b) => b.user_id) || [];
 
   // Deletar comentário
   const deletarMutation = useMutation({
@@ -132,7 +146,7 @@ const AdminCidadeComentarios = ({ cidadeId }: AdminCidadeComentariosProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-cidade-bloqueados", cidadeId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-cidade-bloqueados-full", cidadeId] });
       toast.success("Usuário bloqueado de comentar!");
     },
     onError: () => {
@@ -152,7 +166,7 @@ const AdminCidadeComentarios = ({ cidadeId }: AdminCidadeComentariosProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-cidade-bloqueados", cidadeId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-cidade-bloqueados-full", cidadeId] });
       toast.success("Usuário desbloqueado!");
     },
     onError: () => {
@@ -320,6 +334,79 @@ const AdminCidadeComentarios = ({ cidadeId }: AdminCidadeComentariosProps) => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Seção de Usuários Bloqueados */}
+      {usuariosBloqueadosData && usuariosBloqueadosData.length > 0 && (
+        <div className="mt-8 space-y-4">
+          <h3 className="font-semibold text-gray-900">
+            Usuários Bloqueados ({usuariosBloqueadosData.length})
+          </h3>
+          <div className="border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="text-gray-600">Usuário</TableHead>
+                  <TableHead className="text-gray-600">Bloqueado em</TableHead>
+                  <TableHead className="text-gray-600 text-right">Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {usuariosBloqueadosData.map((bloqueio) => (
+                  <TableRow key={bloqueio.user_id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={bloqueio.profile?.foto_url || undefined} />
+                          <AvatarFallback className="text-xs bg-gray-100 text-gray-600">
+                            {bloqueio.profile?.nome?.charAt(0).toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium text-gray-900">
+                          {bloqueio.profile?.nome || "Usuário"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500">
+                      {format(new Date(bloqueio.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600 border-green-200 hover:bg-green-50"
+                          >
+                            <User className="h-4 w-4 mr-1" />
+                            Desbloquear
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="w-[calc(100%-20px)] max-w-lg rounded-[10px]">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Desbloquear usuário?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              O usuário "{bloqueio.profile?.nome}" poderá voltar a comentar nas notícias desta cidade.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => desbloquearMutation.mutate(bloqueio.user_id)}
+                              className="bg-green-600 text-white hover:bg-green-700"
+                            >
+                              Desbloquear
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
