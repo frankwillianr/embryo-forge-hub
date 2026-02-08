@@ -137,18 +137,18 @@ const JornalDetailPage = () => {
     enabled: !!jornalId,
   });
 
-  // Mutation para reagir - CORRIGIDO
+  // Mutation para reagir
   const reactMutation = useMutation({
-    mutationFn: async (tipo: "like" | "dislike") => {
+    mutationFn: async ({ tipo, currentReaction }: { tipo: "like" | "dislike"; currentReaction: "like" | "dislike" | null | undefined }) => {
       // Se já tem a mesma reação, remove
-      if (userReaction === tipo) {
+      if (currentReaction === tipo) {
         const { error } = await supabase
           .from("rel_cidade_jornal_reacoes")
           .delete()
           .eq("jornal_id", jornalId)
           .eq("user_fingerprint", fingerprint);
         if (error) throw error;
-        return null; // Retorna null indicando que removeu
+        return null;
       } else {
         // Upsert reação (adiciona ou troca)
         const { error } = await supabase
@@ -166,6 +166,10 @@ const JornalDetailPage = () => {
       queryClient.invalidateQueries({ queryKey: ["jornal-reaction", jornalId, fingerprint] });
     },
   });
+
+  const handleReaction = (tipo: "like" | "dislike") => {
+    reactMutation.mutate({ tipo, currentReaction: userReaction });
+  };
 
   // Mutation para comentar
   const comentarMutation = useMutation({
@@ -282,18 +286,14 @@ const JornalDetailPage = () => {
             onTouchEnd={(e) => handleTouchEnd(e, totalMediaItems)}
           >
             <div 
-              className="flex transition-transform duration-300 ease-out"
+              className="flex transition-transform duration-300 ease-out w-full"
               style={{ 
-                transform: `translateX(-${currentImageIndex * 100}%)`,
-                width: `${totalMediaItems * 100}%`
+                transform: `translateX(-${currentImageIndex * 100}%)`
               }}
             >
               {/* Vídeo como primeiro item */}
               {embedUrl && (
-                <div 
-                  className="flex-shrink-0"
-                  style={{ width: `${100 / totalMediaItems}%` }}
-                >
+                <div className="w-full flex-shrink-0">
                   <iframe
                     src={embedUrl}
                     className="w-full aspect-video"
@@ -303,10 +303,7 @@ const JornalDetailPage = () => {
                 </div>
               )}
               {isDirectVideo && (
-                <div 
-                  className="flex-shrink-0"
-                  style={{ width: `${100 / totalMediaItems}%` }}
-                >
+                <div className="w-full flex-shrink-0">
                   <video
                     src={jornal.video_url!}
                     className="w-full aspect-video object-contain bg-black"
@@ -318,11 +315,7 @@ const JornalDetailPage = () => {
               
               {/* Imagens */}
               {imagens.map((img, idx) => (
-                <div 
-                  key={img.id} 
-                  className="flex-shrink-0"
-                  style={{ width: `${100 / totalMediaItems}%` }}
-                >
+                <div key={img.id} className="w-full flex-shrink-0">
                   <img
                     src={img.imagem_url}
                     alt={`${jornal.titulo} - Imagem ${idx + 1}`}
@@ -340,10 +333,10 @@ const JornalDetailPage = () => {
                 <button
                   key={idx}
                   onClick={() => setCurrentImageIndex(idx)}
-                  className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                  className={`h-2 rounded-full transition-all duration-200 ${
                     idx === currentImageIndex 
                       ? "bg-primary w-4" 
-                      : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                      : "bg-muted-foreground/30 hover:bg-muted-foreground/50 w-2"
                   }`}
                 />
               ))}
@@ -380,7 +373,7 @@ const JornalDetailPage = () => {
           <Button
             variant={userReaction === "like" ? "default" : "outline"}
             size="sm"
-            onClick={() => reactMutation.mutate("like")}
+            onClick={() => handleReaction("like")}
             disabled={reactMutation.isPending}
           >
             <ThumbsUp className="h-4 w-4 mr-1" />
@@ -389,7 +382,7 @@ const JornalDetailPage = () => {
           <Button
             variant={userReaction === "dislike" ? "destructive" : "outline"}
             size="sm"
-            onClick={() => reactMutation.mutate("dislike")}
+            onClick={() => handleReaction("dislike")}
             disabled={reactMutation.isPending}
           >
             <ThumbsDown className="h-4 w-4 mr-1" />
