@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import type { Jornal, JornalImagem } from "@/types/jornal";
+import type { Jornal } from "@/types/jornal";
 
 // Fingerprint simples baseado no browser
 const getFingerprint = () => {
