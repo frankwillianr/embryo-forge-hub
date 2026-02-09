@@ -48,7 +48,7 @@ const AdminJornal = () => {
   const [videoType, setVideoType] = useState<"youtube" | "upload">("youtube");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [existingImages, setExistingImages] = useState<JornalImagem[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
