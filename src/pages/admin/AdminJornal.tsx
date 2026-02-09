@@ -112,27 +112,29 @@ const AdminJornal = () => {
     mutationFn: async (jornal: JornalInsert) => {
       setIsUploading(true);
       try {
+        // Upload imagens primeiro
+        let imageUrls: string[] = [];
+        if (imageFiles.length > 0) {
+          // Precisamos de um ID temporário para o upload
+          const tempId = crypto.randomUUID();
+          imageUrls = await uploadImages(imageFiles, tempId);
+        }
+
         const { data, error } = await supabase
           .from("rel_cidade_jornal")
-          .insert(jornal)
+          .insert({
+            ...jornal,
+            imagens: imageUrls,
+          })
           .select()
           .single();
 
         if (error) throw error;
-
-        // Upload e salva imagens
-        if (imageFiles.length > 0) {
-          const urls = await uploadImages(imageFiles, data.id);
-          for (let i = 0; i < urls.length; i++) {
-            await supabase.from("rel_cidade_jornal_imagens").insert({
-              jornal_id: data.id,
-              imagem_url: urls[i],
-              ordem: i,
-            });
-          }
-        }
-
         return data;
+      } finally {
+        setIsUploading(false);
+      }
+    },
       } finally {
         setIsUploading(false);
       }
