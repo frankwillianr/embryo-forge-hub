@@ -356,16 +356,57 @@ const AdminCinema = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Horários (separados por vírgula)</Label>
-              <Input
-                value={formData.horarios}
-                onChange={(e) =>
-                  setFormData({ ...formData, horarios: e.target.value })
-                }
-                placeholder="14:00, 17:30, 21:00"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Duração</Label>
+                <Input
+                  value={formData.duracao}
+                  onChange={(e) =>
+                    setFormData({ ...formData, duracao: e.target.value })
+                  }
+                  placeholder="Ex: 2h15min"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Gênero</Label>
+                <Input
+                  value={formData.genero}
+                  onChange={(e) =>
+                    setFormData({ ...formData, genero: e.target.value })
+                  }
+                  placeholder="Ex: Ação, Comédia"
+                />
+              </div>
             </div>
+
+            <div className="space-y-2">
+              <Label>Status *</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(v) => setFormData({ ...formData, status: v as "em_cartaz" | "em_breve" })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="em_cartaz">Em Cartaz</SelectItem>
+                  <SelectItem value="em_breve">Em Breve</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.status === "em_cartaz" && (
+              <div className="space-y-2">
+                <Label>Horários (separados por vírgula)</Label>
+                <Input
+                  value={formData.horarios}
+                  onChange={(e) =>
+                    setFormData({ ...formData, horarios: e.target.value })
+                  }
+                  placeholder="14:00, 17:30, 21:00"
+                />
+              </div>
+            )}
 
             <DialogFooter>
               <Button
