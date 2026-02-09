@@ -102,6 +102,9 @@ Deno.serve(async (req) => {
         banner_url,
         trailer_url,
         horarios,
+        duracao,
+        genero,
+        status: filmStatus,
         id_externo,
       } = body;
 
