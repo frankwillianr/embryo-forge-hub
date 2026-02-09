@@ -166,6 +166,9 @@ const AdminCinema = () => {
       banner_url: filme.banner_url || "",
       trailer_url: filme.trailer_url || "",
       horarios: filme.horarios?.join(", ") || "",
+      duracao: filme.duracao || "",
+      genero: filme.genero || "",
+      status: filme.status || "em_cartaz",
     });
     setDialogOpen(true);
   };
