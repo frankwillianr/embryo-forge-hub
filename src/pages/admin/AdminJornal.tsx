@@ -436,7 +436,7 @@ const AdminJornal = () => {
                         variant="destructive"
                         size="icon"
                         className="absolute top-1 right-1 h-5 w-5"
-                        onClick={() => removeExistingImage(img)}
+                        onClick={() => removeExistingImage(url)}
                       >
                         <X className="h-3 w-3" />
                       </Button>
