@@ -77,23 +77,9 @@ const AdminJornal = () => {
 
       if (error) throw error;
 
-      // Busca imagens
-      const ids = data.map((j) => j.id);
-      const { data: imagensData } = await supabase
-        .from("rel_cidade_jornal_imagens")
-        .select("*")
-        .in("jornal_id", ids)
-        .order("ordem");
-
-      const imagensPorJornal = (imagensData || []).reduce((acc, img) => {
-        if (!acc[img.jornal_id]) acc[img.jornal_id] = [];
-        acc[img.jornal_id].push(img as JornalImagem);
-        return acc;
-      }, {} as Record<string, JornalImagem[]>);
-
       return data.map((j) => ({
         ...j,
-        imagens: imagensPorJornal[j.id] || [],
+        imagens: Array.isArray(j.imagens) ? j.imagens : [],
       })) as Jornal[];
     },
   });
