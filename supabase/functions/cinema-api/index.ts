@@ -102,6 +102,9 @@ Deno.serve(async (req) => {
         banner_url,
         trailer_url,
         horarios,
+        duracao,
+        genero,
+        status: filmStatus,
         id_externo,
       } = body;
 
@@ -165,6 +168,9 @@ Deno.serve(async (req) => {
           banner_url: banner_url || null,
           trailer_url: trailer_url || null,
           horarios: horarios || [],
+          duracao: duracao || null,
+          genero: genero || null,
+          status: filmStatus || 'em_cartaz',
           id_externo: id_externo || null,
         })
         .select()

@@ -49,6 +49,9 @@ const AdminCinema = () => {
     banner_url: "",
     trailer_url: "",
     horarios: "",
+    duracao: "",
+    genero: "",
+    status: "em_cartaz" as "em_cartaz" | "em_breve",
   });
 
   // Busca cidades
@@ -87,9 +90,12 @@ const AdminCinema = () => {
         nome_cinema: data.nome_cinema,
         banner_url: data.banner_url || null,
         trailer_url: data.trailer_url || null,
-        horarios: data.horarios
+        horarios: data.status === "em_cartaz" && data.horarios
           ? data.horarios.split(",").map((h) => h.trim())
           : [],
+        duracao: data.duracao || null,
+        genero: data.genero || null,
+        status: data.status,
       };
 
       if (editingFilme) {
@@ -143,6 +149,9 @@ const AdminCinema = () => {
       banner_url: "",
       trailer_url: "",
       horarios: "",
+      duracao: "",
+      genero: "",
+      status: "em_cartaz",
     });
     setDialogOpen(true);
   };
@@ -157,6 +166,9 @@ const AdminCinema = () => {
       banner_url: filme.banner_url || "",
       trailer_url: filme.trailer_url || "",
       horarios: filme.horarios?.join(", ") || "",
+      duracao: filme.duracao || "",
+      genero: filme.genero || "",
+      status: filme.status || "em_cartaz",
     });
     setDialogOpen(true);
   };
@@ -344,16 +356,57 @@ const AdminCinema = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Horários (separados por vírgula)</Label>
-              <Input
-                value={formData.horarios}
-                onChange={(e) =>
-                  setFormData({ ...formData, horarios: e.target.value })
-                }
-                placeholder="14:00, 17:30, 21:00"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Duração</Label>
+                <Input
+                  value={formData.duracao}
+                  onChange={(e) =>
+                    setFormData({ ...formData, duracao: e.target.value })
+                  }
+                  placeholder="Ex: 2h15min"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Gênero</Label>
+                <Input
+                  value={formData.genero}
+                  onChange={(e) =>
+                    setFormData({ ...formData, genero: e.target.value })
+                  }
+                  placeholder="Ex: Ação, Comédia"
+                />
+              </div>
             </div>
+
+            <div className="space-y-2">
+              <Label>Status *</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(v) => setFormData({ ...formData, status: v as "em_cartaz" | "em_breve" })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="em_cartaz">Em Cartaz</SelectItem>
+                  <SelectItem value="em_breve">Em Breve</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.status === "em_cartaz" && (
+              <div className="space-y-2">
+                <Label>Horários (separados por vírgula)</Label>
+                <Input
+                  value={formData.horarios}
+                  onChange={(e) =>
+                    setFormData({ ...formData, horarios: e.target.value })
+                  }
+                  placeholder="14:00, 17:30, 21:00"
+                />
+              </div>
+            )}
 
             <DialogFooter>
               <Button
