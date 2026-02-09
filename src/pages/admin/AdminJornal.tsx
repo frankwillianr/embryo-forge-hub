@@ -424,8 +424,8 @@ const AdminJornal = () => {
 
                 <div className="grid grid-cols-3 gap-2">
                   {/* Imagens existentes */}
-                  {existingImages.map((img) => (
-                    <div key={img.id} className="relative">
+                  {existingImages.map((url, idx) => (
+                    <div key={idx} className="relative">
                       <img
                         src={img.imagem_url}
                         alt="Imagem"
