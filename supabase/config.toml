@@ -30,3 +30,6 @@ verify_jwt = false
 
 [functions.get-banners]
 verify_jwt = false
+
+[functions.jornal-api]
+verify_jwt = false
