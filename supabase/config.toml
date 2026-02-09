@@ -33,3 +33,6 @@ verify_jwt = false
 
 [functions.jornal-api]
 verify_jwt = false
+
+[functions.cinema-api]
+verify_jwt = false
