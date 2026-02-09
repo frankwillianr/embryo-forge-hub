@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import type { Jornal, JornalImagem } from "@/types/jornal";
+import type { Jornal } from "@/types/jornal";
 import jornalBanner from "@/assets/jornal-banner.jpg";
 
 const JornalListPage = () => {
@@ -13,7 +13,6 @@ const JornalListPage = () => {
   const { data: jornais = [], isLoading } = useQuery({
     queryKey: ["jornais-list", slug],
     queryFn: async () => {
-      // Busca cidade
       const { data: cidadeData, error: cidadeError } = await supabase
         .from("cidade")
         .select("id")
@@ -23,7 +22,6 @@ const JornalListPage = () => {
       if (cidadeError) throw cidadeError;
       if (!cidadeData) return [];
 
-      // Busca todas as notícias
       const { data: jornaisData, error: jornaisError } = await supabase
         .from("rel_cidade_jornal")
         .select("*")
@@ -33,23 +31,9 @@ const JornalListPage = () => {
       if (jornaisError) throw jornaisError;
       if (!jornaisData || jornaisData.length === 0) return [];
 
-      // Busca imagens
-      const jornalIds = jornaisData.map((j) => j.id);
-      const { data: imagensData } = await supabase
-        .from("rel_cidade_jornal_imagens")
-        .select("*")
-        .in("jornal_id", jornalIds)
-        .order("ordem");
-
-      const imagensPorJornal = (imagensData || []).reduce((acc, img) => {
-        if (!acc[img.jornal_id]) acc[img.jornal_id] = [];
-        acc[img.jornal_id].push(img as JornalImagem);
-        return acc;
-      }, {} as Record<string, JornalImagem[]>);
-
       return jornaisData.map((j) => ({
         ...j,
-        imagens: imagensPorJornal[j.id] || [],
+        imagens: Array.isArray(j.imagens) ? j.imagens : [],
       })) as Jornal[];
     },
     enabled: !!slug,
@@ -67,11 +51,7 @@ const JornalListPage = () => {
 
       {/* Banner Hero */}
       <div className="relative h-[175px] overflow-hidden">
-        <img
-          src={jornalBanner}
-          alt="Jornal"
-          className="w-full h-full object-cover"
-        />
+        <img src={jornalBanner} alt="Jornal" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-3 left-4 right-4">
           <p className="text-xs text-muted-foreground">Fique por dentro</p>
@@ -101,12 +81,11 @@ const JornalListPage = () => {
         ) : (
           <div className="space-y-4">
             {jornais.map((jornal) => {
-              const primeiraImagem = jornal.imagens?.[0]?.imagem_url;
+              const primeiraImagem = jornal.imagens?.[0];
               const dataPublicacao = new Date(jornal.created_at);
               const hora = dataPublicacao.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
               const data = dataPublicacao.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
               
-              // Extrai um resumo da descrição (primeiros 100 caracteres)
               const resumo = jornal.descricao 
                 ? jornal.descricao.substring(0, 100).trim() + (jornal.descricao.length > 100 ? "..." : "")
                 : null;
@@ -117,7 +96,6 @@ const JornalListPage = () => {
                   onClick={() => navigate(`/cidade/${slug}/jornal/${jornal.id}`)}
                   className="flex gap-4 cursor-pointer group bg-card rounded-2xl p-3 border border-border/40 shadow-sm hover:shadow-md transition-shadow"
                 >
-                  {/* Thumbnail */}
                   <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted/30 flex-shrink-0">
                     {primeiraImagem ? (
                       <img
@@ -131,7 +109,6 @@ const JornalListPage = () => {
                       </div>
                     )}
                   </div>
-                  {/* Content */}
                   <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                     <div>
                       <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-1.5">

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import type { Jornal, JornalImagem } from "@/types/jornal";
+import type { Jornal } from "@/types/jornal";
 
 // Fingerprint simples baseado no browser
 const getFingerprint = () => {
@@ -75,13 +75,6 @@ const JornalDetailPage = () => {
       if (error) throw error;
       if (!data) return null;
 
-      // Busca imagens
-      const { data: imagensData } = await supabase
-        .from("rel_cidade_jornal_imagens")
-        .select("*")
-        .eq("jornal_id", jornalId)
-        .order("ordem");
-
       // Busca contagem de reações
       const { count: likesCount } = await supabase
         .from("rel_cidade_jornal_reacoes")
@@ -97,7 +90,7 @@ const JornalDetailPage = () => {
 
       return {
         ...data,
-        imagens: (imagensData || []) as JornalImagem[],
+        imagens: Array.isArray(data.imagens) ? data.imagens : [],
         likes_count: likesCount || 0,
         dislikes_count: dislikesCount || 0,
       } as Jornal;
@@ -367,10 +360,10 @@ const JornalDetailPage = () => {
               )}
               
               {/* Imagens */}
-              {imagens.map((img, idx) => (
-                <div key={img.id} className="w-full flex-shrink-0 bg-muted/30">
+              {imagens.map((url, idx) => (
+                <div key={idx} className="w-full flex-shrink-0 bg-muted/30">
                   <img
-                    src={img.imagem_url}
+                    src={url}
                     alt={`${jornal.titulo} - Imagem ${idx + 1}`}
                     className="w-full aspect-[4/3] object-contain"
                   />

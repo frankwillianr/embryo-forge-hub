@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import JornalFeedCard from "@/components/jornal/JornalFeedCard";
-import type { Jornal, JornalImagem } from "@/types/jornal";
+import type { Jornal } from "@/types/jornal";
 
 interface JornalSectionProps {
   cidadeSlug?: string;
@@ -27,22 +27,9 @@ const JornalSection = ({ cidadeSlug }: JornalSectionProps) => {
 
       if (!jornaisData || jornaisData.length === 0) return [];
 
-      const jornalIds = jornaisData.map((j) => j.id);
-      const { data: imagensData } = await supabase
-        .from("rel_cidade_jornal_imagens")
-        .select("*")
-        .in("jornal_id", jornalIds)
-        .order("ordem");
-
-      const imagensPorJornal = (imagensData || []).reduce((acc, img) => {
-        if (!acc[img.jornal_id]) acc[img.jornal_id] = [];
-        acc[img.jornal_id].push(img as JornalImagem);
-        return acc;
-      }, {} as Record<string, JornalImagem[]>);
-
       return jornaisData.map((j) => ({
         ...j,
-        imagens: imagensPorJornal[j.id] || [],
+        imagens: Array.isArray(j.imagens) ? j.imagens : [],
       })) as Jornal[];
     },
     enabled: !!cidadeSlug,

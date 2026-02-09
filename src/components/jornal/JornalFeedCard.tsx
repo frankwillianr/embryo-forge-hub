@@ -104,10 +104,10 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
                 transform: `translateX(calc(-${currentImageIndex * 100}% + ${translateX}px))`
               }}
             >
-              {imagens.map((img, index) => (
-                <div key={img.id} className="w-full h-full flex-shrink-0">
+              {imagens.map((url, index) => (
+                <div key={index} className="w-full h-full flex-shrink-0">
                   <img
-                    src={img.imagem_url}
+                    src={url}
                     alt={`${jornal.titulo} - ${index + 1}`}
                     className="w-full h-full object-cover"
                     onClick={handleCardClick}

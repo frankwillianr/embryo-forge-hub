@@ -1,11 +1,3 @@
-export interface JornalImagem {
-  id: string;
-  jornal_id: string;
-  imagem_url: string;
-  ordem: number;
-  created_at: string;
-}
-
 export interface JornalReacao {
   id: string;
   jornal_id: string;
@@ -22,9 +14,9 @@ export interface Jornal {
   descricao_curta?: string | null;
   fonte?: string | null;
   video_url?: string | null;
+  imagens?: string[];
   created_at: string;
   updated_at: string;
-  imagens?: JornalImagem[];
   likes_count?: number;
   dislikes_count?: number;
 }
@@ -35,4 +27,5 @@ export interface JornalInsert {
   descricao: string;
   fonte?: string;
   video_url?: string;
+  imagens?: string[];
 }

@@ -30,7 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, X, Image, Video, Youtube, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Jornal, JornalInsert, JornalImagem } from "@/types/jornal";
+import type { Jornal, JornalInsert } from "@/types/jornal";
 import type { Cidade } from "@/types/cidade";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -48,7 +48,7 @@ const AdminJornal = () => {
   const [videoType, setVideoType] = useState<"youtube" | "upload">("youtube");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [existingImages, setExistingImages] = useState<JornalImagem[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -77,23 +77,9 @@ const AdminJornal = () => {
 
       if (error) throw error;
 
-      // Busca imagens
-      const ids = data.map((j) => j.id);
-      const { data: imagensData } = await supabase
-        .from("rel_cidade_jornal_imagens")
-        .select("*")
-        .in("jornal_id", ids)
-        .order("ordem");
-
-      const imagensPorJornal = (imagensData || []).reduce((acc, img) => {
-        if (!acc[img.jornal_id]) acc[img.jornal_id] = [];
-        acc[img.jornal_id].push(img as JornalImagem);
-        return acc;
-      }, {} as Record<string, JornalImagem[]>);
-
       return data.map((j) => ({
         ...j,
-        imagens: imagensPorJornal[j.id] || [],
+        imagens: Array.isArray(j.imagens) ? j.imagens : [],
       })) as Jornal[];
     },
   });
@@ -126,26 +112,24 @@ const AdminJornal = () => {
     mutationFn: async (jornal: JornalInsert) => {
       setIsUploading(true);
       try {
+        // Upload imagens primeiro
+        let imageUrls: string[] = [];
+        if (imageFiles.length > 0) {
+          // Precisamos de um ID temporário para o upload
+          const tempId = crypto.randomUUID();
+          imageUrls = await uploadImages(imageFiles, tempId);
+        }
+
         const { data, error } = await supabase
           .from("rel_cidade_jornal")
-          .insert(jornal)
+          .insert({
+            ...jornal,
+            imagens: imageUrls,
+          })
           .select()
           .single();
 
         if (error) throw error;
-
-        // Upload e salva imagens
-        if (imageFiles.length > 0) {
-          const urls = await uploadImages(imageFiles, data.id);
-          for (let i = 0; i < urls.length; i++) {
-            await supabase.from("rel_cidade_jornal_imagens").insert({
-              jornal_id: data.id,
-              imagem_url: urls[i],
-              ordem: i,
-            });
-          }
-        }
-
         return data;
       } finally {
         setIsUploading(false);
@@ -166,6 +150,13 @@ const AdminJornal = () => {
     mutationFn: async ({ id, ...jornal }: Jornal) => {
       setIsUploading(true);
       try {
+        // Upload novas imagens
+        let allImages = [...existingImages];
+        if (imageFiles.length > 0) {
+          const urls = await uploadImages(imageFiles, id);
+          allImages = [...allImages, ...urls];
+        }
+
         const { data, error } = await supabase
           .from("rel_cidade_jornal")
           .update({
@@ -174,26 +165,13 @@ const AdminJornal = () => {
             descricao: jornal.descricao,
             fonte: jornal.fonte,
             video_url: jornal.video_url,
+            imagens: allImages,
           })
           .eq("id", id)
           .select()
           .single();
 
         if (error) throw error;
-
-        // Upload novas imagens
-        if (imageFiles.length > 0) {
-          const urls = await uploadImages(imageFiles, id);
-          const startOrder = existingImages.length;
-          for (let i = 0; i < urls.length; i++) {
-            await supabase.from("rel_cidade_jornal_imagens").insert({
-              jornal_id: id,
-              imagem_url: urls[i],
-              ordem: startOrder + i,
-            });
-          }
-        }
-
         return data;
       } finally {
         setIsUploading(false);
@@ -227,19 +205,7 @@ const AdminJornal = () => {
     },
   });
 
-  // Delete imagem
-  const deleteImageMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("rel_cidade_jornal_imagens")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-jornais"] });
-    },
-  });
+  // (imagens agora são gerenciadas na coluna JSON da tabela principal)
 
   const resetForm = () => {
     setCidadeId("");
@@ -329,9 +295,8 @@ const AdminJornal = () => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const removeExistingImage = (img: JornalImagem) => {
-    deleteImageMutation.mutate(img.id);
-    setExistingImages((prev) => prev.filter((i) => i.id !== img.id));
+  const removeExistingImage = (url: string) => {
+    setExistingImages((prev) => prev.filter((i) => i !== url));
   };
 
   const getCidadeNome = (cidadeId: string) => {
@@ -459,10 +424,10 @@ const AdminJornal = () => {
 
                 <div className="grid grid-cols-3 gap-2">
                   {/* Imagens existentes */}
-                  {existingImages.map((img) => (
-                    <div key={img.id} className="relative">
+                  {existingImages.map((url, idx) => (
+                    <div key={idx} className="relative">
                       <img
-                        src={img.imagem_url}
+                        src={url}
                         alt="Imagem"
                         className="w-full h-24 object-cover rounded-lg border"
                       />
@@ -471,7 +436,7 @@ const AdminJornal = () => {
                         variant="destructive"
                         size="icon"
                         className="absolute top-1 right-1 h-5 w-5"
-                        onClick={() => removeExistingImage(img)}
+                        onClick={() => removeExistingImage(url)}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -553,9 +518,9 @@ const AdminJornal = () => {
               jornais.map((jornal) => (
                 <TableRow key={jornal.id}>
                   <TableCell>
-                    {jornal.imagens?.[0]?.imagem_url ? (
+                    {jornal.imagens?.[0] ? (
                       <img
-                        src={jornal.imagens[0].imagem_url}
+                        src={jornal.imagens[0]}
                         alt={jornal.titulo}
                         className="w-12 h-8 object-cover rounded"
                       />
