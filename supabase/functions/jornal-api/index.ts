@@ -168,6 +168,7 @@ Deno.serve(async (req) => {
           fonte: fonte || null,
           video_url: video_url || null,
           id_externo: id_externo || null,
+          imagens: (imagens && Array.isArray(imagens)) ? imagens : [],
         })
         .select()
         .single();
@@ -178,24 +179,6 @@ Deno.serve(async (req) => {
           JSON.stringify({ error: 'Erro ao criar jornal', details: insertError.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
-      }
-
-      // Inserir imagens se fornecidas
-      if (imagens && Array.isArray(imagens) && imagens.length > 0) {
-        const imagensInsert = imagens.map((url: string, index: number) => ({
-          jornal_id: novoJornal.id,
-          imagem_url: url,
-          ordem: index,
-        }));
-
-        const { error: imagensError } = await supabase
-          .from('rel_cidade_jornal_imagens')
-          .insert(imagensInsert);
-
-        if (imagensError) {
-          console.error('Erro ao inserir imagens:', imagensError);
-          // Não falha a requisição, apenas loga
-        }
       }
 
       console.log('Jornal criado com sucesso:', novoJornal.id);
