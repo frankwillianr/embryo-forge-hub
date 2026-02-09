@@ -427,7 +427,7 @@ const AdminJornal = () => {
                   {existingImages.map((url, idx) => (
                     <div key={idx} className="relative">
                       <img
-                        src={img.imagem_url}
+                        src={url}
                         alt="Imagem"
                         className="w-full h-24 object-cover rounded-lg border"
                       />
