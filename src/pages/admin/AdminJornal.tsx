@@ -135,10 +135,6 @@ const AdminJornal = () => {
         setIsUploading(false);
       }
     },
-      } finally {
-        setIsUploading(false);
-      }
-    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-jornais"] });
       toast.success("Notícia criada com sucesso!");
