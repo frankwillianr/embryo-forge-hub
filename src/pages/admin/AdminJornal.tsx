@@ -205,19 +205,7 @@ const AdminJornal = () => {
     },
   });
 
-  // Delete imagem
-  const deleteImageMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("rel_cidade_jornal_imagens")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-jornais"] });
-    },
-  });
+  // (imagens agora são gerenciadas na coluna JSON da tabela principal)
 
   const resetForm = () => {
     setCidadeId("");
