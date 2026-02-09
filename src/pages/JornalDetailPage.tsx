@@ -75,13 +75,6 @@ const JornalDetailPage = () => {
       if (error) throw error;
       if (!data) return null;
 
-      // Busca imagens
-      const { data: imagensData } = await supabase
-        .from("rel_cidade_jornal_imagens")
-        .select("*")
-        .eq("jornal_id", jornalId)
-        .order("ordem");
-
       // Busca contagem de reações
       const { count: likesCount } = await supabase
         .from("rel_cidade_jornal_reacoes")
@@ -97,7 +90,7 @@ const JornalDetailPage = () => {
 
       return {
         ...data,
-        imagens: (imagensData || []) as JornalImagem[],
+        imagens: Array.isArray(data.imagens) ? data.imagens : [],
         likes_count: likesCount || 0,
         dislikes_count: dislikesCount || 0,
       } as Jornal;
