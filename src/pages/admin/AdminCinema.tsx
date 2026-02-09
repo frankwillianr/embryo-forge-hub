@@ -90,9 +90,12 @@ const AdminCinema = () => {
         nome_cinema: data.nome_cinema,
         banner_url: data.banner_url || null,
         trailer_url: data.trailer_url || null,
-        horarios: data.horarios
+        horarios: data.status === "em_cartaz" && data.horarios
           ? data.horarios.split(",").map((h) => h.trim())
           : [],
+        duracao: data.duracao || null,
+        genero: data.genero || null,
+        status: data.status,
       };
 
       if (editingFilme) {
