@@ -149,6 +149,9 @@ const AdminCinema = () => {
       banner_url: "",
       trailer_url: "",
       horarios: "",
+      duracao: "",
+      genero: "",
+      status: "em_cartaz",
     });
     setDialogOpen(true);
   };
