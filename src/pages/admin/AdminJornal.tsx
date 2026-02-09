@@ -150,6 +150,13 @@ const AdminJornal = () => {
     mutationFn: async ({ id, ...jornal }: Jornal) => {
       setIsUploading(true);
       try {
+        // Upload novas imagens
+        let allImages = [...existingImages];
+        if (imageFiles.length > 0) {
+          const urls = await uploadImages(imageFiles, id);
+          allImages = [...allImages, ...urls];
+        }
+
         const { data, error } = await supabase
           .from("rel_cidade_jornal")
           .update({
@@ -158,26 +165,13 @@ const AdminJornal = () => {
             descricao: jornal.descricao,
             fonte: jornal.fonte,
             video_url: jornal.video_url,
+            imagens: allImages,
           })
           .eq("id", id)
           .select()
           .single();
 
         if (error) throw error;
-
-        // Upload novas imagens
-        if (imageFiles.length > 0) {
-          const urls = await uploadImages(imageFiles, id);
-          const startOrder = existingImages.length;
-          for (let i = 0; i < urls.length; i++) {
-            await supabase.from("rel_cidade_jornal_imagens").insert({
-              jornal_id: id,
-              imagem_url: urls[i],
-              ordem: startOrder + i,
-            });
-          }
-        }
-
         return data;
       } finally {
         setIsUploading(false);
