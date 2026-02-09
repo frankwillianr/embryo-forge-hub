@@ -295,9 +295,8 @@ const AdminJornal = () => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const removeExistingImage = (img: JornalImagem) => {
-    deleteImageMutation.mutate(img.id);
-    setExistingImages((prev) => prev.filter((i) => i.id !== img.id));
+  const removeExistingImage = (url: string) => {
+    setExistingImages((prev) => prev.filter((i) => i !== url));
   };
 
   const getCidadeNome = (cidadeId: string) => {
