@@ -4,7 +4,7 @@ import { Newspaper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import JornalCard from "./JornalCard";
-import type { Jornal, JornalImagem } from "@/types/jornal";
+import type { Jornal } from "@/types/jornal";
 
 interface JornalHorizontalListProps {
   cidadeSlug?: string;
@@ -16,7 +16,6 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
   const { data: jornais = [], isLoading } = useQuery({
     queryKey: ["jornais-home", cidadeSlug],
     queryFn: async () => {
-      // Busca cidade pelo slug
       const { data: cidadeData, error: cidadeError } = await supabase
         .from("cidade")
         .select("id")
@@ -26,7 +25,6 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
       if (cidadeError) throw cidadeError;
       if (!cidadeData) return [];
 
-      // Busca notícias da cidade
       const { data: jornaisData, error: jornaisError } = await supabase
         .from("rel_cidade_jornal")
         .select("*")
@@ -37,27 +35,9 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
       if (jornaisError) throw jornaisError;
       if (!jornaisData || jornaisData.length === 0) return [];
 
-      // Busca imagens para cada notícia
-      const jornalIds = jornaisData.map((j) => j.id);
-      const { data: imagensData, error: imagensError } = await supabase
-        .from("rel_cidade_jornal_imagens")
-        .select("*")
-        .in("jornal_id", jornalIds)
-        .order("ordem");
-
-      if (imagensError) throw imagensError;
-
-      // Agrupa imagens por jornal
-      const imagensPorJornal = (imagensData || []).reduce((acc, img) => {
-        if (!acc[img.jornal_id]) acc[img.jornal_id] = [];
-        acc[img.jornal_id].push(img as JornalImagem);
-        return acc;
-      }, {} as Record<string, JornalImagem[]>);
-
-      // Monta resultado final
       return jornaisData.map((j) => ({
         ...j,
-        imagens: imagensPorJornal[j.id] || [],
+        imagens: Array.isArray(j.imagens) ? j.imagens : [],
       })) as Jornal[];
     },
     enabled: !!cidadeSlug,

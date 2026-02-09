@@ -11,7 +11,7 @@ interface JornalCardProps {
 
 const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
   const navigate = useNavigate();
-  const primeiraImagem = jornal.imagens?.[0]?.imagem_url;
+  const primeiraImagem = jornal.imagens?.[0];
   
   const handleClick = () => {
     navigate(`/cidade/${cidadeSlug}/jornal/${jornal.id}`);
