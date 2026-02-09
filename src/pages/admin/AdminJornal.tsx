@@ -518,9 +518,9 @@ const AdminJornal = () => {
               jornais.map((jornal) => (
                 <TableRow key={jornal.id}>
                   <TableCell>
-                    {jornal.imagens?.[0]?.imagem_url ? (
+                    {jornal.imagens?.[0] ? (
                       <img
-                        src={jornal.imagens[0].imagem_url}
+                        src={jornal.imagens[0]}
                         alt={jornal.titulo}
                         className="w-12 h-8 object-cover rounded"
                       />
