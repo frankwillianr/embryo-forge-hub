@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Play, Clock, MapPin } from "lucide-react";
+import { Play, Clock, MapPin, Timer, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -11,9 +12,10 @@ import type { Cinema } from "@/types/cinema";
 
 interface CinemaCardProps {
   cinema: Cinema;
+  showHorarios?: boolean;
 }
 
-const CinemaCard = ({ cinema }: CinemaCardProps) => {
+const CinemaCard = ({ cinema, showHorarios = true }: CinemaCardProps) => {
   const [trailerOpen, setTrailerOpen] = useState(false);
 
   const getYouTubeEmbedUrl = (url: string) => {
@@ -39,7 +41,6 @@ const CinemaCard = ({ cinema }: CinemaCardProps) => {
               <Play className="h-8 w-8 text-muted-foreground/40" />
             </div>
           )}
-          {/* Trailer button overlay */}
           {embedUrl && (
             <button
               onClick={() => setTrailerOpen(true)}
@@ -63,14 +64,30 @@ const CinemaCard = ({ cinema }: CinemaCardProps) => {
             <span className="truncate">{cinema.nome_cinema}</span>
           </div>
 
+          {/* Gênero e Duração */}
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {cinema.genero && (
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 gap-1">
+                <Tag className="h-2.5 w-2.5" />
+                {cinema.genero}
+              </Badge>
+            )}
+            {cinema.duracao && (
+              <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/70">
+                <Timer className="h-3 w-3" />
+                {cinema.duracao}
+              </span>
+            )}
+          </div>
+
           {cinema.sinopse && (
             <p className="text-[11px] text-muted-foreground/60 line-clamp-2 mt-1.5 leading-relaxed">
               {cinema.sinopse}
             </p>
           )}
 
-          {/* Horários */}
-          {cinema.horarios && cinema.horarios.length > 0 && (
+          {/* Horários - only for em_cartaz */}
+          {showHorarios && cinema.horarios && cinema.horarios.length > 0 && (
             <div className="mt-auto pt-2">
               <div className="flex items-center gap-1 mb-1.5">
                 <Clock className="h-3 w-3 text-primary/70" />
@@ -89,7 +106,15 @@ const CinemaCard = ({ cinema }: CinemaCardProps) => {
             </div>
           )}
 
-          {/* Trailer button mobile */}
+          {/* Em breve label */}
+          {!showHorarios && (
+            <div className="mt-auto pt-2">
+              <Badge variant="outline" className="text-[10px] text-muted-foreground">
+                Em breve
+              </Badge>
+            </div>
+          )}
+
           {embedUrl && (
             <Button
               size="sm"

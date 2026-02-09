@@ -7,6 +7,10 @@ export interface Cinema {
   banner_url: string | null;
   trailer_url: string | null;
   horarios: string[];
+  duracao: string | null;
+  genero: string | null;
+  status: 'em_cartaz' | 'em_breve';
+  id_externo: string | null;
   created_at: string;
   updated_at: string;
 }
