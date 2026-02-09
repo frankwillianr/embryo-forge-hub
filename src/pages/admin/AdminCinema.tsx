@@ -49,6 +49,9 @@ const AdminCinema = () => {
     banner_url: "",
     trailer_url: "",
     horarios: "",
+    duracao: "",
+    genero: "",
+    status: "em_cartaz" as "em_cartaz" | "em_breve",
   });
 
   // Busca cidades
