@@ -30,7 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, X, Image, Video, Youtube, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Jornal, JornalInsert, JornalImagem } from "@/types/jornal";
+import type { Jornal, JornalInsert } from "@/types/jornal";
 import type { Cidade } from "@/types/cidade";
 import { toast } from "sonner";
 import { format } from "date-fns";
