@@ -27,3 +27,6 @@ verify_jwt = false
 
 [functions.send-empresa-payment-email]
 verify_jwt = false
+
+[functions.get-banners]
+verify_jwt = false
