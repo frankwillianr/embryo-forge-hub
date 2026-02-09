@@ -20,9 +20,30 @@ Deno.serve(async (req) => {
     // Parse query params
     const url = new URL(req.url);
     const cidadeId = url.searchParams.get('cidade_id');
+    const cidadeSlug = url.searchParams.get('cidade'); // Aceita slug como "gv"
     const apenasAtivos = url.searchParams.get('ativos') !== 'false'; // default true
 
-    console.log(`Buscando banners - cidade_id: ${cidadeId}, ativos: ${apenasAtivos}`);
+    console.log(`Buscando banners - cidade_id: ${cidadeId}, cidade_slug: ${cidadeSlug}, ativos: ${apenasAtivos}`);
+
+    // Se passou slug, buscar o ID da cidade primeiro
+    let resolvedCidadeId = cidadeId;
+    if (cidadeSlug && !cidadeId) {
+      const { data: cidade, error: cidadeError } = await supabase
+        .from('cidade')
+        .select('id')
+        .eq('slug', cidadeSlug)
+        .single();
+
+      if (cidadeError || !cidade) {
+        console.error('Cidade não encontrada:', cidadeSlug);
+        return new Response(
+          JSON.stringify({ error: 'Cidade não encontrada', details: `Slug "${cidadeSlug}" não existe` }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      resolvedCidadeId = cidade.id;
+      console.log(`Slug "${cidadeSlug}" resolvido para ID: ${resolvedCidadeId}`);
+    }
 
     // Build query
     let query = supabase
@@ -45,8 +66,8 @@ Deno.serve(async (req) => {
       `);
 
     // Filter by cidade if provided
-    if (cidadeId) {
-      query = query.eq('rel_cidade_banner.cidade_id', cidadeId);
+    if (resolvedCidadeId) {
+      query = query.eq('rel_cidade_banner.cidade_id', resolvedCidadeId);
     }
 
     // Filter only active banners if requested
