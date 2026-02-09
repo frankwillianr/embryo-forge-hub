@@ -19,6 +19,7 @@ export interface Jornal {
   cidade_id: string;
   titulo: string;
   descricao: string;
+  descricao_curta?: string | null;
   fonte?: string | null;
   video_url?: string | null;
   created_at: string;
