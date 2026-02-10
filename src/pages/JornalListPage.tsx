@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import type { Jornal } from "@/types/jornal";
+import { type Jornal, parseImagens } from "@/types/jornal";
 import jornalBanner from "@/assets/jornal-banner.jpg";
 
 const JornalListPage = () => {
