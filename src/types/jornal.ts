@@ -14,7 +14,7 @@ export interface Jornal {
   descricao_curta?: string | null;
   fonte?: string | null;
   video_url?: string | null;
-  imagens?: string[];
+  imagens?: string[] | string | null;
   created_at: string;
   updated_at: string;
   likes_count?: number;
@@ -28,4 +28,12 @@ export interface JornalInsert {
   fonte?: string;
   video_url?: string;
   imagens?: string[];
+}
+
+/** Normaliza o campo imagens que pode vir como string, array ou null */
+export function parseImagens(imagens: string[] | string | null | undefined): string[] {
+  if (!imagens) return [];
+  if (Array.isArray(imagens)) return imagens.filter(Boolean);
+  if (typeof imagens === 'string') return [imagens];
+  return [];
 }
