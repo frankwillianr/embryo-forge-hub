@@ -142,22 +142,6 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Verificar se id_externo já existe
-      if (id_externo) {
-        const { data: existente } = await supabase
-          .from('rel_cidade_jornal')
-          .select('id')
-          .eq('id_externo', id_externo)
-          .maybeSingle();
-
-        if (existente) {
-          return new Response(
-            JSON.stringify({ error: 'ID externo já existe', details: `Já existe um jornal com id_externo "${id_externo}"`, jornal_id: existente.id }),
-            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      }
-
       // Inserir jornal
       const { data: novoJornal, error: insertError } = await supabase
         .from('rel_cidade_jornal')
