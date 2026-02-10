@@ -4,7 +4,7 @@ import { Newspaper } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import JornalCard from "./JornalCard";
-import type { Jornal } from "@/types/jornal";
+import { type Jornal, parseImagens } from "@/types/jornal";
 
 interface JornalHorizontalListProps {
   cidadeSlug?: string;
@@ -37,7 +37,7 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
 
       return jornaisData.map((j) => ({
         ...j,
-        imagens: Array.isArray(j.imagens) ? j.imagens : [],
+        imagens: parseImagens(j.imagens),
       })) as Jornal[];
     },
     enabled: !!cidadeSlug,
