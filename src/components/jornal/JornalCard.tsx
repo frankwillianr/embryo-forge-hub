@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
-import type { Jornal } from "@/types/jornal";
+import { type Jornal, parseImagens } from "@/types/jornal";
 
 interface JornalCardProps {
   jornal: Jornal;
@@ -11,7 +11,7 @@ interface JornalCardProps {
 
 const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
   const navigate = useNavigate();
-  const primeiraImagem = jornal.imagens?.[0];
+  const primeiraImagem = parseImagens(jornal.imagens)[0];
   
   const handleClick = () => {
     navigate(`/cidade/${cidadeSlug}/jornal/${jornal.id}`);

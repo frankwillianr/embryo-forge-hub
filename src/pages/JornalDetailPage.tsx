@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { parseImagens } from "@/types/jornal";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -90,7 +91,7 @@ const JornalDetailPage = () => {
 
       return {
         ...data,
-        imagens: Array.isArray(data.imagens) ? data.imagens : [],
+        imagens: parseImagens(data.imagens),
         likes_count: likesCount || 0,
         dislikes_count: dislikesCount || 0,
       } as Jornal;
@@ -303,7 +304,7 @@ const JornalDetailPage = () => {
     );
   }
 
-  const imagens = jornal.imagens || [];
+  const imagens = parseImagens(jornal.imagens);
   const embedUrl = jornal.video_url ? getYouTubeEmbedUrl(jornal.video_url) : null;
   // Se não for URL do YouTube, pode ser vídeo direto
   const isDirectVideo = jornal.video_url && !embedUrl;
