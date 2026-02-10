@@ -304,7 +304,7 @@ const JornalDetailPage = () => {
     );
   }
 
-  const imagens = jornal.imagens || [];
+  const imagens = parseImagens(jornal.imagens);
   const embedUrl = jornal.video_url ? getYouTubeEmbedUrl(jornal.video_url) : null;
   // Se não for URL do YouTube, pode ser vídeo direto
   const isDirectVideo = jornal.video_url && !embedUrl;
