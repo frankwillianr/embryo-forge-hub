@@ -33,7 +33,7 @@ const JornalListPage = () => {
 
       return jornaisData.map((j) => ({
         ...j,
-        imagens: Array.isArray(j.imagens) ? j.imagens : [],
+        imagens: parseImagens(j.imagens),
       })) as Jornal[];
     },
     enabled: !!slug,
