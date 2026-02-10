@@ -3,7 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play } from "lucide-react";
-import type { Jornal } from "@/types/jornal";
+import { type Jornal, parseImagens } from "@/types/jornal";
 
 interface JornalFeedCardProps {
   jornal: Jornal;
@@ -22,7 +22,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const [startX, setStartX] = useState(0);
   const [translateX, setTranslateX] = useState(0);
 
-  const imagens = jornal.imagens || [];
+  const imagens = parseImagens(jornal.imagens);
   const hasMultipleImages = imagens.length > 1;
   
   const handleTouchStart = (e: React.TouchEvent) => {
