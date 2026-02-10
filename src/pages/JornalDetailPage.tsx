@@ -91,7 +91,7 @@ const JornalDetailPage = () => {
 
       return {
         ...data,
-        imagens: Array.isArray(data.imagens) ? data.imagens : [],
+        imagens: parseImagens(data.imagens),
         likes_count: likesCount || 0,
         dislikes_count: dislikesCount || 0,
       } as Jornal;

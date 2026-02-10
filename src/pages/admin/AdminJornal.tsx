@@ -271,7 +271,7 @@ const AdminJornal = () => {
       setUploadedVideoUrl(null);
     }
     
-    setExistingImages(jornal.imagens || []);
+    setExistingImages(Array.isArray(jornal.imagens) ? jornal.imagens : jornal.imagens ? [jornal.imagens] : []);
     setImageFiles([]);
     setImagePreviews([]);
     setIsDialogOpen(true);
