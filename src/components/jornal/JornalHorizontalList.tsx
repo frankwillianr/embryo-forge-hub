@@ -29,6 +29,7 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
         .from("rel_cidade_jornal")
         .select("*")
         .eq("cidade_id", cidadeData.id)
+        .not("titulo", "like", "%{{%")
         .order("created_at", { ascending: false })
         .limit(10);
 
