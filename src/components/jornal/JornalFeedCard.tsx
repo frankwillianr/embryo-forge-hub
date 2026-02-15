@@ -58,7 +58,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
     setIsLiked(true);
   };
 
-  const descricao = jornal.descricao || "";
+  const descricao = (jornal.descricao || "").replace(/\\n/g, '\n');
   const shouldTruncate = descricao.length > 100;
 
   return (
