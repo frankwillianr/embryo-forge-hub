@@ -169,10 +169,11 @@ const VideoUpload = ({
         </button>
       )}
 
+      {/* Workaround: no accept attribute to avoid iOS camera capture prompt */}
       <input
         ref={inputRef}
         type="file"
-        accept="video/mp4,video/webm,video/quicktime,video/x-m4v"
+        accept=".mp4,.webm,.mov,.m4v"
         onChange={handleFileSelect}
         className="hidden"
       />
