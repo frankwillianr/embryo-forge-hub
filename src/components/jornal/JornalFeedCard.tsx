@@ -88,9 +88,13 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
               <span className="text-[13px] font-semibold text-foreground leading-tight">
                 {jornal.fonte || "Jornal da Cidade"}
               </span>
-              {isRead && (
-                <span className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full leading-none">
+              {isRead ? (
+                <span className="text-[9px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full leading-none">
                   lida
+                </span>
+              ) : (
+                <span className="text-[9px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full leading-none">
+                  não lida
                 </span>
               )}
             </div>
