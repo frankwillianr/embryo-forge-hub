@@ -1,5 +1,6 @@
 import { CalendarDays, MapPin, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useRef } from "react";
 
 interface EventoCardProps {
   id: string;
@@ -23,14 +24,31 @@ const EventoCard = ({
   categoria,
 }: EventoCardProps) => {
   const navigate = useNavigate();
+  const startX = useRef(0);
+  const startY = useRef(0);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    const dx = Math.abs(e.clientX - startX.current);
+    const dy = Math.abs(e.clientY - startY.current);
+    if (dx < 10 && dy < 10) {
+      navigate(`/cidade/${cidadeSlug}/eventos/${id}`);
+    }
+  };
+
   const dataObj = new Date(data_evento + "T00:00:00");
   const dia = dataObj.getDate();
   const mes = dataObj.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "").toUpperCase();
 
   return (
     <div
-      className="min-w-[220px] max-w-[220px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer active:scale-[0.98] transition-transform"
-      onClick={() => navigate(`/cidade/${cidadeSlug}/eventos/${id}`)}
+      className="min-w-[220px] max-w-[220px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer active:scale-[0.98] transition-transform touch-pan-x"
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
     >
       <div className="relative h-[140px] w-full">
         {imagem_url ? (
