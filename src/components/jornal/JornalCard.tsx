@@ -57,9 +57,13 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
         <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider flex items-center gap-1.5">
           <span>{format(new Date(jornal.created_at), "dd MMM", { locale: ptBR })}</span>
           {jornal.fonte && <span>· {jornal.fonte}</span>}
-          {isRead && (
-            <span className="text-[8px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full normal-case tracking-normal">
+          {isRead ? (
+            <span className="text-[8px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full normal-case tracking-normal">
               lida
+            </span>
+          ) : (
+            <span className="text-[8px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full normal-case tracking-normal">
+              não lida
             </span>
           )}
         </p>

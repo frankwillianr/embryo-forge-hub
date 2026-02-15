@@ -123,9 +123,13 @@ const JornalListPage = () => {
                       <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                         <span>{data} às {hora}</span>
                         {jornal.fonte && <span className="text-primary/70">· {jornal.fonte}</span>}
-                        {JSON.parse(localStorage.getItem("jornal-lidos") || "[]").includes(jornal.id) && (
-                          <span className="text-[8px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full normal-case tracking-normal">
+                        {JSON.parse(localStorage.getItem("jornal-lidos") || "[]").includes(jornal.id) ? (
+                          <span className="text-[8px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full normal-case tracking-normal">
                             lida
+                          </span>
+                        ) : (
+                          <span className="text-[8px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full normal-case tracking-normal">
+                            não lida
                           </span>
                         )}
                       </p>
