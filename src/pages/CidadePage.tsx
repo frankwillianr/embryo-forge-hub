@@ -7,13 +7,13 @@ import CidadeBanner from "@/components/CidadeBanner";
 import HomeSection from "@/components/sections/HomeSection";
 import CinemaSection from "@/components/sections/CinemaSection";
 import AloPrefeituraSection from "@/components/sections/AloPrefeituraSection";
-import MenuSheet from "@/components/menu/MenuSheet";
+import MenuSection from "@/components/sections/MenuSection";
 import { Button } from "@/components/ui/button";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-type TabType = "home" | "cinema" | "prefeitura";
+type TabType = "home" | "cinema" | "prefeitura" | "menu";
 
 const navItems = [
   { id: "home" as TabType, title: "Home", icon: Home },
@@ -25,13 +25,13 @@ const sectionTitles: Record<TabType, string> = {
   home: "Home",
   cinema: "Cinema",
   prefeitura: "Alô Prefeitura",
+  menu: "Menu",
 };
 
 const CidadePage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("home");
-  const [menuOpen, setMenuOpen] = useState(false);
   const { profile } = useAuth();
 
   // Get first name from profile
@@ -115,6 +115,8 @@ const CidadePage = () => {
         return <CinemaSection cidadeSlug={slug} />;
       case "prefeitura":
         return <AloPrefeituraSection cidadeSlug={slug} />;
+      case "menu":
+        return <MenuSection cidadeNome={cidade?.nome} cidadeSlug={slug} />;
     }
   };
 
@@ -210,8 +212,15 @@ const CidadePage = () => {
             </button>
 
             <button
-              onClick={() => setMenuOpen(true)}
-              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 text-gray-400 hover:text-white"
+              onClick={() => {
+                setActiveTab("menu");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
+                activeTab === "menu"
+                  ? "text-primary"
+                  : "text-gray-400 hover:text-white"
+              }`}
             >
               <Menu className="h-5 w-5" />
               <span className="text-[9px] font-medium">Menu</span>
@@ -219,14 +228,6 @@ const CidadePage = () => {
           </div>
         </div>
       </nav>
-
-      {/* Menu Sheet */}
-      <MenuSheet 
-        open={menuOpen} 
-        onOpenChange={setMenuOpen} 
-        cidadeNome={cidade?.nome}
-        cidadeSlug={slug}
-      />
     </div>
   );
 };
