@@ -6,6 +6,7 @@ import AloPrefeituraHorizontalList from "@/components/aloPrefeitura/AloPrefeitur
 import ServicosSection from "@/components/servicos/ServicosSection";
 import OfertasSection from "@/components/ofertas/OfertasSection";
 import QuickAccessCards from "@/components/sections/QuickAccessCards";
+import EventosSection from "@/components/eventos/EventosSection";
 import type { Banner } from "@/types/banner";
 
 interface HomeSectionProps {
@@ -82,6 +83,9 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
           <p className="text-muted-foreground text-sm">Nenhum anúncio hoje</p>
         </div>
       )}
+
+      {/* Shows e Eventos */}
+      <EventosSection cidadeSlug={cidadeSlug} />
 
       {/* Jornal da Cidade */}
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
