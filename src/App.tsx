@@ -43,6 +43,7 @@ import MinhasEmpresasPage from "@/pages/MinhasEmpresasPage";
 import EditarEmpresaPage from "@/pages/EditarEmpresaPage";
 import NotFound from "@/pages/NotFound";
 import EventoDetailPage from "@/pages/EventoDetailPage";
+import EventosListPage from "@/pages/EventosListPage";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -82,6 +83,7 @@ const App = () => (
               <Route path="/cidade/:slug/meus-anuncios" element={<MeusAnunciosPage />} />
               <Route path="/cidade/:slug/minhas-empresas" element={<MinhasEmpresasPage />} />
               <Route path="/cidade/:slug/minhas-empresas/:empresaId/editar" element={<EditarEmpresaPage />} />
+              <Route path="/cidade/:slug/eventos" element={<EventosListPage />} />
               <Route path="/cidade/:slug/eventos/:eventoId" element={<EventoDetailPage />} />
               <Route path="/cidade/:slug/auth" element={<AuthPage />} />
             </Route>

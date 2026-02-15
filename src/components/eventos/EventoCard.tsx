@@ -11,6 +11,7 @@ interface EventoCardProps {
   horario?: string | null;
   local_nome?: string | null;
   categoria?: string | null;
+  className?: string;
 }
 
 const EventoCard = ({
@@ -22,6 +23,7 @@ const EventoCard = ({
   horario,
   local_nome,
   categoria,
+  className: customClassName,
 }: EventoCardProps) => {
   const navigate = useNavigate();
   const wasDragging = useRef(false);
@@ -58,7 +60,7 @@ const EventoCard = ({
 
   return (
     <div
-      className="min-w-[220px] max-w-[220px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer active:scale-[0.98] transition-transform"
+      className={customClassName || "min-w-[220px] max-w-[220px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer active:scale-[0.98] transition-transform"}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onClick={handleClick}
