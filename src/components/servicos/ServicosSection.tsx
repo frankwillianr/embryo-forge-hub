@@ -1,14 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Car, ShoppingBag, Users, Bike, Scissors, Wrench, Sparkles, PawPrint, HardHat } from "lucide-react";
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from "@/components/ui/command";
+import { Search, Car, ShoppingBag, Users } from "lucide-react";
 
 // Import icons para grid
 import veiculosIcon from "@/assets/icons/veiculos.png";
@@ -181,40 +173,38 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
 
       {/* Campo de Busca com Autocomplete */}
       <div className="px-5 mb-4 relative">
-        <Command className="rounded-xl border-0 bg-muted/50 overflow-visible">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none z-10" />
-            <CommandInput
-              placeholder="O que você está procurando?"
-              value={searchTerm}
-              onValueChange={setSearchTerm}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-              className="pl-10 h-11 border-0"
-            />
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="O que você está procurando?"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+            className="w-full h-10 pl-10 pr-4 rounded-full bg-muted/50 border border-border/50 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
+          />
+        </div>
+        {isSearchFocused && searchTerm.trim() && (
+          <div className="absolute top-full left-5 right-5 mt-1 bg-background border border-border rounded-2xl shadow-lg z-50 max-h-[200px] overflow-y-auto">
+            {servicosFiltrados.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Nenhum serviço encontrado</p>
+            ) : (
+              <div className="py-1.5">
+                {servicosFiltrados.map((servico) => (
+                  <button
+                    key={servico.id}
+                    onMouseDown={() => handleSelectServico(servico.id)}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
+                  >
+                    <Search className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0" />
+                    {servico.nome}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          {isSearchFocused && searchTerm.trim() && (
-            <CommandList className="absolute top-full left-0 right-0 mt-1 bg-background border rounded-xl shadow-lg z-50 max-h-[200px]">
-              {servicosFiltrados.length === 0 ? (
-                <CommandEmpty>Nenhum serviço encontrado</CommandEmpty>
-              ) : (
-                <CommandGroup>
-                  {servicosFiltrados.map((servico) => (
-                    <CommandItem
-                      key={servico.id}
-                      value={servico.nome}
-                      onSelect={() => handleSelectServico(servico.id)}
-                      className="cursor-pointer"
-                    >
-                      <Search className="mr-2 h-4 w-4 text-muted-foreground" />
-                      {servico.nome}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-            </CommandList>
-          )}
-        </Command>
+        )}
       </div>
 
       {/* Grid de Serviços - scroll horizontal com 2 linhas */}
