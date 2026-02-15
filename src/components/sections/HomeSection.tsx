@@ -107,8 +107,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       {/* Cinema */}
       <CinemaHorizontalList cidadeSlug={cidadeSlug} />
 
-      {/* Horários de Ônibus */}
-      <OnibusHorizontalList cidadeSlug={cidadeSlug} />
     </div>
   );
 };
