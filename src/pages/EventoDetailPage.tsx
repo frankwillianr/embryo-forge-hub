@@ -132,15 +132,6 @@ const EventoDetailPage = () => {
           </div>
         )}
 
-        {/* Buy ticket button */}
-        {evento.link_ingresso && (
-          <a href={evento.link_ingresso} target="_blank" rel="noopener noreferrer" className="block">
-            <Button className="w-full gap-2 h-12 text-base rounded-xl">
-              <ExternalLink className="h-5 w-5" />
-              Comprar Ingresso
-            </Button>
-          </a>
-        )}
       </div>
     </div>
   );
