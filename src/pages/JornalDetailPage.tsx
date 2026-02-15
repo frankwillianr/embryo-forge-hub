@@ -415,98 +415,74 @@ const JornalDetailPage = () => {
 
         <h1 className="text-xl font-bold text-foreground">{jornal.titulo}</h1>
 
-        {/* Botões de narração */}
+        {/* Botões de narração - Web Speech API */}
         <div className="flex flex-wrap gap-2">
           {[
-            { voice: "pt-BR-FranciscaNeural", name: "Francisca", gender: "♀" },
-            { voice: "pt-BR-AntonioNeural", name: "Antônio", gender: "♂" },
-            { voice: "pt-BR-ThalitaNeural", name: "Thalita", gender: "♀" },
-            { voice: "pt-BR-DonatoNeural", name: "Donato", gender: "♂" },
-            { voice: "pt-BR-GiovannaNeural", name: "Giovanna", gender: "♀" },
-            { voice: "pt-BR-FabioNeural", name: "Fábio", gender: "♂" },
-          ].map(({ voice, name, gender }) => (
+            { id: "voice-1", name: "Voz 1", rate: 0.9, pitch: 1.1 },
+            { id: "voice-2", name: "Voz 2", rate: 1.0, pitch: 0.85 },
+            { id: "voice-3", name: "Voz 3", rate: 0.95, pitch: 1.0 },
+            { id: "voice-4", name: "Voz 4", rate: 1.05, pitch: 0.95 },
+          ].map(({ id, name, rate, pitch }) => (
             <button
-              key={voice}
-              onClick={async (e) => {
+              key={id}
+              onClick={(e) => {
                 e.stopPropagation();
-                if (isSpeaking && activeVoice === voice) {
+                if (isSpeaking && activeVoice === id) {
+                  window.speechSynthesis.cancel();
                   if (audioRef.current) {
                     audioRef.current.pause();
-                    audioRef.current.currentTime = 0;
                     audioRef.current = null;
                   }
-                  window.speechSynthesis.cancel();
                   setIsSpeaking(false);
                   setActiveVoice(null);
                   return;
                 }
-                // Para qualquer áudio anterior
+                window.speechSynthesis.cancel();
                 if (audioRef.current) {
                   audioRef.current.pause();
                   audioRef.current = null;
                 }
-                window.speechSynthesis.cancel();
 
                 setIsLoadingAudio(true);
-                setActiveVoice(voice);
-                try {
-                  const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
-                  const response = await fetch(
-                    "https://umauozcntfxgphzbiifz.supabase.co/functions/v1/edge-tts",
-                    {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ text, voice }),
-                    }
-                  );
+                setActiveVoice(id);
 
-                  if (!response.ok) throw new Error("Erro ao gerar áudio");
+                const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "pt-BR";
+                utterance.rate = rate;
+                utterance.pitch = pitch;
 
-                  const blob = await response.blob();
-                  const url = URL.createObjectURL(blob);
-                  const audio = new Audio(url);
-                  audioRef.current = audio;
-                  audio.onended = () => {
-                    setIsSpeaking(false);
-                    setActiveVoice(null);
-                    URL.revokeObjectURL(url);
-                  };
-                  audio.onerror = () => {
-                    setIsSpeaking(false);
-                    setActiveVoice(null);
-                    URL.revokeObjectURL(url);
-                  };
-                  await audio.play();
-                  setIsSpeaking(true);
-                } catch (error) {
-                  console.error("TTS error:", error);
-                  const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
-                  const utterance = new SpeechSynthesisUtterance(text);
-                  utterance.lang = "pt-BR";
-                  utterance.rate = 0.95;
-                  utterance.onend = () => { setIsSpeaking(false); setActiveVoice(null); };
-                  utterance.onerror = () => { setIsSpeaking(false); setActiveVoice(null); };
-                  window.speechSynthesis.speak(utterance);
-                  setIsSpeaking(true);
-                } finally {
-                  setIsLoadingAudio(false);
+                // Tenta encontrar vozes pt-BR distintas disponíveis no navegador
+                const allVoices = window.speechSynthesis.getVoices();
+                const ptVoices = allVoices.filter(v => v.lang.startsWith("pt"));
+                const voiceIndex = parseInt(id.split("-")[1]) - 1;
+                if (ptVoices.length > voiceIndex) {
+                  utterance.voice = ptVoices[voiceIndex];
+                } else if (ptVoices.length > 0) {
+                  utterance.voice = ptVoices[voiceIndex % ptVoices.length];
                 }
+
+                utterance.onend = () => { setIsSpeaking(false); setActiveVoice(null); };
+                utterance.onerror = () => { setIsSpeaking(false); setActiveVoice(null); };
+                window.speechSynthesis.speak(utterance);
+                setIsSpeaking(true);
+                setIsLoadingAudio(false);
               }}
-              disabled={isLoadingAudio && activeVoice !== voice}
+              disabled={isLoadingAudio && activeVoice !== id}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all active:scale-95 disabled:opacity-40 ${
-                activeVoice === voice
+                activeVoice === id
                   ? "bg-primary text-primary-foreground border-primary"
                   : "text-foreground border-border/60 hover:border-primary/40"
               }`}
             >
-              {isLoadingAudio && activeVoice === voice ? (
+              {isLoadingAudio && activeVoice === id ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
-              ) : isSpeaking && activeVoice === voice ? (
+              ) : isSpeaking && activeVoice === id ? (
                 <VolumeX className="h-3 w-3" />
               ) : (
                 <Volume2 className="h-3 w-3" />
               )}
-              {gender} {name}
+              🎙 {name}
             </button>
           ))}
         </div>
