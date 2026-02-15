@@ -105,7 +105,7 @@ const ServicoCategoriaPage = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(`/cidade/${slug}/servicos`)}
+          onClick={() => navigate(`/cidade/${slug}`)}
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
