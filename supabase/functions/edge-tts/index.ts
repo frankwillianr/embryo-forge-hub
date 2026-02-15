@@ -27,9 +27,12 @@ serve(async (req) => {
 
     // Voz padrão: Francisca (pt-BR, feminina, neural)
     const selectedVoice = voice || "pt-BR-FranciscaNeural";
+    console.log("Voice requested:", voice, "| Voice used:", selectedVoice);
 
     const tts = new UniversalEdgeTTS(trimmedText, selectedVoice);
+    console.log("TTS instance created with voice:", selectedVoice);
     const result = await tts.synthesize();
+    console.log("Audio generated, size:", result.audio?.byteLength || result.audio?.length || "unknown");
 
     return new Response(result.audio, {
       headers: {
