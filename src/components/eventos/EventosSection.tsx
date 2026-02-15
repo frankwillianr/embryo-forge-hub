@@ -75,21 +75,23 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
         </button>
       </div>
 
-      {/* Horizontal scroll */}
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide px-5 pb-2">
-        {eventos.map((evento: any) => (
-          <EventoCard
-            key={evento.id}
-            id={evento.id}
-            cidadeSlug={cidadeSlug}
-            titulo={evento.titulo}
-            imagem_url={evento.imagem_url}
-            data_evento={evento.data_evento}
-            horario={evento.horario}
-            local_nome={evento.local_nome}
-            categoria={evento.categoria}
-          />
-        ))}
+      {/* Horizontal scroll - same structure as JornalHorizontalList */}
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="flex gap-3 px-5 pb-2">
+          {eventos.map((evento: any) => (
+            <EventoCard
+              key={evento.id}
+              id={evento.id}
+              cidadeSlug={cidadeSlug}
+              titulo={evento.titulo}
+              imagem_url={evento.imagem_url}
+              data_evento={evento.data_evento}
+              horario={evento.horario}
+              local_nome={evento.local_nome}
+              categoria={evento.categoria}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
