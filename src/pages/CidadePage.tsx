@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Home, Newspaper, Film, Megaphone, Menu, ArrowLeft, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +31,7 @@ const sectionTitles: Record<TabType, string> = {
 const CidadePage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const { profile } = useAuth();
 
@@ -63,6 +64,16 @@ const CidadePage = () => {
       console.log('Push notifications ativadas para esta cidade');
     }
   }, [permissionStatus]);
+
+  // Handle navigation state (e.g., from cinema horizontal list)
+  useEffect(() => {
+    const state = location.state as { tab?: TabType } | null;
+    if (state?.tab) {
+      setActiveTab(state.tab);
+      // Clear the state to avoid re-triggering
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   // Função temporária para testar push
   const handleTestPush = async () => {
