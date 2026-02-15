@@ -404,16 +404,12 @@ const JornalDetailPage = () => {
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {format(new Date(jornal.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+            {jornal.fonte && (
+              <span className="text-primary/80 ml-1">
+                · via {jornal.fonte}
+              </span>
+            )}
           </span>
-          {jornal.fonte && (
-            <span className="text-primary/80">
-              via {jornal.fonte}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground flex-1">{jornal.titulo}</h1>
           <button
             onClick={async (e) => {
               e.stopPropagation();
@@ -491,6 +487,8 @@ const JornalDetailPage = () => {
             )}
           </button>
         </div>
+
+        <h1 className="text-xl font-bold text-foreground">{jornal.titulo}</h1>
 
         {/* Descrição com imagens intercaladas */}
         {(() => {
