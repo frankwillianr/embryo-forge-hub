@@ -59,6 +59,7 @@ const JornalDetailPage = () => {
   const [mostrarFormComentario, setMostrarFormComentario] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [activeVoice, setActiveVoice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fingerprint = getFingerprint();
 
@@ -410,85 +411,105 @@ const JornalDetailPage = () => {
               </span>
             )}
           </span>
-          <button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (isSpeaking) {
-                if (audioRef.current) {
-                  audioRef.current.pause();
-                  audioRef.current.currentTime = 0;
-                  audioRef.current = null;
-                }
-                window.speechSynthesis.cancel();
-                setIsSpeaking(false);
-                return;
-              }
-              
-              setIsLoadingAudio(true);
-              try {
-                const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
-                const response = await fetch(
-                  "https://umauozcntfxgphzbiifz.supabase.co/functions/v1/edge-tts",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ text }),
-                  }
-                );
-
-                if (!response.ok) throw new Error("Erro ao gerar áudio");
-
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                const audio = new Audio(url);
-                audioRef.current = audio;
-                audio.onended = () => {
-                  setIsSpeaking(false);
-                  URL.revokeObjectURL(url);
-                };
-                audio.onerror = () => {
-                  setIsSpeaking(false);
-                  URL.revokeObjectURL(url);
-                };
-                await audio.play();
-                setIsSpeaking(true);
-              } catch (error) {
-                console.error("TTS error:", error);
-                const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = "pt-BR";
-                utterance.rate = 0.95;
-                utterance.onend = () => setIsSpeaking(false);
-                utterance.onerror = () => setIsSpeaking(false);
-                window.speechSynthesis.speak(utterance);
-                setIsSpeaking(true);
-              } finally {
-                setIsLoadingAudio(false);
-              }
-            }}
-            disabled={isLoadingAudio}
-            className="flex-shrink-0 flex items-center gap-1.5 text-xs text-primary font-medium px-3 py-1.5 rounded-full border border-primary/20 active:opacity-70 transition-opacity disabled:opacity-50"
-          >
-            {isLoadingAudio ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Gerando...
-              </>
-            ) : isSpeaking ? (
-              <>
-                <VolumeX className="h-3.5 w-3.5" />
-                Parar
-              </>
-            ) : (
-              <>
-                <Volume2 className="h-3.5 w-3.5" />
-                Ouvir notícia
-              </>
-            )}
-          </button>
         </div>
 
         <h1 className="text-xl font-bold text-foreground">{jornal.titulo}</h1>
+
+        {/* Botões de narração */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            { voice: "pt-BR-FranciscaNeural", name: "Francisca", gender: "♀" },
+            { voice: "pt-BR-AntonioNeural", name: "Antônio", gender: "♂" },
+            { voice: "pt-BR-ThalitaNeural", name: "Thalita", gender: "♀" },
+            { voice: "pt-BR-DonatoNeural", name: "Donato", gender: "♂" },
+            { voice: "pt-BR-GiovannaNeural", name: "Giovanna", gender: "♀" },
+            { voice: "pt-BR-FabioNeural", name: "Fábio", gender: "♂" },
+          ].map(({ voice, name, gender }) => (
+            <button
+              key={voice}
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (isSpeaking && activeVoice === voice) {
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current.currentTime = 0;
+                    audioRef.current = null;
+                  }
+                  window.speechSynthesis.cancel();
+                  setIsSpeaking(false);
+                  setActiveVoice(null);
+                  return;
+                }
+                // Para qualquer áudio anterior
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                  audioRef.current = null;
+                }
+                window.speechSynthesis.cancel();
+
+                setIsLoadingAudio(true);
+                setActiveVoice(voice);
+                try {
+                  const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
+                  const response = await fetch(
+                    "https://umauozcntfxgphzbiifz.supabase.co/functions/v1/edge-tts",
+                    {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ text, voice }),
+                    }
+                  );
+
+                  if (!response.ok) throw new Error("Erro ao gerar áudio");
+
+                  const blob = await response.blob();
+                  const url = URL.createObjectURL(blob);
+                  const audio = new Audio(url);
+                  audioRef.current = audio;
+                  audio.onended = () => {
+                    setIsSpeaking(false);
+                    setActiveVoice(null);
+                    URL.revokeObjectURL(url);
+                  };
+                  audio.onerror = () => {
+                    setIsSpeaking(false);
+                    setActiveVoice(null);
+                    URL.revokeObjectURL(url);
+                  };
+                  await audio.play();
+                  setIsSpeaking(true);
+                } catch (error) {
+                  console.error("TTS error:", error);
+                  const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
+                  const utterance = new SpeechSynthesisUtterance(text);
+                  utterance.lang = "pt-BR";
+                  utterance.rate = 0.95;
+                  utterance.onend = () => { setIsSpeaking(false); setActiveVoice(null); };
+                  utterance.onerror = () => { setIsSpeaking(false); setActiveVoice(null); };
+                  window.speechSynthesis.speak(utterance);
+                  setIsSpeaking(true);
+                } finally {
+                  setIsLoadingAudio(false);
+                }
+              }}
+              disabled={isLoadingAudio && activeVoice !== voice}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all active:scale-95 disabled:opacity-40 ${
+                activeVoice === voice
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "text-foreground border-border/60 hover:border-primary/40"
+              }`}
+            >
+              {isLoadingAudio && activeVoice === voice ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : isSpeaking && activeVoice === voice ? (
+                <VolumeX className="h-3 w-3" />
+              ) : (
+                <Volume2 className="h-3 w-3" />
+              )}
+              {gender} {name}
+            </button>
+          ))}
+        </div>
 
         {/* Descrição com imagens intercaladas */}
         {(() => {
