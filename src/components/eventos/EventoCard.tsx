@@ -1,6 +1,5 @@
 import { CalendarDays, MapPin, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useRef } from "react";
 
 interface EventoCardProps {
   id: string;
@@ -24,35 +23,23 @@ const EventoCard = ({
   categoria,
 }: EventoCardProps) => {
   const navigate = useNavigate();
-  const startX = useRef(0);
-  const startY = useRef(0);
-
-  const handlePointerDown = (e: React.PointerEvent) => {
-    startX.current = e.clientX;
-    startY.current = e.clientY;
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    const dx = Math.abs(e.clientX - startX.current);
-    const dy = Math.abs(e.clientY - startY.current);
-    if (dx < 10 && dy < 10) {
-      navigate(`/cidade/${cidadeSlug}/eventos/${id}`);
-    }
-  };
-
   const dataObj = new Date(data_evento + "T00:00:00");
   const dia = dataObj.getDate();
   const mes = dataObj.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "").toUpperCase();
 
   return (
-    <div
-      className="min-w-[220px] max-w-[220px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer active:scale-[0.98] transition-transform touch-pan-x"
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
+    <a
+      href={`/cidade/${cidadeSlug}/eventos/${id}`}
+      onClick={(e) => {
+        e.preventDefault();
+        navigate(`/cidade/${cidadeSlug}/eventos/${id}`);
+      }}
+      draggable={false}
+      className="min-w-[220px] max-w-[220px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer active:scale-[0.98] transition-transform block"
     >
-      <div className="relative h-[140px] w-full">
+      <div className="relative h-[140px] w-full pointer-events-none">
         {imagem_url ? (
-          <img src={imagem_url} alt={titulo} className="w-full h-full object-cover" />
+          <img src={imagem_url} alt={titulo} className="w-full h-full object-cover" draggable={false} />
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
             <CalendarDays className="h-10 w-10 text-muted-foreground/40" />
@@ -68,7 +55,7 @@ const EventoCard = ({
           </div>
         )}
       </div>
-      <div className="p-3 space-y-1.5">
+      <div className="p-3 space-y-1.5 pointer-events-none">
         <h3 className="font-semibold text-foreground text-sm line-clamp-2 leading-tight">{titulo}</h3>
         {local_nome && (
           <div className="flex items-center gap-1 text-muted-foreground">
@@ -83,7 +70,7 @@ const EventoCard = ({
           </div>
         )}
       </div>
-    </div>
+    </a>
   );
 };
 
