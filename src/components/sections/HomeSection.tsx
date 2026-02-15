@@ -8,6 +8,7 @@ import OfertasSection from "@/components/ofertas/OfertasSection";
 import QuickAccessCards from "@/components/sections/QuickAccessCards";
 import EventosSection from "@/components/eventos/EventosSection";
 import CinemaHorizontalList from "@/components/cinema/CinemaHorizontalList";
+import OnibusHorizontalList from "@/components/onibus/OnibusHorizontalList";
 import type { Banner } from "@/types/banner";
 
 interface HomeSectionProps {
@@ -105,6 +106,9 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       {/* Cinema */}
       <CinemaHorizontalList cidadeSlug={cidadeSlug} />
+
+      {/* Horários de Ônibus */}
+      <OnibusHorizontalList cidadeSlug={cidadeSlug} />
     </div>
   );
 };
