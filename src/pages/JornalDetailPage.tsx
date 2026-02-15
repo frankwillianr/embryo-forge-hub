@@ -414,10 +414,9 @@ const JornalDetailPage = () => {
         {/* Descrição com imagens intercaladas */}
         {(() => {
           const descricao = jornal.descricao?.replace(/\\n/g, '\n') || "";
-          const extraImages = imagens.slice(1); // imagens além da primeira (já exibida no carrossel)
+          const extraImages = imagens.slice(1);
           
           if (extraImages.length === 0 || descricao.length < 200) {
-            // Sem imagens extras ou texto curto: exibe normal
             return (
               <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
                 {descricao}
@@ -425,74 +424,53 @@ const JornalDetailPage = () => {
             );
           }
 
-          // Divide a descrição em partes iguais baseado na quantidade de imagens extras
+          // Divide o texto em (extraImages.length + 1) partes iguais
+          // Encontra o espaço mais próximo de cada ponto de corte
           const totalParts = extraImages.length + 1;
-          const paragraphs = descricao.split('\n').filter(Boolean);
-          
-          // Se tem parágrafos suficientes, divide por parágrafos
-          if (paragraphs.length >= totalParts * 2) {
-            const chunkSize = Math.ceil(paragraphs.length / totalParts);
-            const parts: string[] = [];
-            for (let i = 0; i < totalParts; i++) {
-              parts.push(paragraphs.slice(i * chunkSize, (i + 1) * chunkSize).join('\n'));
+          const partLength = Math.floor(descricao.length / totalParts);
+          const textParts: string[] = [];
+          let lastCut = 0;
+
+          for (let i = 1; i < totalParts; i++) {
+            const target = partLength * i;
+            // Busca o espaço ou quebra de linha mais próximo do ponto alvo
+            let cutAt = descricao.indexOf(' ', target);
+            const cutBefore = descricao.lastIndexOf(' ', target);
+            const newlineAfter = descricao.indexOf('\n', target);
+            const newlineBefore = descricao.lastIndexOf('\n', target);
+            
+            // Prefere cortar em quebra de linha se estiver perto
+            if (newlineAfter !== -1 && Math.abs(newlineAfter - target) < 100) {
+              cutAt = newlineAfter;
+            } else if (newlineBefore !== -1 && Math.abs(newlineBefore - target) < 100) {
+              cutAt = newlineBefore;
+            } else if (cutAt === -1 || (cutBefore !== -1 && Math.abs(cutBefore - target) < Math.abs(cutAt - target))) {
+              cutAt = cutBefore;
             }
             
-            return (
-              <div className="space-y-4">
-                {parts.map((part, idx) => (
-                  <div key={idx}>
-                    <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                      {part}
-                    </p>
-                    {idx < extraImages.length && (
-                      <div className="my-4 rounded-xl overflow-hidden">
-                        <img
-                          src={extraImages[idx]}
-                          alt={`${jornal.titulo} - Imagem ${idx + 2}`}
-                          className="w-full aspect-[4/3] object-cover rounded-xl"
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            );
+            if (cutAt <= lastCut) cutAt = target; // safety
+            
+            textParts.push(descricao.slice(lastCut, cutAt).trim());
+            lastCut = cutAt + 1;
           }
-
-          // Fallback: divide o texto pela metade no ponto mais próximo de um espaço
-          const midPoint = Math.floor(descricao.length / 2);
-          const spaceAfter = descricao.indexOf(' ', midPoint);
-          const spaceBefore = descricao.lastIndexOf(' ', midPoint);
-          const splitAt = (spaceAfter !== -1 && (spaceAfter - midPoint) < (midPoint - spaceBefore)) 
-            ? spaceAfter 
-            : spaceBefore;
-          
-          const firstHalf = descricao.slice(0, splitAt);
-          const secondHalf = descricao.slice(splitAt + 1);
+          textParts.push(descricao.slice(lastCut).trim());
 
           return (
             <div className="space-y-4">
-              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                {firstHalf}
-              </p>
-              <div className="my-2 rounded-xl overflow-hidden">
-                <img
-                  src={extraImages[0]}
-                  alt={`${jornal.titulo} - Imagem 2`}
-                  className="w-full aspect-[4/3] object-cover rounded-xl"
-                />
-              </div>
-              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                {secondHalf}
-              </p>
-              {/* Imagens restantes no final */}
-              {extraImages.slice(1).map((url, idx) => (
-                <div key={idx} className="rounded-xl overflow-hidden">
-                  <img
-                    src={url}
-                    alt={`${jornal.titulo} - Imagem ${idx + 3}`}
-                    className="w-full aspect-[4/3] object-cover rounded-xl"
-                  />
+              {textParts.map((part, idx) => (
+                <div key={idx}>
+                  <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                    {part}
+                  </p>
+                  {idx < extraImages.length && (
+                    <div className="my-4 rounded-xl overflow-hidden">
+                      <img
+                        src={extraImages[idx]}
+                        alt={`${jornal.titulo} - Imagem ${idx + 2}`}
+                        className="w-full aspect-[4/3] object-cover rounded-xl"
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
