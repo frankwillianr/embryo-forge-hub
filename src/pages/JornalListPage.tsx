@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
@@ -94,8 +95,17 @@ const JornalListPage = () => {
               return (
                 <div
                   key={jornal.id}
-                  onClick={() => navigate(`/cidade/${slug}/jornal/${jornal.id}`)}
-                  className="flex gap-4 cursor-pointer group bg-card rounded-2xl p-3 border border-border/40 shadow-sm hover:shadow-md transition-shadow"
+                  onClick={() => {
+                    const read = JSON.parse(localStorage.getItem("jornal-lidos") || "[]");
+                    if (!read.includes(jornal.id)) {
+                      read.push(jornal.id);
+                      localStorage.setItem("jornal-lidos", JSON.stringify(read));
+                    }
+                    navigate(`/cidade/${slug}/jornal/${jornal.id}`);
+                  }}
+                  className={`flex gap-4 cursor-pointer group bg-card rounded-2xl p-3 border border-border/40 shadow-sm hover:shadow-md transition-shadow ${
+                    JSON.parse(localStorage.getItem("jornal-lidos") || "[]").includes(jornal.id) ? 'opacity-60' : ''
+                  }`}
                 >
                   <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted/30 flex-shrink-0">
                     {primeiraImagem ? (
