@@ -1,6 +1,5 @@
 import { CalendarDays, MapPin, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useRef, useCallback } from "react";
 
 interface EventoCardProps {
   id: string;
@@ -26,48 +25,18 @@ const EventoCard = ({
   className: customClassName,
 }: EventoCardProps) => {
   const navigate = useNavigate();
-  const wasDragging = useRef(false);
-  const touchStart = useRef({ x: 0, y: 0 });
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    wasDragging.current = false;
-    touchStart.current = {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
-    };
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    const dx = Math.abs(e.touches[0].clientX - touchStart.current.x);
-    const dy = Math.abs(e.touches[0].clientY - touchStart.current.y);
-    if (dx > 8 || dy > 8) {
-      wasDragging.current = true;
-    }
-  }, []);
-
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    if (wasDragging.current) {
-      e.preventDefault();
-      wasDragging.current = false;
-      return;
-    }
-    navigate(`/cidade/${cidadeSlug}/eventos/${id}`);
-  }, [navigate, cidadeSlug, id]);
-
   const dataObj = new Date(data_evento + "T00:00:00");
   const dia = dataObj.getDate();
   const mes = dataObj.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "").toUpperCase();
 
   return (
     <div
-      className={customClassName || "min-w-[220px] max-w-[220px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer active:scale-[0.98] transition-transform"}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onClick={handleClick}
+      onClick={() => navigate(`/cidade/${cidadeSlug}/eventos/${id}`)}
+      className={customClassName || "min-w-[220px] max-w-[220px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer group"}
     >
       <div className="relative h-[140px] w-full">
         {imagem_url ? (
-          <img src={imagem_url} alt={titulo} className="w-full h-full object-cover" draggable={false} />
+          <img src={imagem_url} alt={titulo} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
             <CalendarDays className="h-10 w-10 text-muted-foreground/40" />
