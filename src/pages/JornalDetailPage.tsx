@@ -424,23 +424,14 @@ const JornalDetailPage = () => {
               key={id}
               onClick={(e) => {
                 e.stopPropagation();
-                if (isSpeaking && activeVoice === id) {
+                // Se está falando, para
+                if (isSpeaking) {
                   window.speechSynthesis.cancel();
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current = null;
-                  }
                   setIsSpeaking(false);
                   setActiveVoice(null);
                   return;
                 }
-                window.speechSynthesis.cancel();
-                if (audioRef.current) {
-                  audioRef.current.pause();
-                  audioRef.current = null;
-                }
 
-                setIsLoadingAudio(true);
                 setActiveVoice(id);
 
                 const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
@@ -449,7 +440,6 @@ const JornalDetailPage = () => {
                 utterance.rate = rate;
                 utterance.pitch = pitch;
 
-                // Tenta encontrar vozes pt-BR distintas disponíveis no navegador
                 const allVoices = window.speechSynthesis.getVoices();
                 const ptVoices = allVoices.filter(v => v.lang.startsWith("pt"));
                 const voiceIndex = parseInt(id.split("-")[1]) - 1;
@@ -460,10 +450,14 @@ const JornalDetailPage = () => {
                 }
 
                 utterance.onend = () => { setIsSpeaking(false); setActiveVoice(null); };
-                utterance.onerror = () => { setIsSpeaking(false); setActiveVoice(null); };
+                utterance.onerror = (e) => {
+                  if (e.error !== 'canceled') {
+                    setIsSpeaking(false);
+                    setActiveVoice(null);
+                  }
+                };
                 window.speechSynthesis.speak(utterance);
                 setIsSpeaking(true);
-                setIsLoadingAudio(false);
               }}
               disabled={isLoadingAudio && activeVoice !== id}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all active:scale-95 disabled:opacity-40 ${
