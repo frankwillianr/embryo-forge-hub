@@ -412,7 +412,7 @@ const JornalDetailPage = () => {
         <h1 className="text-xl font-bold text-foreground">{jornal.titulo}</h1>
 
         <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
-          {jornal.descricao}
+          {jornal.descricao?.replace(/\\n/g, '\n')}
         </p>
 
         {/* Ações */}
