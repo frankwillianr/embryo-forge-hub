@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, ThumbsUp, ThumbsDown, MessageCircle, Trash2, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { parseImagens } from "@/types/jornal";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,7 @@ const JornalDetailPage = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [novoComentario, setNovoComentario] = useState("");
   const [mostrarFormComentario, setMostrarFormComentario] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const fingerprint = getFingerprint();
 
   // Touch handling for swipe
@@ -476,6 +477,38 @@ const JornalDetailPage = () => {
             </div>
           );
         })()}
+
+        {/* Botão Ouvir */}
+        <button
+          onClick={() => {
+            if (isSpeaking) {
+              window.speechSynthesis.cancel();
+              setIsSpeaking(false);
+              return;
+            }
+            const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = "pt-BR";
+            utterance.rate = 0.95;
+            utterance.onend = () => setIsSpeaking(false);
+            utterance.onerror = () => setIsSpeaking(false);
+            window.speechSynthesis.speak(utterance);
+            setIsSpeaking(true);
+          }}
+          className="flex items-center gap-2 text-sm text-primary font-medium py-2 active:opacity-70 transition-opacity"
+        >
+          {isSpeaking ? (
+            <>
+              <VolumeX className="h-4 w-4" />
+              Parar leitura
+            </>
+          ) : (
+            <>
+              <Volume2 className="h-4 w-4" />
+              Ouvir notícia
+            </>
+          )}
+        </button>
 
         {/* Ações */}
         <div className="flex items-center gap-3 pt-4 border-t border-border">
