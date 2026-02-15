@@ -70,9 +70,9 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
         <h3 className="font-medium text-foreground line-clamp-2 text-[13px] leading-tight tracking-tight">
           {jornal.titulo}
         </h3>
-        {jornal.descricao_curta && (
-          <p className="text-[11px] text-muted-foreground/70 line-clamp-2 leading-snug mt-0.5">
-            {jornal.descricao_curta}
+        {(jornal.descricao_curta || jornal.descricao) && (
+          <p className="text-[11px] text-muted-foreground/70 line-clamp-1 leading-snug mt-0.5">
+            {jornal.descricao_curta || jornal.descricao}
           </p>
         )}
       </div>
