@@ -412,7 +412,77 @@ const JornalDetailPage = () => {
           )}
         </div>
 
-        <h1 className="text-xl font-bold text-foreground">{jornal.titulo}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold text-foreground flex-1">{jornal.titulo}</h1>
+          <button
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (isSpeaking) {
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
+                  audioRef.current = null;
+                }
+                window.speechSynthesis.cancel();
+                setIsSpeaking(false);
+                return;
+              }
+              
+              setIsLoadingAudio(true);
+              try {
+                const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
+                const response = await fetch(
+                  "https://umauozcntfxgphzbiifz.supabase.co/functions/v1/edge-tts",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text }),
+                  }
+                );
+
+                if (!response.ok) throw new Error("Erro ao gerar áudio");
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                audioRef.current = audio;
+                audio.onended = () => {
+                  setIsSpeaking(false);
+                  URL.revokeObjectURL(url);
+                };
+                audio.onerror = () => {
+                  setIsSpeaking(false);
+                  URL.revokeObjectURL(url);
+                };
+                await audio.play();
+                setIsSpeaking(true);
+              } catch (error) {
+                console.error("TTS error:", error);
+                const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "pt-BR";
+                utterance.rate = 0.95;
+                utterance.onend = () => setIsSpeaking(false);
+                utterance.onerror = () => setIsSpeaking(false);
+                window.speechSynthesis.speak(utterance);
+                setIsSpeaking(true);
+              } finally {
+                setIsLoadingAudio(false);
+              }
+            }}
+            disabled={isLoadingAudio}
+            className="flex-shrink-0 p-2 rounded-full text-primary active:opacity-70 transition-opacity disabled:opacity-50"
+            aria-label={isSpeaking ? "Parar leitura" : "Ouvir notícia"}
+          >
+            {isLoadingAudio ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : isSpeaking ? (
+              <VolumeX className="h-5 w-5" />
+            ) : (
+              <Volume2 className="h-5 w-5" />
+            )}
+          </button>
+        </div>
 
         {/* Descrição com imagens intercaladas */}
         {(() => {
@@ -480,84 +550,6 @@ const JornalDetailPage = () => {
           );
         })()}
 
-        {/* Botão Ouvir */}
-        <button
-          onClick={async (e) => {
-            e.stopPropagation();
-            if (isSpeaking) {
-              if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
-                audioRef.current = null;
-              }
-              window.speechSynthesis.cancel();
-              setIsSpeaking(false);
-              return;
-            }
-            
-            setIsLoadingAudio(true);
-            try {
-              const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
-              const response = await fetch(
-                "https://umauozcntfxgphzbiifz.supabase.co/functions/v1/edge-tts",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ text }),
-                }
-              );
-
-              if (!response.ok) throw new Error("Erro ao gerar áudio");
-
-              const blob = await response.blob();
-              const url = URL.createObjectURL(blob);
-              const audio = new Audio(url);
-              audioRef.current = audio;
-              audio.onended = () => {
-                setIsSpeaking(false);
-                URL.revokeObjectURL(url);
-              };
-              audio.onerror = () => {
-                setIsSpeaking(false);
-                URL.revokeObjectURL(url);
-              };
-              await audio.play();
-              setIsSpeaking(true);
-            } catch (error) {
-              console.error("TTS error:", error);
-              // Fallback para Web Speech API
-              const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
-              const utterance = new SpeechSynthesisUtterance(text);
-              utterance.lang = "pt-BR";
-              utterance.rate = 0.95;
-              utterance.onend = () => setIsSpeaking(false);
-              utterance.onerror = () => setIsSpeaking(false);
-              window.speechSynthesis.speak(utterance);
-              setIsSpeaking(true);
-            } finally {
-              setIsLoadingAudio(false);
-            }
-          }}
-          disabled={isLoadingAudio}
-          className="flex items-center gap-2 text-sm text-primary font-medium py-2 active:opacity-70 transition-opacity disabled:opacity-50"
-        >
-          {isLoadingAudio ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Gerando áudio...
-            </>
-          ) : isSpeaking ? (
-            <>
-              <VolumeX className="h-4 w-4" />
-              Parar leitura
-            </>
-          ) : (
-            <>
-              <Volume2 className="h-4 w-4" />
-              Ouvir notícia
-            </>
-          )}
-        </button>
 
         {/* Ações */}
         <div className="flex items-center gap-3 pt-4 border-t border-border">
