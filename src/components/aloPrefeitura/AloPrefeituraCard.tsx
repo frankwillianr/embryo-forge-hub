@@ -49,6 +49,11 @@ const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
         <h3 className="font-medium text-foreground line-clamp-2 text-[13px] leading-tight tracking-tight">
           {item.titulo}
         </h3>
+        {item.descricao && (
+          <p className="text-[11px] text-muted-foreground/70 line-clamp-1 leading-snug mt-0.5">
+            {item.descricao}
+          </p>
+        )}
       </div>
     </div>
   );
