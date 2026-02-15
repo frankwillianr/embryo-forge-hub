@@ -120,15 +120,15 @@ const JornalListPage = () => {
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                     <div>
-                      <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                        <span>{data} às {hora}</span>
-                        {jornal.fonte && <span className="text-primary/70">· {jornal.fonte}</span>}
+                      <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-1.5 flex items-center flex-wrap gap-1">
+                        <span className="whitespace-nowrap">{data} às {hora}</span>
+                        {jornal.fonte && <span className="text-primary/70 whitespace-nowrap">· {jornal.fonte}</span>}
                         {JSON.parse(localStorage.getItem("jornal-lidos") || "[]").includes(jornal.id) ? (
-                          <span className="text-[8px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full normal-case tracking-normal">
+                          <span className="text-[8px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full normal-case tracking-normal whitespace-nowrap">
                             lida
                           </span>
                         ) : (
-                          <span className="text-[8px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full normal-case tracking-normal">
+                          <span className="text-[8px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full normal-case tracking-normal whitespace-nowrap">
                             não lida
                           </span>
                         )}
