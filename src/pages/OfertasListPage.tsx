@@ -188,7 +188,7 @@ const OfertasListPage = () => {
             ))}
           </div>
         ) : ofertasFiltradas.length > 0 ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             {ofertasFiltradas.map((oferta) => {
               const meta = categoriasMeta[oferta.categoria] || {
                 nome: oferta.categoria,
@@ -203,29 +203,35 @@ const OfertasListPage = () => {
                       `/cidade/${slug}/servicos/${oferta.categoria}/${oferta.id}`
                     )
                   }
-                  className="w-full rounded-2xl overflow-hidden shadow-md transition-transform active:scale-[0.99] text-left"
+                  className="flex flex-col rounded-2xl overflow-hidden bg-card border border-border/50 shadow-sm hover:shadow-lg transition-all active:scale-[0.97] text-left"
                 >
-                  {/* Banner */}
-                  <div className="relative h-32">
+                  {/* Imagem */}
+                  <div className="relative aspect-[4/3] w-full">
                     <img
                       src={oferta.banner_oferta_url!}
                       alt={oferta.nome}
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    
-                    {/* Info sobre o banner */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">{meta.icone}</span>
-                        <span className="text-white/70 text-xs">
-                          {meta.nome}
-                        </span>
-                      </div>
-                      <h3 className="text-white font-semibold text-lg">
-                        {oferta.nome}
-                      </h3>
+                    {/* Badge categoria */}
+                    <div className="absolute top-2 left-2 flex items-center gap-1 bg-background/85 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                      <span className="text-xs">{meta.icone}</span>
+                      <span className="text-[10px] font-medium text-foreground">{meta.nome}</span>
                     </div>
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-2.5 flex-1">
+                    <h3 className="text-[13px] font-semibold text-foreground line-clamp-2 leading-tight">
+                      {oferta.nome}
+                    </h3>
+                    {oferta.descricao && (
+                      <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                        {oferta.descricao}
+                      </p>
+                    )}
+                    <span className="inline-block mt-1.5 text-[10px] font-semibold text-primary">
+                      Ver oferta →
+                    </span>
                   </div>
                 </button>
               );
