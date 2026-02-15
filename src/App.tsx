@@ -46,6 +46,7 @@ import EventoDetailPage from "@/pages/EventoDetailPage";
 import EventosListPage from "@/pages/EventosListPage";
 import OnibusListPage from "@/pages/OnibusListPage";
 import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
+import SuportePage from "@/pages/SuportePage";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -90,6 +91,7 @@ const App = () => (
               <Route path="/cidade/:slug/onibus" element={<OnibusListPage />} />
               <Route path="/cidade/:slug/auth" element={<AuthPage />} />
               <Route path="/cidade/:slug/politica-privacidade" element={<PoliticaPrivacidadePage />} />
+              <Route path="/cidade/:slug/suporte" element={<SuportePage />} />
             </Route>
 
             {/* Admin routes without max-width constraint */}
