@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { EdgeTTS } from "jsr:@edge-tts/universal@^1.3.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,64 +27,15 @@ serve(async (req) => {
 
     console.log("Voice requested:", voice, "| Voice used:", selectedVoice);
 
-    // Usando a API do Edge TTS diretamente via WebSocket
-    const websocketUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4`;
-    
-    const requestId = crypto.randomUUID().replace(/-/g, "");
-    const timestamp = new Date().toISOString();
-
-    const configMessage = `X-Timestamp:${timestamp}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}`;
-
-    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='pt-BR'><voice name='${selectedVoice}'>${trimmedText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</voice></speak>`;
-
-    const ssmlMessage = `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n${ssml}`;
-
-    const ws = new WebSocket(websocketUrl);
-    const audioChunks: Uint8Array[] = [];
-
-    await new Promise<void>((resolve, reject) => {
-      ws.onopen = () => {
-        ws.send(configMessage);
-        ws.send(ssmlMessage);
-      };
-
-      ws.onmessage = (event) => {
-        if (typeof event.data === "string") {
-          if (event.data.includes("Path:turn.end")) {
-            ws.close();
-            resolve();
-          }
-        } else if (event.data instanceof Blob) {
-          event.data.arrayBuffer().then(buffer => {
-            const view = new Uint8Array(buffer);
-            // Pula o header (primeiros bytes até encontrar os dados de áudio)
-            const headerEndIndex = view.findIndex((_, i) => 
-              i > 0 && view[i - 1] === 13 && view[i] === 10 && view[i + 1] === 13 && view[i + 2] === 10
-            );
-            if (headerEndIndex > 0) {
-              audioChunks.push(view.slice(headerEndIndex + 3));
-            }
-          });
-        }
-      };
-
-      ws.onerror = (error) => {
-        reject(new Error("WebSocket error"));
-      };
-
-      setTimeout(() => reject(new Error("Timeout")), 30000);
+    const tts = new EdgeTTS();
+    await tts.synthesize(trimmedText, selectedVoice, {
+      rate: "+0%",
+      volume: "+0%",
+      pitch: "+0Hz",
     });
 
-    // Concatena todos os chunks de áudio
-    const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
-    const audioBuffer = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of audioChunks) {
-      audioBuffer.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    console.log("Audio generated, size:", audioBuffer.length);
+    const audioBuffer = tts.toBuffer();
+    console.log("Audio generated, size:", audioBuffer.byteLength);
 
     return new Response(audioBuffer, {
       headers: {
