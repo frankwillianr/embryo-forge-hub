@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ShieldCheck, X, Camera, Loader2 } from "lucide-react";
+import { AlertTriangle, ShieldCheck, X, Camera, Video, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,12 +33,15 @@ const NovaDenunciaModal = ({
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [imagens, setImagens] = useState<File[]>([]);
+  const [video, setVideo] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = () => {
     setTitulo("");
     setDescricao("");
     setImagens([]);
+    setVideo(null);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,6 +55,29 @@ const NovaDenunciaModal = ({
 
   const removeImage = (index: number) => {
     setImagens((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const acceptedFormats = ["video/mp4", "video/webm", "video/quicktime", "video/x-m4v"];
+    if (!acceptedFormats.includes(file.type)) {
+      toast.error("Formato inválido. Use MP4, WebM ou MOV.");
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("Vídeo muito grande. Máximo de 50MB.");
+      return;
+    }
+
+    setVideo(file);
+  };
+
+  const removeVideo = () => {
+    setVideo(null);
+    if (videoInputRef.current) videoInputRef.current.value = "";
   };
 
   const mutation = useMutation({
@@ -71,32 +98,53 @@ const NovaDenunciaModal = ({
 
       if (denunciaError) throw denunciaError;
 
-      // Upload das imagens
-      if (imagens.length > 0) {
-        for (let i = 0; i < imagens.length; i++) {
-          const file = imagens[i];
-          const fileExt = file.name.split(".").pop();
-          const fileName = `${denuncia.id}/${Date.now()}_${i}.${fileExt}`;
+      // Upload das imagens (obrigatório)
+      for (let i = 0; i < imagens.length; i++) {
+        const file = imagens[i];
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${denuncia.id}/${Date.now()}_${i}.${fileExt}`;
 
-          const { error: uploadError } = await supabase.storage
-            .from("alo-prefeitura")
-            .upload(fileName, file);
+        const { error: uploadError } = await supabase.storage
+          .from("alo-prefeitura")
+          .upload(fileName, file);
 
-          if (uploadError) {
-            console.error("Erro ao fazer upload:", uploadError);
-            continue;
-          }
+        if (uploadError) {
+          console.error("Erro ao fazer upload:", uploadError);
+          continue;
+        }
 
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("alo-prefeitura").getPublicUrl(fileName);
+
+        await supabase.from("rel_cidade_alo_prefeitura_imagens").insert({
+          alo_prefeitura_id: denuncia.id,
+          imagem_url: publicUrl,
+          ordem: i,
+        });
+      }
+
+      // Upload do vídeo (opcional)
+      if (video) {
+        const videoExt = video.name.split(".").pop()?.toLowerCase() || "mp4";
+        const videoFileName = `${denuncia.id}/video_${Date.now()}.${videoExt}`;
+
+        const { error: videoUploadError } = await supabase.storage
+          .from("alo-prefeitura")
+          .upload(videoFileName, video);
+
+        if (videoUploadError) {
+          console.error("Erro ao fazer upload do vídeo:", videoUploadError);
+        } else {
           const {
-            data: { publicUrl },
-          } = supabase.storage.from("alo-prefeitura").getPublicUrl(fileName);
+            data: { publicUrl: videoPublicUrl },
+          } = supabase.storage.from("alo-prefeitura").getPublicUrl(videoFileName);
 
-          // Salva referência da imagem
-          await supabase.from("rel_cidade_alo_prefeitura_imagens").insert({
-            alo_prefeitura_id: denuncia.id,
-            imagem_url: publicUrl,
-            ordem: i,
-          });
+          // Update the denuncia with the video URL
+          await supabase
+            .from("rel_cidade_alo_prefeitura")
+            .update({ video_url: videoPublicUrl })
+            .eq("id", denuncia.id);
         }
       }
 
@@ -131,6 +179,10 @@ const NovaDenunciaModal = ({
       toast.error("Descreva a denúncia");
       return;
     }
+    if (imagens.length === 0) {
+      toast.error("Adicione pelo menos uma foto");
+      return;
+    }
     mutation.mutate();
   };
 
@@ -142,6 +194,9 @@ const NovaDenunciaModal = ({
             <AlertTriangle className="h-5 w-5 text-primary" />
             Nova Denúncia
           </DialogTitle>
+          <DialogDescription>
+            Preencha os dados abaixo para enviar sua denúncia de forma sigilosa.
+          </DialogDescription>
         </DialogHeader>
 
         {/* Alerta de sigilo */}
@@ -182,9 +237,9 @@ const NovaDenunciaModal = ({
             </p>
           </div>
 
-          {/* Upload de imagens */}
+          {/* Upload de imagens - OBRIGATÓRIO */}
           <div className="space-y-2">
-            <Label>Fotos (opcional)</Label>
+            <Label>Fotos *</Label>
             <div className="flex flex-wrap gap-2">
               {imagens.map((file, index) => (
                 <div key={index} className="relative">
@@ -216,8 +271,47 @@ const NovaDenunciaModal = ({
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Adicione até 5 fotos para ilustrar o problema
+              Adicione pelo menos 1 foto (máx. 5) para ilustrar o problema
             </p>
+          </div>
+
+          {/* Upload de vídeo - OPCIONAL */}
+          <div className="space-y-2">
+            <Label>Vídeo (opcional)</Label>
+            {video ? (
+              <div className="relative rounded-xl overflow-hidden bg-black">
+                <video
+                  src={URL.createObjectURL(video)}
+                  className="w-full aspect-video object-contain"
+                  controls
+                  preload="metadata"
+                />
+                <button
+                  type="button"
+                  onClick={removeVideo}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/90 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => videoInputRef.current?.click()}
+                className="w-full py-4 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary hover:text-primary transition-colors bg-muted/30"
+              >
+                <Video className="h-6 w-6" />
+                <span className="text-sm font-medium">Adicionar vídeo</span>
+                <span className="text-xs">MP4, WebM ou MOV (máx. 50MB)</span>
+              </button>
+            )}
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept=".mp4,.webm,.mov,.m4v"
+              onChange={handleVideoChange}
+              className="hidden"
+            />
           </div>
 
           {/* Status info */}
