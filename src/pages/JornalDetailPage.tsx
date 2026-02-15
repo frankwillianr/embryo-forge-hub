@@ -471,15 +471,23 @@ const JornalDetailPage = () => {
               }
             }}
             disabled={isLoadingAudio}
-            className="flex-shrink-0 p-2 rounded-full text-primary active:opacity-70 transition-opacity disabled:opacity-50"
-            aria-label={isSpeaking ? "Parar leitura" : "Ouvir notícia"}
+            className="flex-shrink-0 flex items-center gap-1.5 text-xs text-primary font-medium px-3 py-1.5 rounded-full border border-primary/20 active:opacity-70 transition-opacity disabled:opacity-50"
           >
             {isLoadingAudio ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Gerando...
+              </>
             ) : isSpeaking ? (
-              <VolumeX className="h-5 w-5" />
+              <>
+                <VolumeX className="h-3.5 w-3.5" />
+                Parar
+              </>
             ) : (
-              <Volume2 className="h-5 w-5" />
+              <>
+                <Volume2 className="h-3.5 w-3.5" />
+                Ouvir notícia
+              </>
             )}
           </button>
         </div>
