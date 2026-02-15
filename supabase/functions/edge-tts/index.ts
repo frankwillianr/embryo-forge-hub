@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { UniversalEdgeTTS } from "npm:edge-tts-universal@^2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,19 +21,71 @@ serve(async (req) => {
       });
     }
 
-    // Limita o texto a 5000 caracteres para evitar abuso
     const trimmedText = text.slice(0, 5000);
-
-    // Voz padrão: Francisca (pt-BR, feminina, neural)
     const selectedVoice = voice || "pt-BR-FranciscaNeural";
+
     console.log("Voice requested:", voice, "| Voice used:", selectedVoice);
 
-    const tts = new UniversalEdgeTTS(trimmedText, selectedVoice);
-    console.log("TTS instance created with voice:", selectedVoice);
-    const result = await tts.synthesize();
-    console.log("Audio generated, size:", result.audio?.byteLength || result.audio?.length || "unknown");
+    // Usando a API do Edge TTS diretamente via WebSocket
+    const websocketUrl = `wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E9FB37E23D68491D6F4`;
+    
+    const requestId = crypto.randomUUID().replace(/-/g, "");
+    const timestamp = new Date().toISOString();
 
-    return new Response(result.audio, {
+    const configMessage = `X-Timestamp:${timestamp}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n{"context":{"synthesis":{"audio":{"metadataoptions":{"sentenceBoundaryEnabled":"false","wordBoundaryEnabled":"false"},"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}`;
+
+    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='pt-BR'><voice name='${selectedVoice}'>${trimmedText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</voice></speak>`;
+
+    const ssmlMessage = `X-RequestId:${requestId}\r\nContent-Type:application/ssml+xml\r\nPath:ssml\r\n\r\n${ssml}`;
+
+    const ws = new WebSocket(websocketUrl);
+    const audioChunks: Uint8Array[] = [];
+
+    await new Promise<void>((resolve, reject) => {
+      ws.onopen = () => {
+        ws.send(configMessage);
+        ws.send(ssmlMessage);
+      };
+
+      ws.onmessage = (event) => {
+        if (typeof event.data === "string") {
+          if (event.data.includes("Path:turn.end")) {
+            ws.close();
+            resolve();
+          }
+        } else if (event.data instanceof Blob) {
+          event.data.arrayBuffer().then(buffer => {
+            const view = new Uint8Array(buffer);
+            // Pula o header (primeiros bytes até encontrar os dados de áudio)
+            const headerEndIndex = view.findIndex((_, i) => 
+              i > 0 && view[i - 1] === 13 && view[i] === 10 && view[i + 1] === 13 && view[i + 2] === 10
+            );
+            if (headerEndIndex > 0) {
+              audioChunks.push(view.slice(headerEndIndex + 3));
+            }
+          });
+        }
+      };
+
+      ws.onerror = (error) => {
+        reject(new Error("WebSocket error"));
+      };
+
+      setTimeout(() => reject(new Error("Timeout")), 30000);
+    });
+
+    // Concatena todos os chunks de áudio
+    const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+    const audioBuffer = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of audioChunks) {
+      audioBuffer.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    console.log("Audio generated, size:", audioBuffer.length);
+
+    return new Response(audioBuffer, {
       headers: {
         ...corsHeaders,
         "Content-Type": "audio/mpeg",
