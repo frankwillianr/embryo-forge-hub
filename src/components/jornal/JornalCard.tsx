@@ -31,7 +31,7 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
   return (
     <div 
       onClick={handleClick}
-      className={`flex-shrink-0 w-64 cursor-pointer group ${isRead ? 'opacity-60' : ''}`}
+      className="flex-shrink-0 w-64 cursor-pointer group"
     >
       {/* Imagem com cantos arredondados suaves */}
       <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted/50">
@@ -54,9 +54,14 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
 
       {/* Conteúdo minimalista */}
       <div className="pt-2.5 space-y-0.5">
-        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
-          {format(new Date(jornal.created_at), "dd MMM", { locale: ptBR })}
-          {jornal.fonte && <span className="ml-1.5">· {jornal.fonte}</span>}
+        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider flex items-center gap-1.5">
+          <span>{format(new Date(jornal.created_at), "dd MMM", { locale: ptBR })}</span>
+          {jornal.fonte && <span>· {jornal.fonte}</span>}
+          {isRead && (
+            <span className="text-[8px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full normal-case tracking-normal">
+              lida
+            </span>
+          )}
         </p>
         <h3 className="font-medium text-foreground line-clamp-2 text-[13px] leading-tight tracking-tight">
           {jornal.titulo}

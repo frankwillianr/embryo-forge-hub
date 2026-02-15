@@ -103,9 +103,7 @@ const JornalListPage = () => {
                     }
                     navigate(`/cidade/${slug}/jornal/${jornal.id}`);
                   }}
-                  className={`flex gap-4 cursor-pointer group bg-card rounded-2xl p-3 border border-border/40 shadow-sm hover:shadow-md transition-shadow ${
-                    JSON.parse(localStorage.getItem("jornal-lidos") || "[]").includes(jornal.id) ? 'opacity-60' : ''
-                  }`}
+                  className="flex gap-4 cursor-pointer group bg-card rounded-2xl p-3 border border-border/40 shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="w-28 h-28 rounded-xl overflow-hidden bg-muted/30 flex-shrink-0">
                     {primeiraImagem ? (
@@ -122,9 +120,14 @@ const JornalListPage = () => {
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                     <div>
-                      <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-1.5">
-                        {data} às {hora}
-                        {jornal.fonte && <span className="ml-1.5 text-primary/70">· {jornal.fonte}</span>}
+                      <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                        <span>{data} às {hora}</span>
+                        {jornal.fonte && <span className="text-primary/70">· {jornal.fonte}</span>}
+                        {JSON.parse(localStorage.getItem("jornal-lidos") || "[]").includes(jornal.id) && (
+                          <span className="text-[8px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full normal-case tracking-normal">
+                            lida
+                          </span>
+                        )}
                       </p>
                       <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-snug mb-1.5">
                         {jornal.titulo}

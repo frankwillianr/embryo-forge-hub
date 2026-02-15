@@ -72,7 +72,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const shouldTruncate = descricao.length > 100;
 
   return (
-    <article className={`border-b border-border/50 ${isRead ? 'opacity-70' : ''}`}>
+    <article className="border-b border-border/50 relative">
       {/* Header - perfil estilo Instagram */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2.5">
@@ -84,9 +84,16 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
             </div>
           </div>
           <div className="flex flex-col">
-            <span className="text-[13px] font-semibold text-foreground leading-tight">
-              {jornal.fonte || "Jornal da Cidade"}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[13px] font-semibold text-foreground leading-tight">
+                {jornal.fonte || "Jornal da Cidade"}
+              </span>
+              {isRead && (
+                <span className="text-[9px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full leading-none">
+                  lida
+                </span>
+              )}
+            </div>
             <span className="text-[11px] text-muted-foreground">
               {formatDistanceToNow(new Date(jornal.created_at), { addSuffix: true, locale: ptBR })}
             </span>
