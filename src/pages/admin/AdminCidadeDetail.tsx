@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign, MessageCircle, Users, Building2 } from "lucide-react";
+import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign, MessageCircle, Users, Building2, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cidade } from "@/types/cidade";
@@ -13,6 +13,7 @@ import AdminCidadePrecificacao from "@/components/admin/cidade/AdminCidadePrecif
 import AdminCidadeComentarios from "@/components/admin/cidade/AdminCidadeComentarios";
 import AdminCidadeUsuarios from "@/components/admin/cidade/AdminCidadeUsuarios";
 import AdminCidadeEmpresas from "@/components/admin/cidade/AdminCidadeEmpresas";
+import AdminCidadeEventos from "@/components/admin/cidade/AdminCidadeEventos";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -20,6 +21,7 @@ const tabs = [
   { id: "cinema", label: "Cinema", icon: Film },
   { id: "alo-prefeitura", label: "Alô Prefeitura", icon: Phone },
   { id: "banners", label: "Banners", icon: Megaphone },
+  { id: "eventos", label: "Eventos", icon: CalendarDays },
   { id: "empresas", label: "Empresas", icon: Building2 },
   { id: "comentarios", label: "Comentários", icon: MessageCircle },
   { id: "usuarios", label: "Usuários", icon: Users },
@@ -126,6 +128,7 @@ const AdminCidadeDetail = () => {
         {activeTab === "cinema" && <AdminCidadeCinema cidadeId={cidadeId!} />}
         {activeTab === "alo-prefeitura" && <AdminCidadeAloPrefeitura cidadeId={cidadeId!} />}
         {activeTab === "banners" && <AdminCidadeBanners cidadeId={cidadeId!} />}
+        {activeTab === "eventos" && <AdminCidadeEventos cidadeId={cidadeId!} />}
         {activeTab === "empresas" && <AdminCidadeEmpresas cidadeId={cidadeId!} />}
         {activeTab === "comentarios" && <AdminCidadeComentarios cidadeId={cidadeId!} />}
         {activeTab === "usuarios" && <AdminCidadeUsuarios cidadeId={cidadeId!} />}
