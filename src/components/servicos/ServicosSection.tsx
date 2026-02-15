@@ -24,7 +24,7 @@ interface ServicosSectionProps {
   cidadeSlug?: string;
 }
 
-// Todos os serviços disponíveis para o grid (8 itens = 2 linhas de 4)
+// Todos os serviços disponíveis para o grid horizontal
 const todosServicos = [
   { id: "entregador", nome: "Entregador", icon: entregadorIcon },
   { id: "salao", nome: "Salão", icon: salaoIcon },
@@ -32,9 +32,30 @@ const todosServicos = [
   { id: "limpeza", nome: "Limpeza", icon: limpezaIcon },
   { id: "pet", nome: "Pet", icon: petIcon },
   { id: "obras", nome: "Obras", icon: obrasIcon },
-  { id: "eletricista", nome: "Eletricista", icon: reparosIcon },
-  { id: "encanador", nome: "Encanador", icon: obrasIcon },
-];
+  { id: "eletricista", nome: "Eletricista", emoji: "⚡" },
+  { id: "encanador", nome: "Encanador", emoji: "🚿" },
+  { id: "motorista", nome: "Motorista", emoji: "🚙" },
+  { id: "mudancas", nome: "Mudanças", emoji: "🚚" },
+  { id: "manicure", nome: "Manicure", emoji: "💅" },
+  { id: "barbeiro", nome: "Barbeiro", emoji: "💈" },
+  { id: "pintor", nome: "Pintor", emoji: "🎨" },
+  { id: "chaveiro", nome: "Chaveiro", emoji: "🔑" },
+  { id: "vidraceiro", nome: "Vidraceiro", emoji: "🪟" },
+  { id: "diarista", nome: "Diarista", emoji: "🏠" },
+  { id: "dedetizacao", nome: "Dedetização", emoji: "🪲" },
+  { id: "serralheria", nome: "Serralheria", emoji: "⚙️" },
+  { id: "marceneiro", nome: "Marceneiro", emoji: "🪑" },
+  { id: "jardinagem", nome: "Jardinagem", emoji: "🌳" },
+  { id: "informatica", nome: "Informática", emoji: "💻" },
+  { id: "ar-condicionado", nome: "Ar Cond.", emoji: "❄️" },
+  { id: "personal", nome: "Personal", emoji: "🏋️" },
+  { id: "nutricionista", nome: "Nutrição", emoji: "🍎" },
+  { id: "massagista", nome: "Massagem", emoji: "💆" },
+  { id: "aulas", nome: "Aulas", emoji: "📚" },
+  { id: "fotografo", nome: "Fotógrafo", emoji: "📷" },
+  { id: "eventos", nome: "Eventos", emoji: "🎉" },
+  { id: "costura", nome: "Costura", emoji: "🧵" },
+] as Array<{ id: string; nome: string; icon?: string; emoji?: string }>;
 
 // Lista completa para autocomplete
 const todosServicosAutocomplete = [
@@ -93,24 +114,13 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
   return (
     <div className="py-6">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 mb-4">
-        <div>
-          <h2 className="text-base font-semibold text-foreground tracking-tight">
-            Serviços
-          </h2>
-          <p className="text-[12px] text-muted-foreground/70">
-            Encontre o que precisa na sua cidade
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            navigate(`/cidade/${cidadeSlug}/servicos`);
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
-        >
-          Ver todos
-        </button>
+      <div className="px-5 mb-4">
+        <h2 className="text-base font-semibold text-foreground tracking-tight">
+          Serviços
+        </h2>
+        <p className="text-[12px] text-muted-foreground/70">
+          Encontre o que precisa na sua cidade
+        </p>
       </div>
 
       {/* Serviços em Destaque - 3 cards estilo QuickAccess */}
@@ -207,20 +217,26 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </Command>
       </div>
 
-      {/* Grid de Serviços - 4 colunas, 2 linhas (8 itens aleatórios) */}
-      <div className="px-5">
-        <div className="grid grid-cols-4 gap-2">
+      {/* Grid de Serviços - scroll horizontal */}
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="flex gap-2 px-5 pb-2" style={{ width: "max-content" }}>
           {servicosAleatorios.map((item) => (
             <button
               key={item.id}
               onClick={() => handleClick(item.id)}
-              className="flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-xl py-2.5 px-2 transition-all active:scale-95 group"
+              className="flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-xl py-2.5 px-2 transition-all active:scale-95 group w-[72px] flex-shrink-0"
             >
-              <img 
-                src={item.icon} 
-                alt={item.nome}
-                className="w-10 h-10 mb-1 group-hover:scale-110 transition-transform object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
-              />
+              {item.icon ? (
+                <img 
+                  src={item.icon} 
+                  alt={item.nome}
+                  className="w-10 h-10 mb-1 group-hover:scale-110 transition-transform object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
+                />
+              ) : (
+                <span className="text-2xl mb-1 group-hover:scale-110 transition-transform">
+                  {item.emoji}
+                </span>
+              )}
               <span className="text-[10px] font-medium text-foreground text-center leading-tight">
                 {item.nome}
               </span>
