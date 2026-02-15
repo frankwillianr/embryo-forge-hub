@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Film, ChevronRight, Play } from "lucide-react";
+import { Film, ChevronRight, Play, Clock, Tag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cinema } from "@/types/cinema";
 
@@ -78,7 +78,7 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
           {filmes.map((filme) => (
             <div
               key={filme.id}
-              className="min-w-[120px] max-w-[120px] flex-shrink-0"
+              className="min-w-[140px] max-w-[140px] flex-shrink-0"
             >
               {/* Poster */}
               <div className="w-full aspect-[2/3] rounded-xl overflow-hidden bg-muted/30 relative group">
@@ -98,10 +98,33 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
               <p className="text-xs font-medium text-foreground mt-1.5 line-clamp-2 leading-tight">
                 {filme.nome_filme}
               </p>
+              {/* Gênero */}
               {filme.genero && (
-                <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                  {filme.genero}
-                </p>
+                <div className="flex items-center gap-1 mt-1">
+                  <Tag className="h-2.5 w-2.5 text-muted-foreground" />
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {filme.genero}
+                  </p>
+                </div>
+              )}
+              {/* Horários */}
+              {filme.horarios && filme.horarios.length > 0 && (
+                <div className="flex items-center gap-1 mt-1 flex-wrap">
+                  <Clock className="h-2.5 w-2.5 text-primary/70 flex-shrink-0" />
+                  <div className="flex gap-1 flex-wrap">
+                    {filme.horarios.slice(0, 3).map((hora, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary"
+                      >
+                        {hora}
+                      </span>
+                    ))}
+                    {filme.horarios.length > 3 && (
+                      <span className="text-[9px] text-muted-foreground">+{filme.horarios.length - 3}</span>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           ))}
