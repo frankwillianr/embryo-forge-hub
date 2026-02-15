@@ -415,13 +415,10 @@ const JornalDetailPage = () => {
 
         <h1 className="text-xl font-bold text-foreground">{jornal.titulo}</h1>
 
-        {/* Botões de narração - Web Speech API */}
+        {/* Botão de narração - Web Speech API */}
         <div className="flex flex-wrap gap-2">
           {[
-            { id: "voice-1", name: "Voz 1", rate: 0.9, pitch: 1.1 },
-            { id: "voice-2", name: "Voz 2", rate: 1.0, pitch: 0.85 },
-            { id: "voice-3", name: "Voz 3", rate: 0.95, pitch: 1.0 },
-            { id: "voice-4", name: "Voz 4", rate: 1.05, pitch: 0.95 },
+            { id: "voice-2", name: "Ouvir notícia", rate: 1.15, pitch: 0.85 },
           ].map(({ id, name, rate, pitch }) => (
             <button
               key={id}
