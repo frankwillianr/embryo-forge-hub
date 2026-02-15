@@ -16,6 +16,10 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showFullText, setShowFullText] = useState(false);
+  const [isRead, setIsRead] = useState(() => {
+    const read = JSON.parse(localStorage.getItem("jornal-lidos") || "[]");
+    return read.includes(jornal.id);
+  });
   
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -51,6 +55,12 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   };
 
   const handleCardClick = () => {
+    if (!isRead) {
+      const read = JSON.parse(localStorage.getItem("jornal-lidos") || "[]");
+      read.push(jornal.id);
+      localStorage.setItem("jornal-lidos", JSON.stringify(read));
+      setIsRead(true);
+    }
     navigate(`/cidade/${cidadeSlug}/jornal/${jornal.id}`);
   };
 
@@ -62,7 +72,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const shouldTruncate = descricao.length > 100;
 
   return (
-    <article className="border-b border-border/50">
+    <article className={`border-b border-border/50 ${isRead ? 'opacity-70' : ''}`}>
       {/* Header - perfil estilo Instagram */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2.5">

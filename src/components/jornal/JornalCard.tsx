@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -12,15 +13,25 @@ interface JornalCardProps {
 const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
   const navigate = useNavigate();
   const primeiraImagem = parseImagens(jornal.imagens)[0];
+  const [isRead, setIsRead] = useState(() => {
+    const read = JSON.parse(localStorage.getItem("jornal-lidos") || "[]");
+    return read.includes(jornal.id);
+  });
   
   const handleClick = () => {
+    if (!isRead) {
+      const read = JSON.parse(localStorage.getItem("jornal-lidos") || "[]");
+      read.push(jornal.id);
+      localStorage.setItem("jornal-lidos", JSON.stringify(read));
+      setIsRead(true);
+    }
     navigate(`/cidade/${cidadeSlug}/jornal/${jornal.id}`);
   };
 
   return (
     <div 
       onClick={handleClick}
-      className="flex-shrink-0 w-64 cursor-pointer group"
+      className={`flex-shrink-0 w-64 cursor-pointer group ${isRead ? 'opacity-60' : ''}`}
     >
       {/* Imagem com cantos arredondados suaves */}
       <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted/50">
