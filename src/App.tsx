@@ -23,7 +23,7 @@ import NovoVeiculoPage from "@/pages/NovoVeiculoPage";
 import DesapegaListPage from "@/pages/DesapegaListPage";
 import NovoDesapegaPage from "@/pages/NovoDesapegaPage";
 import DesapegaDetailPage from "@/pages/DesapegaDetailPage";
-import ServicosListPage from "@/pages/ServicosListPage";
+
 import ServicoCategoriaPage from "@/pages/ServicoCategoriaPage";
 import NovaEmpresaPage from "@/pages/NovaEmpresaPage";
 import ServicoEmpresaDetailPage from "@/pages/ServicoEmpresaDetailPage";
@@ -124,7 +124,6 @@ const App = () => (
           <Route path="/cidade/:slug/desapega/:anuncioId" element={<DesapegaDetailPage />} />
 
           {/* Serviços */}
-          <Route path="/cidade/:slug/servicos" element={<ServicosListPage />} />
           <Route path="/cidade/:slug/servicos/:categoriaId" element={<ServicoCategoriaPage />} />
           <Route path="/cidade/:slug/servicos/:categoriaId/novo" element={<NovaEmpresaPage />} />
           <Route path="/cidade/:slug/servicos/:categoriaId/:empresaId" element={<ServicoEmpresaDetailPage />} />
