@@ -411,9 +411,93 @@ const JornalDetailPage = () => {
 
         <h1 className="text-xl font-bold text-foreground">{jornal.titulo}</h1>
 
-        <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
-          {jornal.descricao?.replace(/\\n/g, '\n')}
-        </p>
+        {/* Descrição com imagens intercaladas */}
+        {(() => {
+          const descricao = jornal.descricao?.replace(/\\n/g, '\n') || "";
+          const extraImages = imagens.slice(1); // imagens além da primeira (já exibida no carrossel)
+          
+          if (extraImages.length === 0 || descricao.length < 200) {
+            // Sem imagens extras ou texto curto: exibe normal
+            return (
+              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                {descricao}
+              </p>
+            );
+          }
+
+          // Divide a descrição em partes iguais baseado na quantidade de imagens extras
+          const totalParts = extraImages.length + 1;
+          const paragraphs = descricao.split('\n').filter(Boolean);
+          
+          // Se tem parágrafos suficientes, divide por parágrafos
+          if (paragraphs.length >= totalParts * 2) {
+            const chunkSize = Math.ceil(paragraphs.length / totalParts);
+            const parts: string[] = [];
+            for (let i = 0; i < totalParts; i++) {
+              parts.push(paragraphs.slice(i * chunkSize, (i + 1) * chunkSize).join('\n'));
+            }
+            
+            return (
+              <div className="space-y-4">
+                {parts.map((part, idx) => (
+                  <div key={idx}>
+                    <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                      {part}
+                    </p>
+                    {idx < extraImages.length && (
+                      <div className="my-4 rounded-xl overflow-hidden">
+                        <img
+                          src={extraImages[idx]}
+                          alt={`${jornal.titulo} - Imagem ${idx + 2}`}
+                          className="w-full aspect-[4/3] object-cover rounded-xl"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          }
+
+          // Fallback: divide o texto pela metade no ponto mais próximo de um espaço
+          const midPoint = Math.floor(descricao.length / 2);
+          const spaceAfter = descricao.indexOf(' ', midPoint);
+          const spaceBefore = descricao.lastIndexOf(' ', midPoint);
+          const splitAt = (spaceAfter !== -1 && (spaceAfter - midPoint) < (midPoint - spaceBefore)) 
+            ? spaceAfter 
+            : spaceBefore;
+          
+          const firstHalf = descricao.slice(0, splitAt);
+          const secondHalf = descricao.slice(splitAt + 1);
+
+          return (
+            <div className="space-y-4">
+              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                {firstHalf}
+              </p>
+              <div className="my-2 rounded-xl overflow-hidden">
+                <img
+                  src={extraImages[0]}
+                  alt={`${jornal.titulo} - Imagem 2`}
+                  className="w-full aspect-[4/3] object-cover rounded-xl"
+                />
+              </div>
+              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                {secondHalf}
+              </p>
+              {/* Imagens restantes no final */}
+              {extraImages.slice(1).map((url, idx) => (
+                <div key={idx} className="rounded-xl overflow-hidden">
+                  <img
+                    src={url}
+                    alt={`${jornal.titulo} - Imagem ${idx + 3}`}
+                    className="w-full aspect-[4/3] object-cover rounded-xl"
+                  />
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Ações */}
         <div className="flex items-center gap-3 pt-4 border-t border-border">
