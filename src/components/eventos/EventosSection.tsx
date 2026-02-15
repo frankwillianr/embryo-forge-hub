@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarDays, ChevronRight } from "lucide-react";
 import EventoCard from "./EventoCard";
@@ -8,6 +9,7 @@ interface EventosSectionProps {
 }
 
 const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
+  const navigate = useNavigate();
   const { data: eventos = [], isLoading } = useQuery({
     queryKey: ["eventos-home", cidadeSlug],
     queryFn: async () => {
@@ -61,6 +63,16 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
           <CalendarDays className="h-5 w-5 text-accent" />
           <h2 className="font-bold text-foreground text-base">Shows e Eventos</h2>
         </div>
+        <button
+          onClick={() => {
+            navigate(`/cidade/${cidadeSlug}/eventos`);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          className="flex items-center gap-0.5 text-xs font-medium text-primary"
+        >
+          Ver todos
+          <ChevronRight className="h-4 w-4" />
+        </button>
       </div>
 
       {/* Horizontal scroll */}
