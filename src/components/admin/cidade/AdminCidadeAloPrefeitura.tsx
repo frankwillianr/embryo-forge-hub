@@ -18,7 +18,7 @@ const AdminCidadeAloPrefeitura = ({ cidadeId }: AdminCidadeAloPrefeituraProps) =
     queryKey: ["admin-cidade-alo-prefeitura", cidadeId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("alo_prefeitura")
+        .from("rel_cidade_alo_prefeitura")
         .select("*")
         .eq("cidade_id", cidadeId)
         .order("created_at", { ascending: false });
