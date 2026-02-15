@@ -44,7 +44,7 @@ const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
       {/* Conteúdo minimalista */}
       <div className="pt-2.5 space-y-0.5">
         <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
-          {format(new Date(item.created_at), "dd MMM", { locale: ptBR })}
+          {format(new Date(item.created_at), "dd MMM · HH:mm", { locale: ptBR })}
         </p>
         <h3 className="font-medium text-foreground line-clamp-2 text-[13px] leading-tight tracking-tight">
           {item.titulo}
