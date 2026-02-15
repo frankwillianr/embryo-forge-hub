@@ -217,14 +217,14 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </Command>
       </div>
 
-      {/* Grid de Serviços - scroll horizontal */}
+      {/* Grid de Serviços - scroll horizontal com 2 linhas */}
       <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex gap-2 px-5 pb-2" style={{ width: "max-content" }}>
+        <div className="grid grid-rows-2 grid-flow-col gap-2 px-5 pb-2 auto-cols-[72px]">
           {servicosAleatorios.map((item) => (
             <button
               key={item.id}
               onClick={() => handleClick(item.id)}
-              className="flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-xl py-2.5 px-2 transition-all active:scale-95 group w-[72px] flex-shrink-0"
+              className="flex flex-col items-center justify-center bg-muted/60 hover:bg-muted rounded-xl py-2.5 px-2 transition-all active:scale-95 group w-[72px]"
             >
               {item.icon ? (
                 <img 
