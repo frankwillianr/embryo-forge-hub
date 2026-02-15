@@ -11,6 +11,7 @@ import AdminCidadeDetail from "@/pages/admin/AdminCidadeDetail";
 import AdminJornal from "@/pages/admin/AdminJornal";
 import AdminCinema from "@/pages/admin/AdminCinema";
 import AdminAloPrefeitura from "@/pages/admin/AdminAloPrefeitura";
+import MobileLayout from "@/components/MobileLayout";
 
 import CidadePage from "@/pages/CidadePage";
 import BannerDetailPage from "@/pages/BannerDetailPage";
@@ -51,107 +52,45 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Redirect root to default city */}
-            <Route path="/" element={<Navigate to="/cidade/governador-valadares" replace />} />
-            
-            {/* Public city page with slug */}
-            <Route path="/cidade/:slug" element={<CidadePage />} />
-          <Route path="/cidade/:slug/banner/:id" element={<BannerDetailPage />} />
-          <Route path="/cidade/:slug/jornal" element={<JornalListPage />} />
-          <Route path="/cidade/:slug/jornal/:jornalId" element={<JornalDetailPage />} />
+            {/* Public routes with mobile max-width */}
+            <Route element={<MobileLayout />}>
+              <Route path="/" element={<Navigate to="/cidade/governador-valadares" replace />} />
+              <Route path="/cidade/:slug" element={<CidadePage />} />
+              <Route path="/cidade/:slug/banner/:id" element={<BannerDetailPage />} />
+              <Route path="/cidade/:slug/jornal" element={<JornalListPage />} />
+              <Route path="/cidade/:slug/jornal/:jornalId" element={<JornalDetailPage />} />
+              <Route path="/cidade/:slug/alo-prefeitura" element={<AloPrefeituraListPage />} />
+              <Route path="/cidade/:slug/alo-prefeitura/:itemId" element={<AloPrefeituraDetailPage />} />
+              <Route path="/cidade/:slug/veiculos" element={<VeiculosListPage />} />
+              <Route path="/cidade/:slug/veiculos/novo" element={<NovoVeiculoPage />} />
+              <Route path="/cidade/:slug/desapega" element={<DesapegaListPage />} />
+              <Route path="/cidade/:slug/desapega/novo" element={<NovoDesapegaPage />} />
+              <Route path="/cidade/:slug/desapega/:anuncioId" element={<DesapegaDetailPage />} />
+              <Route path="/cidade/:slug/servicos/:categoriaId" element={<ServicoCategoriaPage />} />
+              <Route path="/cidade/:slug/servicos/:categoriaId/novo" element={<NovaEmpresaPage />} />
+              <Route path="/cidade/:slug/servicos/:categoriaId/:empresaId" element={<ServicoEmpresaDetailPage />} />
+              <Route path="/cidade/:slug/ofertas" element={<OfertasListPage />} />
+              <Route path="/cidade/:slug/vagas" element={<VagasListPage />} />
+              <Route path="/cidade/:slug/vagas/nova" element={<NovaVagaPage />} />
+              <Route path="/cidade/:slug/vagas/:vagaId" element={<VagaDetailPage />} />
+              <Route path="/cidade/:slug/pets" element={<PetsListPage />} />
+              <Route path="/cidade/:slug/pets/novo" element={<NovoPetPage />} />
+              <Route path="/cidade/:slug/pets/:id" element={<PetDetailPage />} />
+              <Route path="/cidade/:slug/anunciar" element={<AnunciarPage />} />
+              <Route path="/cidade/:slug/banner/novo" element={<NovoBannerPage />} />
+              <Route path="/cidade/:slug/meus-anuncios" element={<MeusAnunciosPage />} />
+              <Route path="/cidade/:slug/minhas-empresas" element={<MinhasEmpresasPage />} />
+              <Route path="/cidade/:slug/minhas-empresas/:empresaId/editar" element={<EditarEmpresaPage />} />
+              <Route path="/cidade/:slug/auth" element={<AuthPage />} />
+            </Route>
 
-          {/* Admin routes with admin layout */}
-          <Route
-            path="/admin"
-            element={
-              <AdminLayout>
-                <AdminDashboard />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/admin/cidades"
-            element={
-              <AdminLayout>
-                <AdminCidades />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/admin/cidades/:cidadeId"
-            element={
-              <AdminLayout>
-                <AdminCidadeDetail />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/admin/jornal"
-            element={
-              <AdminLayout>
-                <AdminJornal />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/admin/cinema"
-            element={
-              <AdminLayout>
-                <AdminCinema />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/admin/alo-prefeitura"
-            element={
-              <AdminLayout>
-                <AdminAloPrefeitura />
-              </AdminLayout>
-            }
-          />
-
-          {/* Alô Prefeitura public routes */}
-          <Route path="/cidade/:slug/alo-prefeitura" element={<AloPrefeituraListPage />} />
-          <Route path="/cidade/:slug/alo-prefeitura/:itemId" element={<AloPrefeituraDetailPage />} />
-
-          {/* Veículos public routes */}
-          <Route path="/cidade/:slug/veiculos" element={<VeiculosListPage />} />
-          <Route path="/cidade/:slug/veiculos/novo" element={<NovoVeiculoPage />} />
-
-          {/* Desapega public routes */}
-          <Route path="/cidade/:slug/desapega" element={<DesapegaListPage />} />
-          <Route path="/cidade/:slug/desapega/novo" element={<NovoDesapegaPage />} />
-          <Route path="/cidade/:slug/desapega/:anuncioId" element={<DesapegaDetailPage />} />
-
-          {/* Serviços */}
-          <Route path="/cidade/:slug/servicos/:categoriaId" element={<ServicoCategoriaPage />} />
-          <Route path="/cidade/:slug/servicos/:categoriaId/novo" element={<NovaEmpresaPage />} />
-          <Route path="/cidade/:slug/servicos/:categoriaId/:empresaId" element={<ServicoEmpresaDetailPage />} />
-
-          {/* Ofertas */}
-          <Route path="/cidade/:slug/ofertas" element={<OfertasListPage />} />
-
-          {/* Vagas de Emprego */}
-          <Route path="/cidade/:slug/vagas" element={<VagasListPage />} />
-          <Route path="/cidade/:slug/vagas/nova" element={<NovaVagaPage />} />
-          <Route path="/cidade/:slug/vagas/:vagaId" element={<VagaDetailPage />} />
-
-          {/* Pets Perdidos */}
-          <Route path="/cidade/:slug/pets" element={<PetsListPage />} />
-          <Route path="/cidade/:slug/pets/novo" element={<NovoPetPage />} />
-          <Route path="/cidade/:slug/pets/:id" element={<PetDetailPage />} />
-
-            {/* Anunciar Hub */}
-            <Route path="/cidade/:slug/anunciar" element={<AnunciarPage />} />
-            <Route path="/cidade/:slug/banner/novo" element={<NovoBannerPage />} />
-
-            {/* Minha Conta */}
-            <Route path="/cidade/:slug/meus-anuncios" element={<MeusAnunciosPage />} />
-            <Route path="/cidade/:slug/minhas-empresas" element={<MinhasEmpresasPage />} />
-            <Route path="/cidade/:slug/minhas-empresas/:empresaId/editar" element={<EditarEmpresaPage />} />
-
-            {/* Auth */}
-            <Route path="/cidade/:slug/auth" element={<AuthPage />} />
+            {/* Admin routes without max-width constraint */}
+            <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
+            <Route path="/admin/cidades" element={<AdminLayout><AdminCidades /></AdminLayout>} />
+            <Route path="/admin/cidades/:cidadeId" element={<AdminLayout><AdminCidadeDetail /></AdminLayout>} />
+            <Route path="/admin/jornal" element={<AdminLayout><AdminJornal /></AdminLayout>} />
+            <Route path="/admin/cinema" element={<AdminLayout><AdminCinema /></AdminLayout>} />
+            <Route path="/admin/alo-prefeitura" element={<AdminLayout><AdminAloPrefeitura /></AdminLayout>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>
