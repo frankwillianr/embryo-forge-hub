@@ -7,6 +7,7 @@ import ServicosSection from "@/components/servicos/ServicosSection";
 import OfertasSection from "@/components/ofertas/OfertasSection";
 import QuickAccessCards from "@/components/sections/QuickAccessCards";
 import EventosSection from "@/components/eventos/EventosSection";
+import CinemaHorizontalList from "@/components/cinema/CinemaHorizontalList";
 import type { Banner } from "@/types/banner";
 
 interface HomeSectionProps {
@@ -101,6 +102,9 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       {/* Quick Access Cards */}
       <QuickAccessCards cidadeSlug={cidadeSlug} />
+
+      {/* Cinema */}
+      <CinemaHorizontalList cidadeSlug={cidadeSlug} />
     </div>
   );
 };
