@@ -68,12 +68,13 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
         {eventos.map((evento: any) => (
           <EventoCard
             key={evento.id}
+            id={evento.id}
+            cidadeSlug={cidadeSlug}
             titulo={evento.titulo}
             imagem_url={evento.imagem_url}
             data_evento={evento.data_evento}
             horario={evento.horario}
             local_nome={evento.local_nome}
-            preco={evento.preco}
             categoria={evento.categoria}
           />
         ))}
