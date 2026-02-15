@@ -482,10 +482,15 @@ const JornalDetailPage = () => {
 
         {/* Botão Ouvir */}
         <button
-          onClick={async () => {
+          onClick={async (e) => {
+            e.stopPropagation();
             if (isSpeaking) {
-              audioRef.current?.pause();
-              audioRef.current = null;
+              if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+                audioRef.current = null;
+              }
+              window.speechSynthesis.cancel();
               setIsSpeaking(false);
               return;
             }
