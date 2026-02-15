@@ -418,7 +418,7 @@ const JornalDetailPage = () => {
         {/* Botão de narração - Web Speech API */}
         <div className="flex flex-wrap gap-2">
           {[
-            { id: "voice-2", name: "Ouvir notícia", rate: 1.15, pitch: 0.85 },
+            { id: "voice-2", name: "Ouvir notícia", rate: 1.3, pitch: 0.85 },
           ].map(({ id, name, rate, pitch }) => (
             <button
               key={id}
