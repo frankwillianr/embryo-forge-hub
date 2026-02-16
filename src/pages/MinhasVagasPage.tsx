@@ -135,7 +135,7 @@ const MinhasVagasPage = () => {
             <TabsContent value="ativas" className="mt-4 space-y-3">
               {ativas.length > 0 ? (
                 ativas.map((vaga) => (
-                  <VagaCard key={vaga.id} vaga={vaga} cidadeSlug={slug} />
+                  <VagaCard key={vaga.id} vaga={vaga} />
                 ))
               ) : (
                 renderEmptyState("Nenhuma vaga ativa no momento")
@@ -145,7 +145,7 @@ const MinhasVagasPage = () => {
             <TabsContent value="pendentes" className="mt-4 space-y-3">
               {pendentes.length > 0 ? (
                 pendentes.map((vaga) => (
-                  <VagaCard key={vaga.id} vaga={vaga} cidadeSlug={slug} />
+                  <VagaCard key={vaga.id} vaga={vaga} />
                 ))
               ) : (
                 renderEmptyState("Nenhuma vaga aguardando aprovação")
@@ -155,7 +155,7 @@ const MinhasVagasPage = () => {
             <TabsContent value="inativas" className="mt-4 space-y-3">
               {inativas.length > 0 ? (
                 inativas.map((vaga) => (
-                  <VagaCard key={vaga.id} vaga={vaga} cidadeSlug={slug} />
+                  <VagaCard key={vaga.id} vaga={vaga} />
                 ))
               ) : (
                 renderEmptyState("Nenhuma vaga inativa")
