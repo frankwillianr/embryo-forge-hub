@@ -25,7 +25,8 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
       localStorage.setItem("jornal-lidos", JSON.stringify(read));
       setIsRead(true);
     }
-    navigate(`/cidade/${cidadeSlug}/jornal/${jornal.id}`);
+    // Navegar para o feed com hash da notícia para scroll automático
+    navigate(`/cidade/${cidadeSlug}/jornal#${jornal.id}`);
   };
 
   return (

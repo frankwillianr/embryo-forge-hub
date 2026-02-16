@@ -1,5 +1,6 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import JornalFeedCard from "@/components/jornal/JornalFeedCard";
 const JornalListPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: jornais = [], isLoading } = useQuery({
     queryKey: ["jornais-list", slug],
@@ -39,6 +41,26 @@ const JornalListPage = () => {
     },
     enabled: !!slug,
   });
+
+  // Scroll automático até a notícia quando há hash na URL
+  useEffect(() => {
+    if (!isLoading && location.hash) {
+      const jornalId = location.hash.substring(1); // Remove o #
+      const element = document.getElementById(`jornal-${jornalId}`);
+
+      if (element) {
+        // Aguarda um momento para garantir que o DOM está pronto
+        setTimeout(() => {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+          // Remove o hash da URL sem recarregar a página
+          window.history.replaceState(null, '', location.pathname);
+        }, 100);
+      }
+    }
+  }, [isLoading, location.hash, location.pathname]);
 
   return (
     <div className="min-h-screen bg-background pb-4">

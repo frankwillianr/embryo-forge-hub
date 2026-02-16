@@ -299,7 +299,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const shouldTruncate = descricao.length > 100;
 
   return (
-    <article className="border-b border-border/50 relative mb-6">
+    <article id={`jornal-${jornal.id}`} className="border-b border-border/50 relative mb-6 scroll-mt-16">
       {/* Header - perfil estilo Instagram */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2.5">
