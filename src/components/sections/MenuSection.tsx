@@ -142,16 +142,16 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
       {/* Contatos Section - Minimalista */}
       <div className="px-5 py-6 border-t border-border">
         <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-4">
-          Suporte
+          Precisa de ajuda? Fale com a gente
         </p>
 
         <div className="space-y-3">
           <a
-            href="tel:+5533999999999"
+            href="tel:+5533997305519"
             className="flex items-center gap-3 text-sm hover:text-primary transition-colors"
           >
             <Phone className="h-[18px] w-[18px] text-muted-foreground" />
-            <span className="text-foreground">(33) 99999-9999</span>
+            <span className="text-foreground">(33) 99730-5519</span>
           </a>
 
           <a
