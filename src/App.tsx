@@ -41,6 +41,9 @@ import AuthPage from "@/pages/AuthPage";
 import MeusAnunciosPage from "@/pages/MeusAnunciosPage";
 import MinhasEmpresasPage from "@/pages/MinhasEmpresasPage";
 import EditarEmpresaPage from "@/pages/EditarEmpresaPage";
+import MeusVeiculosPage from "@/pages/MeusVeiculosPage";
+import MinhasDenunciasPage from "@/pages/MinhasDenunciasPage";
+import MinhasVagasPage from "@/pages/MinhasVagasPage";
 import NotFound from "@/pages/NotFound";
 import EventoDetailPage from "@/pages/EventoDetailPage";
 import EventosListPage from "@/pages/EventosListPage";
@@ -86,6 +89,9 @@ const App = () => (
               <Route path="/cidade/:slug/meus-anuncios" element={<MeusAnunciosPage />} />
               <Route path="/cidade/:slug/minhas-empresas" element={<MinhasEmpresasPage />} />
               <Route path="/cidade/:slug/minhas-empresas/:empresaId/editar" element={<EditarEmpresaPage />} />
+              <Route path="/cidade/:slug/meus-veiculos" element={<MeusVeiculosPage />} />
+              <Route path="/cidade/:slug/minhas-denuncias" element={<MinhasDenunciasPage />} />
+              <Route path="/cidade/:slug/minhas-vagas" element={<MinhasVagasPage />} />
               <Route path="/cidade/:slug/eventos" element={<EventosListPage />} />
               <Route path="/cidade/:slug/eventos/:eventoId" element={<EventoDetailPage />} />
               <Route path="/cidade/:slug/onibus" element={<OnibusListPage />} />
