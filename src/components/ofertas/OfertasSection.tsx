@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BadgePercent } from "lucide-react";
 
 interface OfertasSectionProps {
   cidadeSlug?: string;
@@ -66,13 +67,14 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
 
   return (
     <div className="py-6">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 mb-4">
+      {/* Header minimalista */}
+      <div className="flex items-center justify-between px-5 mb-1">
         <div>
-          <h2 className="text-base font-semibold text-foreground tracking-tight">
+          <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+            <BadgePercent className="h-4 w-4 text-primary" />
             Ofertas da Cidade
           </h2>
-          <p className="text-[12px] text-muted-foreground/70">
+          <p className="text-[12px] text-muted-foreground/70 mt-0.5">
             Promoções imperdíveis
           </p>
         </div>

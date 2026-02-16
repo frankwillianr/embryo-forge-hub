@@ -53,24 +53,26 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
   if (filmes.length === 0) return null;
 
   return (
-    <div className="py-4">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 mb-3">
-        <div className="flex items-center gap-2">
-          <Film className="h-5 w-5 text-accent" />
-          <h2 className="font-bold text-foreground text-base">Cinema</h2>
-        </div>
+    <div className="py-6">
+      {/* Header minimalista */}
+      <div className="flex items-center justify-between px-5 mb-1">
+        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+          <Film className="h-4 w-4 text-primary" />
+          Cinema
+        </h2>
         <button
           onClick={() => {
-            navigate(`/cidade/${cidadeSlug}`, { state: { tab: "cinema" } });
             window.scrollTo({ top: 0, behavior: "smooth" });
+            navigate(`/cidade/${cidadeSlug}`, { state: { tab: "cinema" } });
           }}
-          className="flex items-center gap-0.5 text-xs font-medium text-primary"
+          className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
         >
           Ver todos
-          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
+      <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
+        Confira os filmes em cartaz na sua cidade
+      </p>
 
       {/* Horizontal scroll */}
       <div className="overflow-x-auto scrollbar-hide">

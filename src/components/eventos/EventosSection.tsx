@@ -56,24 +56,26 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
   if (eventos.length === 0) return null;
 
   return (
-    <div className="py-4">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 mb-3">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-accent" />
-          <h2 className="font-bold text-foreground text-base">Shows e Eventos</h2>
-        </div>
+    <div className="py-6">
+      {/* Header minimalista */}
+      <div className="flex items-center justify-between px-5 mb-1">
+        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+          <CalendarDays className="h-4 w-4 text-primary" />
+          Shows e Eventos
+        </h2>
         <button
           onClick={() => {
-            navigate(`/cidade/${cidadeSlug}/eventos`);
             window.scrollTo({ top: 0, behavior: "smooth" });
+            navigate(`/cidade/${cidadeSlug}/eventos`);
           }}
-          className="flex items-center gap-0.5 text-xs font-medium text-primary"
+          className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
         >
           Ver todos
-          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
+      <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
+        Descubra shows e eventos na sua cidade
+      </p>
 
       {/* Horizontal scroll - same structure as JornalHorizontalList */}
       <div className="overflow-x-auto scrollbar-hide">

@@ -80,138 +80,107 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
   ];
 
   return (
-    <div className="flex flex-col">
-      {/* Perfil Section */}
-      <div className="px-6 py-6">
-        <div className="flex items-center gap-3 mb-4">
+    <div className="flex flex-col min-h-full bg-background">
+      {/* Perfil Section - Minimalista */}
+      <div className="px-5 pt-8 pb-6">
+        <div className="flex items-center gap-3 mb-6">
           {profile?.foto_url ? (
-            <img 
-              src={profile.foto_url} 
-              alt={profile.nome} 
-              className="w-14 h-14 rounded-full object-cover"
+            <img
+              src={profile.foto_url}
+              alt={profile.nome}
+              className="w-12 h-12 rounded-full object-cover ring-1 ring-border"
             />
           ) : (
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-7 w-7 text-primary" />
+            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+              <User className="h-5 w-5 text-muted-foreground" />
             </div>
           )}
           <div>
-            <p className="font-semibold text-foreground">
-              {user ? `Olá, ${firstName}` : "Visitante"}
+            <p className="text-sm font-semibold text-foreground">
+              {user ? firstName || "Usuário" : "Visitante"}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {cidadeNome || "Sua cidade"}
+            <p className="text-xs text-muted-foreground">
+              {cidadeNome}
             </p>
           </div>
         </div>
 
-        {user ? (
-          <Button 
-            variant="dark"
-            onClick={() => setShowLogoutConfirm(true)}
-            className="w-full rounded-xl"
-          >
-            <LogOut className="h-4 w-4" />
-            Sair da conta
-          </Button>
-        ) : (
-          <Button 
-            variant="dark"
+        {!user && (
+          <button
             onClick={handleLogin}
-            className="w-full rounded-xl"
+            className="w-full py-2.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
           >
-            Fazer Login
-          </Button>
+            Entrar na conta
+          </button>
         )}
       </div>
 
-      <Separator />
-
-      {/* Menu Items - Only show when logged in */}
+      {/* Menu Items - Minimalista */}
       {user && (
-        <>
-          <div className="px-6 py-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Minhas Postagens
-            </h3>
+        <div className="px-5 py-6 border-t border-border">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-4">
+            Minhas Postagens
+          </p>
 
-            <div className="space-y-2">
-              {menuItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => navigate(item.path)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
-                >
-                  <div className={`w-10 h-10 rounded-full ${item.bgColor} flex items-center justify-center`}>
-                    <item.icon className={`h-5 w-5 ${item.color}`} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{item.label}</p>
-                    <p className="text-xs text-muted-foreground">{item.description}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
+          <div className="space-y-1">
+            {menuItems.map((item) => (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className="w-full flex items-center gap-3 py-3 text-left hover:text-primary transition-colors group"
+              >
+                <item.icon className="h-[18px] w-[18px] text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                  {item.label}
+                </span>
+              </button>
+            ))}
           </div>
-
-          <Separator />
-        </>
+        </div>
       )}
 
-      {/* Contatos Section */}
-      <div className="px-6 py-4">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          Contatos
-        </h3>
+      {/* Contatos Section - Minimalista */}
+      <div className="px-5 py-6 border-t border-border">
+        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-4">
+          Suporte
+        </p>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           <a
             href="tel:+5533999999999"
-            className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+            className="flex items-center gap-3 text-sm hover:text-primary transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-              <Phone className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">WhatsApp</p>
-              <p className="text-xs text-muted-foreground">(33) 99999-9999</p>
-            </div>
+            <Phone className="h-[18px] w-[18px] text-muted-foreground" />
+            <span className="text-foreground">(33) 99999-9999</span>
           </a>
 
           <a
             href="mailto:contato@app.com"
-            className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+            className="flex items-center gap-3 text-sm hover:text-primary transition-colors"
           >
-            <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-              <Mail className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">E-mail</p>
-              <p className="text-xs text-muted-foreground">contato@app.com</p>
-            </div>
+            <Mail className="h-[18px] w-[18px] text-muted-foreground" />
+            <span className="text-foreground">contato@app.com</span>
           </a>
-
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
-            <div className="w-10 h-10 rounded-full bg-orange-500/10 flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-orange-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">Endereço</p>
-              <p className="text-xs text-muted-foreground">
-                {cidadeNome || "Sua cidade"}, MG
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
-      <Separator />
+      {/* Logout - Minimalista */}
+      {user && (
+        <div className="mt-auto px-5 py-6 border-t border-border">
+          <button
+            onClick={() => setShowLogoutConfirm(true)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <LogOut className="h-[18px] w-[18px]" />
+            <span>Sair da conta</span>
+          </button>
+        </div>
+      )}
 
-      {/* Footer */}
-      <div className="px-6 py-4">
-        <p className="text-xs text-center text-muted-foreground">
-          Versão 1.0.0
+      {/* Footer - Minimalista */}
+      <div className="px-5 py-4 border-t border-border">
+        <p className="text-[10px] text-center text-muted-foreground/60">
+          v1.0.0
         </p>
       </div>
 

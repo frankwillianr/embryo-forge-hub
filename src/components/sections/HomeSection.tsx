@@ -86,9 +86,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
         </div>
       )}
 
-      {/* Shows e Eventos */}
-      <EventosSection cidadeSlug={cidadeSlug} />
-
       {/* Jornal da Cidade */}
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
 
@@ -106,6 +103,9 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       {/* Cinema */}
       <CinemaHorizontalList cidadeSlug={cidadeSlug} />
+
+      {/* Shows e Eventos */}
+      <EventosSection cidadeSlug={cidadeSlug} />
 
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Car, ShoppingBag, Users } from "lucide-react";
+import { Search, Car, ShoppingBag, Users, Wrench } from "lucide-react";
 
 // Import icons para grid
 import veiculosIcon from "@/assets/icons/veiculos.png";
@@ -107,10 +107,11 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
     <div className="py-6">
       {/* Header */}
       <div className="px-5 mb-4">
-        <h2 className="text-base font-semibold text-foreground tracking-tight">
+        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+          <Wrench className="h-4 w-4 text-primary" />
           Serviços
         </h2>
-        <p className="text-[12px] text-muted-foreground/70">
+        <p className="text-[12px] text-muted-foreground/70 mt-0.5">
           Encontre o que precisa na sua cidade
         </p>
       </div>

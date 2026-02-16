@@ -405,11 +405,6 @@ const JornalDetailPage = () => {
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {format(new Date(jornal.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
-            {jornal.fonte && (
-              <span className="text-primary/80 ml-1">
-                · via {jornal.fonte}
-              </span>
-            )}
           </span>
         </div>
 
