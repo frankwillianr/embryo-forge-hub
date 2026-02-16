@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2 } from "lucide-react";
+import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   AlertDialog,
@@ -147,10 +147,12 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
 
         <div className="space-y-3">
           <a
-            href="tel:+5533997305519"
+            href="https://wa.me/5533997305519"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-3 text-sm hover:text-primary transition-colors"
           >
-            <Phone className="h-[18px] w-[18px] text-muted-foreground" />
+            <MessageCircle className="h-[18px] w-[18px] text-muted-foreground" />
             <span className="text-foreground">(33) 99730-5519</span>
           </a>
 
