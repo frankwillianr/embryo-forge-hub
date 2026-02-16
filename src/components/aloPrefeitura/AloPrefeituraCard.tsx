@@ -14,7 +14,8 @@ const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
   const primeiraImagem = item.imagens?.[0]?.imagem_url;
   
   const handleClick = () => {
-    navigate(`/cidade/${cidadeSlug}/alo-prefeitura/${item.id}`);
+    // Navegar para o feed com hash do item para scroll automático
+    navigate(`/cidade/${cidadeSlug}/alo-prefeitura#${item.id}`);
   };
 
   return (

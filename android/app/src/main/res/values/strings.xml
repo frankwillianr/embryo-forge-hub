@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Gv City</string>
+    <string name="title_activity_main">Gv City</string>
+    <string name="package_name">com.will.gvcity</string>
+    <string name="custom_url_scheme">com.will.gvcity</string>
+</resources>

@@ -74,7 +74,7 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
   });
 
   return (
-    <div>
+    <div className="pb-4">
       {/* Carrossel de Anúncios */}
       {isLoading ? (
         <div className="aspect-[16/9] w-full bg-muted animate-pulse m-5 rounded-[20px]" />
@@ -89,20 +89,68 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       {/* Jornal da Cidade */}
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
 
+      {/* Separador Linha Dupla */}
+      <div className="flex items-center justify-center my-10">
+        <div className="flex flex-col gap-2 w-20">
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        </div>
+      </div>
+
       {/* Serviços */}
       <ServicosSection cidadeSlug={cidadeSlug} />
+
+      {/* Separador Linha Dupla */}
+      <div className="flex items-center justify-center my-10">
+        <div className="flex flex-col gap-2 w-20">
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        </div>
+      </div>
 
       {/* Ofertas da Cidade */}
       <OfertasSection cidadeSlug={cidadeSlug} />
 
+      {/* Separador Linha Dupla */}
+      <div className="flex items-center justify-center my-10">
+        <div className="flex flex-col gap-2 w-20">
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        </div>
+      </div>
+
       {/* Alô Prefeitura */}
       <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
+
+      {/* Separador Linha Dupla */}
+      <div className="flex items-center justify-center my-10">
+        <div className="flex flex-col gap-2 w-20">
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        </div>
+      </div>
 
       {/* Quick Access Cards */}
       <QuickAccessCards cidadeSlug={cidadeSlug} />
 
+      {/* Separador Linha Dupla */}
+      <div className="flex items-center justify-center my-10">
+        <div className="flex flex-col gap-2 w-20">
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        </div>
+      </div>
+
       {/* Cinema */}
       <CinemaHorizontalList cidadeSlug={cidadeSlug} />
+
+      {/* Separador Linha Dupla */}
+      <div className="flex items-center justify-center my-10">
+        <div className="flex flex-col gap-2 w-20">
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        </div>
+      </div>
 
       {/* Shows e Eventos */}
       <EventosSection cidadeSlug={cidadeSlug} />

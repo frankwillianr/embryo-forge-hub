@@ -46,7 +46,7 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
 
   if (isLoading) {
     return (
-      <div className="px-5 py-6">
+      <div className="py-6 px-5">
         <div className="flex gap-4 overflow-hidden">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex-shrink-0 w-64 space-y-3">

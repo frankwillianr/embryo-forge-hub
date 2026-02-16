@@ -1,14 +1,16 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { AloPrefeitura, AloPrefeituraImagem } from "@/types/aloPrefeitura";
-import aloPrefeituraBanner from "@/assets/alo-prefeitura-banner.jpg";
+import AloPrefeituraFeedCard from "@/components/aloPrefeitura/AloPrefeituraFeedCard";
 
 const AloPrefeituraListPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["alo-prefeitura-list", slug],
@@ -55,86 +57,67 @@ const AloPrefeituraListPage = () => {
     enabled: !!slug,
   });
 
+  // Scroll automático até a publicação quando há hash na URL
+  useEffect(() => {
+    if (!isLoading && location.hash) {
+      const itemId = location.hash.substring(1); // Remove o #
+      const element = document.getElementById(`alo-${itemId}`);
+
+      if (element) {
+        // Aguarda um momento para garantir que o DOM está pronto
+        setTimeout(() => {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+          // Remove o hash da URL sem recarregar a página
+          window.history.replaceState(null, '', location.pathname);
+        }, 100);
+      }
+    }
+  }, [isLoading, location.hash, location.pathname]);
+
   return (
     <div className="min-h-screen bg-background pb-4">
-      {/* Header */}
+      {/* Header estilo Instagram */}
       <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 pt-safe border-b border-border/50 bg-background/95 backdrop-blur-sm">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}`)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-base font-semibold">Alô Prefeitura</h1>
+        <h1 className="text-base font-semibold text-foreground">Alô Prefeitura</h1>
       </header>
 
-      {/* Banner Hero */}
-      <div className="relative h-40 overflow-hidden">
-        <img
-          src={aloPrefeituraBanner}
-          alt="Alô Prefeitura"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <div className="absolute bottom-3 left-4 right-4">
-          <p className="text-xs text-muted-foreground">Sua voz na cidade</p>
-          <h2 className="text-lg font-bold text-foreground">Denúncias da Comunidade</h2>
-        </div>
-      </div>
-
-      {/* Lista */}
-      <div className="px-4 py-4">
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex gap-3">
-                <div className="w-24 h-20 bg-muted/50 animate-pulse rounded-xl flex-shrink-0" />
-                <div className="flex-1 space-y-2 py-1">
-                  <div className="h-2 w-16 bg-muted/50 animate-pulse rounded" />
-                  <div className="h-3 w-full bg-muted/50 animate-pulse rounded" />
-                  <div className="h-3 w-3/4 bg-muted/50 animate-pulse rounded" />
+      {/* Feed estilo Instagram */}
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="border-b border-border/50">
+              <div className="px-3 py-2.5 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-muted/50 animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-32 bg-muted/50 animate-pulse rounded" />
+                  <div className="h-2 w-20 bg-muted/50 animate-pulse rounded" />
                 </div>
               </div>
-            ))}
-          </div>
-        ) : items.length === 0 ? (
-          <div className="text-center text-muted-foreground py-12 text-sm">
-            Nenhuma publicação ainda
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {items.map((item) => {
-              const primeiraImagem = item.imagens?.[0]?.imagem_url;
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => navigate(`/cidade/${slug}/alo-prefeitura/${item.id}`)}
-                  className="flex gap-3 cursor-pointer group"
-                >
-                  {/* Thumbnail */}
-                  <div className="w-24 h-20 rounded-xl overflow-hidden bg-muted/30 flex-shrink-0">
-                    {primeiraImagem ? (
-                      <img
-                        src={primeiraImagem}
-                        alt={item.titulo}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-muted/20 to-muted/40" />
-                    )}
-                  </div>
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 py-0.5">
-                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1">
-                      {new Date(item.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-                    </p>
-                    <h3 className="text-[13px] font-medium text-foreground line-clamp-2 leading-tight tracking-tight">
-                      {item.titulo}
-                    </h3>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              <div className="aspect-square w-full bg-muted/50 animate-pulse" />
+              <div className="px-3 py-3 space-y-2">
+                <div className="h-3 w-full bg-muted/50 animate-pulse rounded" />
+                <div className="h-3 w-3/4 bg-muted/50 animate-pulse rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="text-center text-muted-foreground py-12 text-sm">
+          Nenhuma publicação ainda
+        </div>
+      ) : (
+        <div>
+          {items.map((item) => (
+            <AloPrefeituraFeedCard key={item.id} item={item} cidadeSlug={slug} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

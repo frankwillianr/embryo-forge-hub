@@ -48,6 +48,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const [showCommentSheet, setShowCommentSheet] = useState(false);
   const [comentario, setComentario] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const [isRead, setIsRead] = useState(() => {
     const read = JSON.parse(localStorage.getItem("jornal-lidos") || "[]");
     return read.includes(jornal.id);
@@ -155,8 +156,16 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   // Mutation para reagir (like)
   const reactMutation = useMutation({
     mutationFn: async (tipo: "like" | "dislike") => {
+      // Buscar reação atual do banco para garantir estado correto
+      const { data: currentReaction } = await supabase
+        .from("rel_cidade_jornal_reacoes")
+        .select("tipo")
+        .eq("jornal_id", jornal.id)
+        .eq("user_fingerprint", fingerprint)
+        .maybeSingle();
+
       // Se já tem a mesma reação, remove
-      if (userReaction === tipo) {
+      if (currentReaction?.tipo === tipo) {
         const { error } = await supabase
           .from("rel_cidade_jornal_reacoes")
           .delete()
@@ -246,6 +255,10 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const handleDoubleTap = () => {
     // Duplo clique dá like
     reactMutation.mutate("like");
+
+    // Mostrar animação de coração
+    setShowLikeAnimation(true);
+    setTimeout(() => setShowLikeAnimation(false), 1000);
   };
 
   const handleLikeClick = (e: React.MouseEvent) => {
@@ -342,7 +355,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
       </div>
 
       {/* Imagem/Carrossel */}
-      <div 
+      <div
         ref={containerRef}
         className="relative aspect-square w-full overflow-hidden bg-muted/30"
         onTouchStart={handleTouchStart}
@@ -350,9 +363,21 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
         onTouchEnd={handleTouchEnd}
         onDoubleClick={handleDoubleTap}
       >
+        {/* Animação de Like */}
+        {showLikeAnimation && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 pointer-events-none">
+            <Heart
+              className="w-24 h-24 text-white fill-white animate-[ping_0.6s_ease-out]"
+              style={{
+                animation: 'likeHeart 0.8s ease-out',
+              }}
+            />
+          </div>
+        )}
+
         {imagens.length > 0 ? (
           <>
-            <div 
+            <div
               className={`flex h-full ${isDragging ? '' : 'transition-transform duration-300'}`}
               style={{
                 transform: `translateX(calc(-${currentImageIndex * 100}% + ${translateX}px))`
@@ -364,7 +389,6 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
                     src={url}
                     alt={`${jornal.titulo} - ${index + 1}`}
                     className="w-full h-full object-cover"
-                    onClick={handleCardClick}
                   />
                 </div>
               ))}
@@ -387,19 +411,13 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
             )}
           </>
         ) : jornal.video_url ? (
-          <div 
-            className="w-full h-full flex items-center justify-center bg-muted/50 cursor-pointer"
-            onClick={handleCardClick}
-          >
+          <div className="w-full h-full flex items-center justify-center bg-muted/50">
             <div className="w-16 h-16 rounded-full bg-black/30 backdrop-blur flex items-center justify-center">
               <Play className="h-8 w-8 text-white ml-1" fill="white" />
             </div>
           </div>
         ) : (
-          <div 
-            className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/80 cursor-pointer"
-            onClick={handleCardClick}
-          />
+          <div className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/80" />
         )}
       </div>
 
@@ -457,7 +475,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
         </div>
 
         {/* Título e descrição */}
-        <div className="mt-1">
+        <div className="mt-1 mb-3">
           <p className="text-[13px] text-foreground leading-relaxed">
             <span className="font-semibold mr-1.5">Jornal</span>
             <span className="font-medium">{jornal.titulo}</span>
@@ -469,7 +487,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
                   {descricao.slice(0, 100)}...
                   <button
                     onClick={() => setShowFullText(true)}
-                    className="text-muted-foreground/70 ml-1 font-medium"
+                    className="text-foreground ml-1.5 font-semibold hover:text-muted-foreground transition-colors"
                   >
                     mais
                   </button>
@@ -479,13 +497,16 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
               )}
             </div>
           )}
-
         </div>
       </div>
 
       {/* Modal de Comentários */}
       <Sheet open={showCommentSheet} onOpenChange={setShowCommentSheet}>
-        <SheetContent side="bottom" className="h-[50vh] rounded-t-[20px] p-0">
+        <SheetContent
+          side="bottom"
+          className="h-[85vh] rounded-t-[20px] p-0 pb-safe"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <SheetHeader className="px-4 py-3 border-b border-border/50">
             <SheetTitle className="text-base font-semibold">
               Comentários {comentariosCount > 0 && `(${comentariosCount})`}
