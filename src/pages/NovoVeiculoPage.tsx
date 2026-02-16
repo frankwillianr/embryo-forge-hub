@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { ArrowLeft, Upload, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { fipeApi } from "@/services/fipeApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,6 +58,7 @@ const NovoVeiculoPage = () => {
   // Form state
   const [marcaId, setMarcaId] = useState("");
   const [modeloId, setModeloId] = useState("");
+  const [versaoId, setVersaoId] = useState("");
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [preco, setPreco] = useState("");
@@ -98,32 +100,37 @@ const NovoVeiculoPage = () => {
     enabled: !!slug,
   });
 
-  // Buscar marcas
+  // Buscar marcas da API FIPE
   const { data: marcas } = useQuery({
-    queryKey: ["veiculos-marcas"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rel_cidade_veiculos_marcas")
-        .select("*")
-        .order("nome");
-      if (error) throw error;
-      return data;
-    },
+    queryKey: ["fipe-marcas"],
+    queryFn: () => fipeApi.getMarcas(),
+    staleTime: 1000 * 60 * 60 * 24,
   });
 
   // Buscar modelos da marca selecionada
-  const { data: modelos } = useQuery({
-    queryKey: ["veiculos-modelos", marcaId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rel_cidade_veiculos_modelos")
-        .select("*")
-        .eq("marca_id", marcaId)
-        .order("nome");
-      if (error) throw error;
-      return data;
-    },
+  const { data: modelosData } = useQuery({
+    queryKey: ["fipe-modelos", marcaId],
+    queryFn: () => fipeApi.getModelos(marcaId),
     enabled: !!marcaId,
+    staleTime: 1000 * 60 * 60 * 24,
+  });
+
+  const modelos = modelosData?.modelos || [];
+
+  // Buscar versões (anos) do modelo selecionado
+  const { data: versoes } = useQuery({
+    queryKey: ["fipe-versoes", marcaId, modeloId],
+    queryFn: () => fipeApi.getAnos(marcaId, Number(modeloId)),
+    enabled: !!marcaId && !!modeloId,
+    staleTime: 1000 * 60 * 60 * 24,
+  });
+
+  // Buscar dados completos do veículo FIPE quando versão for selecionada
+  const { data: dadosFipe } = useQuery({
+    queryKey: ["fipe-veiculo", marcaId, modeloId, versaoId],
+    queryFn: () => fipeApi.getVeiculo(marcaId, Number(modeloId), versaoId),
+    enabled: !!marcaId && !!modeloId && !!versaoId,
+    staleTime: 1000 * 60 * 60 * 24,
   });
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,8 +166,12 @@ const NovoVeiculoPage = () => {
         .from("rel_cidade_veiculos")
         .insert({
           cidade_id: cidade.id,
-          marca_id: marcaId,
-          modelo_id: modeloId,
+          fipe_marca_id: marcaId,
+          fipe_marca_nome: marcas?.find(m => m.codigo === marcaId)?.nome,
+          fipe_modelo_id: modeloId,
+          fipe_modelo_nome: modelos?.find(m => m.codigo.toString() === modeloId)?.nome,
+          fipe_versao_id: versaoId || null,
+          fipe_versao_nome: versoes?.find(v => v.codigo === versaoId)?.nome || null,
           titulo,
           descricao: descricao || null,
           preco: parseFloat(preco.replace(/\D/g, "")) / 100,
@@ -239,8 +250,8 @@ const NovoVeiculoPage = () => {
     e.preventDefault();
     
     // Validações básicas
-    if (!marcaId || !modeloId || !titulo || !preco || !anoFabricacao || 
-        !anoModelo || !cor || !combustivel || !cambio || !quilometragem || 
+    if (!marcaId || !modeloId || !versaoId || !titulo || !preco || !anoFabricacao ||
+        !anoModelo || !cor || !combustivel || !cambio || !quilometragem ||
         !condicao || !telefone) {
       toast({
         title: "Campos obrigatórios",
@@ -312,36 +323,57 @@ const NovoVeiculoPage = () => {
           </div>
         </div>
 
-        {/* Marca e Modelo */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Marca, Modelo e Versão */}
+        <div className="space-y-3">
           <div className="space-y-2">
             <Label>Marca *</Label>
             <Select value={marcaId} onValueChange={(v) => {
               setMarcaId(v);
               setModeloId("");
+              setVersaoId("");
             }}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
+                <SelectValue placeholder="Selecione a marca" />
               </SelectTrigger>
               <SelectContent>
                 {marcas?.map((marca) => (
-                  <SelectItem key={marca.id} value={marca.id}>
+                  <SelectItem key={marca.codigo} value={marca.codigo}>
                     {marca.nome}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
           <div className="space-y-2">
             <Label>Modelo *</Label>
-            <Select value={modeloId} onValueChange={setModeloId} disabled={!marcaId}>
+            <Select value={modeloId} onValueChange={(v) => {
+              setModeloId(v);
+              setVersaoId("");
+            }} disabled={!marcaId}>
               <SelectTrigger>
-                <SelectValue placeholder={marcaId ? "Selecione" : "Escolha marca"} />
+                <SelectValue placeholder={marcaId ? "Selecione o modelo" : "Escolha a marca primeiro"} />
               </SelectTrigger>
               <SelectContent>
                 {modelos?.map((modelo) => (
-                  <SelectItem key={modelo.id} value={modelo.id}>
+                  <SelectItem key={modelo.codigo} value={modelo.codigo.toString()}>
                     {modelo.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Versão / Ano *</Label>
+            <Select value={versaoId} onValueChange={setVersaoId} disabled={!modeloId}>
+              <SelectTrigger>
+                <SelectValue placeholder={modeloId ? "Selecione a versão" : "Escolha o modelo primeiro"} />
+              </SelectTrigger>
+              <SelectContent>
+                {versoes?.map((versao) => (
+                  <SelectItem key={versao.codigo} value={versao.codigo}>
+                    {versao.nome}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -360,12 +392,18 @@ const NovoVeiculoPage = () => {
         </div>
 
         {/* Preço FIPE - Referência */}
-        <FipePrice
-          marcaNome={marcas?.find(m => m.id === marcaId)?.nome}
-          modeloNome={modelos?.find(m => m.id === modeloId)?.nome}
-          anoModelo={anoModelo}
-          combustivel={combustivel}
-        />
+        {dadosFipe && (
+          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+            <p className="text-xs text-muted-foreground mb-1">Preço FIPE de referência</p>
+            <p className="text-2xl font-bold text-primary">{dadosFipe.Valor}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {dadosFipe.Marca} {dadosFipe.Modelo} - {dadosFipe.Combustivel}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Referência: {dadosFipe.MesReferencia}
+            </p>
+          </div>
+        )}
 
         {/* Preço */}
         <div className="space-y-2">
