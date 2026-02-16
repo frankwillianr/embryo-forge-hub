@@ -556,7 +556,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
                 comentarios.map((comentario: any) => {
                   const isOwnComment = user && comentario.user_id === user.id;
                   return (
-                    <div key={comentario.id} className="flex gap-3 group">
+                    <div key={comentario.id} className="flex gap-3">
                       <Avatar className="h-8 w-8 flex-shrink-0">
                         <AvatarImage src={comentario.profile?.foto_url || undefined} />
                         <AvatarFallback className="text-xs">
@@ -577,10 +577,10 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
                           {isOwnComment && (
                             <button
                               onClick={() => setComentarioToDelete(comentario.id)}
-                              className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="ml-auto p-1 hover:bg-destructive/10 rounded transition-colors"
                               title="Excluir comentário"
                             >
-                              <Trash2 className="h-3.5 w-3.5 text-destructive hover:text-destructive/80" />
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </button>
                           )}
                         </div>
