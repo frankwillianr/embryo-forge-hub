@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,13 @@ import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { audioManager } from "@/lib/audioManager";
 
 interface JornalFeedCardProps {
   jornal: Jornal;
@@ -38,13 +45,27 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showFullText, setShowFullText] = useState(false);
-  const [showCommentForm, setShowCommentForm] = useState(false);
+  const [showCommentSheet, setShowCommentSheet] = useState(false);
   const [comentario, setComentario] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isRead, setIsRead] = useState(() => {
     const read = JSON.parse(localStorage.getItem("jornal-lidos") || "[]");
     return read.includes(jornal.id);
   });
+
+  // Ouvir mudanças no audioManager global
+  useEffect(() => {
+    const unsubscribe = audioManager.addListener((isPlaying, audioId) => {
+      // Se não está tocando nada OU está tocando outro áudio
+      if (!isPlaying || audioId !== jornal.id) {
+        setIsSpeaking(false);
+      } else if (audioId === jornal.id) {
+        setIsSpeaking(true);
+      }
+    });
+
+    return unsubscribe;
+  }, [jornal.id]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -93,7 +114,20 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
     initialData: jornal,
   });
 
-  // Busca comentários
+  // Busca contagem de comentários
+  const { data: comentariosCount = 0 } = useQuery({
+    queryKey: ["jornal-comentarios-count", jornal.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("rel_cidade_jornal_comentarios")
+        .select("*", { count: "exact", head: true })
+        .eq("jornal_id", jornal.id);
+
+      return count || 0;
+    },
+  });
+
+  // Busca todos comentários (usado no modal)
   const { data: comentarios = [] } = useQuery({
     queryKey: ["jornal-comentarios-feed", jornal.id],
     queryFn: async () => {
@@ -106,8 +140,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
           profiles:user_id (nome, foto_url)
         `)
         .eq("jornal_id", jornal.id)
-        .order("created_at", { ascending: false })
-        .limit(2);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
@@ -116,6 +149,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
         profile: c.profiles,
       }));
     },
+    enabled: showCommentSheet, // Só busca quando abre o modal
   });
 
   // Mutation para reagir (like)
@@ -165,10 +199,9 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
     },
     onSuccess: () => {
       setComentario("");
-      setShowCommentForm(false);
       toast.success("Comentário publicado!");
-      // Redireciona para ver os comentários
-      handleCardClick();
+      queryClient.invalidateQueries({ queryKey: ["jornal-comentarios-feed", jornal.id] });
+      queryClient.invalidateQueries({ queryKey: ["jornal-comentarios-count", jornal.id] });
     },
     onError: () => {
       toast.error("Erro ao publicar comentário");
@@ -226,7 +259,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
       navigate(`/cidade/${cidadeSlug}/auth`);
       return;
     }
-    setShowCommentForm(!showCommentForm);
+    setShowCommentSheet(true);
   };
 
   const handleEnviarComentario = () => {
@@ -237,46 +270,36 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
     comentarMutation.mutate(comentario.trim());
   };
 
-  const handleSpeakClick = (e: React.MouseEvent) => {
+  const handleSpeakClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Se está falando, para
+    // Se está tocando este áudio, para
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
+      audioManager.stopAll();
       return;
     }
 
-    // Inicia a fala
-    const text = `${jornal.titulo}. ${descricao || ""}`;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "pt-BR";
-    utterance.rate = 1.0; // Velocidade normal
-    utterance.pitch = 1.0;
-
-    // Tenta usar uma voz em português
-    const allVoices = window.speechSynthesis.getVoices();
-    const ptVoices = allVoices.filter(v => v.lang.startsWith("pt"));
-    if (ptVoices.length > 0) {
-      utterance.voice = ptVoices[0];
-    }
-
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = (e) => {
-      if (e.error !== 'canceled') {
-        setIsSpeaking(false);
+    try {
+      // Se tem áudio pré-gerado, usa ele
+      if (jornal.audio_url) {
+        await audioManager.playAudio(jornal.audio_url, jornal.id);
+      } else {
+        // Fallback para Web Speech API
+        const text = `${jornal.titulo}. ${descricao || ""}`;
+        audioManager.playSpeech(text, jornal.id);
       }
-    };
-
-    window.speechSynthesis.speak(utterance);
-    setIsSpeaking(true);
+    } catch (error) {
+      console.error("Error playing audio:", error);
+      toast.error("Erro ao reproduzir áudio");
+      setIsSpeaking(false);
+    }
   };
 
   const descricao = (jornal.descricao || "").replace(/\\n/g, '\n');
   const shouldTruncate = descricao.length > 100;
 
   return (
-    <article className="border-b border-border/50 relative">
+    <article className="border-b border-border/50 relative mb-6">
       {/* Header - perfil estilo Instagram */}
       <div className="flex items-center justify-between px-3 py-2.5">
         <div className="flex items-center gap-2.5">
@@ -396,21 +419,32 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
             </button>
             <button
               onClick={handleCommentClick}
-              className="active:scale-90 transition-transform"
+              className="active:scale-90 transition-transform flex items-center gap-1"
               title="Comentar"
             >
               <MessageCircle className="h-6 w-6 text-foreground" />
+              {comentariosCount > 0 && (
+                <span className="text-[13px] text-foreground font-medium">
+                  {comentariosCount}
+                </span>
+              )}
             </button>
           </div>
           <button
             onClick={handleSpeakClick}
-            className="active:scale-90 transition-transform"
+            className="active:scale-90 transition-transform flex items-center gap-1.5"
             title={isSpeaking ? "Parar narração" : "Ouvir notícia"}
           >
             {isSpeaking ? (
-              <VolumeX className="h-5 w-5 text-foreground" />
+              <>
+                <VolumeX className="h-5 w-5 text-foreground" />
+                <span className="text-[13px] text-foreground font-medium">Pausar</span>
+              </>
             ) : (
-              <Volume2 className="h-5 w-5 text-foreground" />
+              <>
+                <Volume2 className="h-5 w-5 text-foreground" />
+                <span className="text-[13px] text-foreground font-medium">Ouvir notícia</span>
+              </>
             )}
           </button>
         </div>
@@ -429,7 +463,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
             <span className="font-medium">{jornal.titulo}</span>
           </p>
           {descricao && (
-            <p className="text-[13px] text-muted-foreground leading-relaxed mt-1">
+            <div className="text-[13px] text-muted-foreground leading-relaxed mt-1 whitespace-pre-line">
               {shouldTruncate && !showFullText ? (
                 <>
                   {descricao.slice(0, 100)}...
@@ -443,77 +477,89 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
               ) : (
                 descricao
               )}
-            </p>
-          )}
-
-          {/* Ver comentários */}
-          {comentarios.length > 0 && (
-            <button
-              onClick={handleCardClick}
-              className="text-[13px] text-muted-foreground/70 mt-2 block"
-            >
-              Ver {comentarios.length === 2 ? 'os 2 primeiros' : 'o'} comentário{comentarios.length > 1 ? 's' : ''}
-            </button>
-          )}
-
-          {/* Últimos comentários */}
-          {comentarios.slice(0, 2).map((comentario: any) => (
-            <div key={comentario.id} className="flex gap-2 mt-2">
-              <p className="text-[13px] text-foreground leading-relaxed">
-                <span className="font-semibold mr-1">
-                  {comentario.profile?.nome || "Usuário"}
-                </span>
-                <span className="text-muted-foreground">
-                  {comentario.comentario}
-                </span>
-              </p>
             </div>
-          ))}
+          )}
 
-          {/* Form de Comentário */}
-          {showCommentForm && (
-            <div className="mt-3 space-y-2 p-3 bg-muted/20 rounded-lg border border-border/50">
+        </div>
+      </div>
+
+      {/* Modal de Comentários */}
+      <Sheet open={showCommentSheet} onOpenChange={setShowCommentSheet}>
+        <SheetContent side="bottom" className="h-[50vh] rounded-t-[20px] p-0">
+          <SheetHeader className="px-4 py-3 border-b border-border/50">
+            <SheetTitle className="text-base font-semibold">
+              Comentários {comentariosCount > 0 && `(${comentariosCount})`}
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="flex flex-col h-[calc(100%-60px)]">
+            {/* Lista de comentários */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+              {comentarios.length === 0 ? (
+                <div className="text-center text-muted-foreground text-sm py-8">
+                  Nenhum comentário ainda. Seja o primeiro!
+                </div>
+              ) : (
+                comentarios.map((comentario: any) => (
+                  <div key={comentario.id} className="flex gap-3">
+                    <Avatar className="h-8 w-8 flex-shrink-0">
+                      <AvatarImage src={comentario.profile?.foto_url || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {comentario.profile?.nome?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-foreground">
+                          {comentario.profile?.nome || "Usuário"}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {formatDistanceToNow(new Date(comentario.created_at), {
+                            addSuffix: true,
+                            locale: ptBR,
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-[13px] text-foreground leading-relaxed">
+                        {comentario.comentario}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Form de comentário fixo no fundo */}
+            <div className="border-t border-border/50 p-3 bg-background">
               <div className="flex items-start gap-2">
-                <Avatar className="h-7 w-7">
+                <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarImage src={profile?.foto_url || undefined} />
                   <AvatarFallback className="text-xs">
                     {profile?.nome?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
+                <div className="flex-1 flex gap-2">
                   <Textarea
-                    placeholder="Escreva seu comentário..."
+                    placeholder="Adicione um comentário..."
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
-                    rows={2}
-                    className="resize-none text-sm"
+                    rows={1}
+                    className="resize-none text-sm min-h-[36px]"
                   />
+                  <Button
+                    size="sm"
+                    onClick={handleEnviarComentario}
+                    disabled={comentarMutation.isPending || !comentario.trim()}
+                    className="bg-primary hover:bg-primary/90 h-9"
+                  >
+                    {comentarMutation.isPending ? "..." : "Enviar"}
+                  </Button>
                 </div>
               </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setShowCommentForm(false);
-                    setComentario("");
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleEnviarComentario}
-                  disabled={comentarMutation.isPending || !comentario.trim()}
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  {comentarMutation.isPending ? "Enviando..." : "Publicar"}
-                </Button>
-              </div>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </article>
   );
 };
