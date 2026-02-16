@@ -12,11 +12,14 @@ interface VeiculoCardProps {
     combustivel: string;
     condicao: string;
     destaque: boolean;
-    marca: { nome: string } | null;
-    modelo: { nome: string } | null;
+    fipe_marca_nome?: string;
+    fipe_modelo_nome?: string;
+    marca?: { nome: string } | null;
+    modelo?: { nome: string } | null;
     imagens: { imagem_url: string; ordem: number }[] | null;
   };
-  onClick: () => void;
+  onClick?: () => void;
+  cidadeSlug?: string;
 }
 
 const combustivelLabels: Record<string, string> = {
@@ -29,7 +32,9 @@ const combustivelLabels: Record<string, string> = {
   gnv: "GNV",
 };
 
-const VeiculoCard = ({ veiculo, onClick }: VeiculoCardProps) => {
+const VeiculoCard = ({ veiculo, onClick, cidadeSlug }: VeiculoCardProps) => {
+  const marcaNome = veiculo.fipe_marca_nome || veiculo.marca?.nome || "";
+  const modeloNome = veiculo.fipe_modelo_nome || veiculo.modelo?.nome || "";
   const formatPrice = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -74,7 +79,7 @@ const VeiculoCard = ({ veiculo, onClick }: VeiculoCardProps) => {
         <div className="flex-1 p-3 flex flex-col justify-between">
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              {veiculo.marca?.nome} {veiculo.modelo?.nome}
+              {marcaNome} {modeloNome}
             </p>
             <h3 className="font-semibold text-sm text-foreground line-clamp-1 mt-0.5">
               {veiculo.titulo}
@@ -103,8 +108,8 @@ const VeiculoCard = ({ veiculo, onClick }: VeiculoCardProps) => {
               {formatPrice(veiculo.preco)}
             </span>
             <FipePriceCompact
-              marcaNome={veiculo.marca?.nome}
-              modeloNome={veiculo.modelo?.nome}
+              marcaNome={marcaNome}
+              modeloNome={modeloNome}
               anoModelo={veiculo.ano_modelo.toString()}
               combustivel={veiculo.combustivel}
               precoAnunciado={veiculo.preco}
