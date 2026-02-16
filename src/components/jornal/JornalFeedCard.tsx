@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Volume2, VolumeX, MoreHorizontal, Play } from "lucide-react";
+import { Heart, MessageCircle, Volume2, VolumeX, MoreHorizontal, Play, Trash2 } from "lucide-react";
 import { type Jornal, parseImagens } from "@/types/jornal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,6 +17,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { audioManager } from "@/lib/audioManager";
 
 interface JornalFeedCardProps {
@@ -49,6 +59,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const [comentario, setComentario] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
+  const [comentarioToDelete, setComentarioToDelete] = useState<string | null>(null);
   const [isRead, setIsRead] = useState(() => {
     const read = JSON.parse(localStorage.getItem("jornal-lidos") || "[]");
     return read.includes(jornal.id);
@@ -214,6 +225,27 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
     },
     onError: () => {
       toast.error("Erro ao publicar comentário");
+    },
+  });
+
+  // Mutation para deletar comentário
+  const deletarComentarioMutation = useMutation({
+    mutationFn: async (comentarioId: string) => {
+      const { error } = await supabase
+        .from("rel_cidade_jornal_comentarios")
+        .delete()
+        .eq("id", comentarioId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Comentário excluído!");
+      queryClient.invalidateQueries({ queryKey: ["jornal-comentarios-feed", jornal.id] });
+      queryClient.invalidateQueries({ queryKey: ["jornal-comentarios-count", jornal.id] });
+      setComentarioToDelete(null);
+    },
+    onError: () => {
+      toast.error("Erro ao excluir comentário");
     },
   });
   
@@ -521,32 +553,44 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
                   Nenhum comentário ainda. Seja o primeiro!
                 </div>
               ) : (
-                comentarios.map((comentario: any) => (
-                  <div key={comentario.id} className="flex gap-3">
-                    <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarImage src={comentario.profile?.foto_url || undefined} />
-                      <AvatarFallback className="text-xs">
-                        {comentario.profile?.nome?.charAt(0).toUpperCase() || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-semibold text-foreground">
-                          {comentario.profile?.nome || "Usuário"}
-                        </span>
-                        <span className="text-[11px] text-muted-foreground">
-                          {formatDistanceToNow(new Date(comentario.created_at), {
-                            addSuffix: true,
-                            locale: ptBR,
-                          })}
-                        </span>
+                comentarios.map((comentario: any) => {
+                  const isOwnComment = user && comentario.user_id === user.id;
+                  return (
+                    <div key={comentario.id} className="flex gap-3 group">
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarImage src={comentario.profile?.foto_url || undefined} />
+                        <AvatarFallback className="text-xs">
+                          {comentario.profile?.nome?.charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] font-semibold text-foreground">
+                            {comentario.profile?.nome || "Usuário"}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {formatDistanceToNow(new Date(comentario.created_at), {
+                              addSuffix: true,
+                              locale: ptBR,
+                            })}
+                          </span>
+                          {isOwnComment && (
+                            <button
+                              onClick={() => setComentarioToDelete(comentario.id)}
+                              className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Excluir comentário"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive hover:text-destructive/80" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[13px] text-foreground leading-relaxed">
+                          {comentario.comentario}
+                        </p>
                       </div>
-                      <p className="text-[13px] text-foreground leading-relaxed">
-                        {comentario.comentario}
-                      </p>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -581,6 +625,27 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Modal de confirmação de exclusão */}
+      <AlertDialog open={!!comentarioToDelete} onOpenChange={(open) => !open && setComentarioToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir comentário?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O comentário será excluído permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => comentarioToDelete && deletarComentarioMutation.mutate(comentarioToDelete)}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </article>
   );
 };
