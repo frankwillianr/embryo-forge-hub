@@ -79,14 +79,14 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent p-[2px]">
             <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
               <span className="text-xs font-semibold text-foreground">
-                {jornal.fonte?.charAt(0)?.toUpperCase() || "J"}
+                J
               </span>
             </div>
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="text-[13px] font-semibold text-foreground leading-tight">
-                {jornal.fonte || "Jornal da Cidade"}
+                Jornal da Cidade
               </span>
               {isRead ? (
                 <span className="text-[9px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full leading-none">
@@ -212,7 +212,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
         {/* Título e descrição */}
         <div className="mt-1 pb-3">
           <p className="text-[13px] text-foreground leading-relaxed">
-            <span className="font-semibold mr-1.5">{jornal.fonte || "Jornal"}</span>
+            <span className="font-semibold mr-1.5">Jornal</span>
             <span className="font-medium">{jornal.titulo}</span>
             {descricao && (
               <>

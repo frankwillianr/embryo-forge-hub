@@ -56,7 +56,6 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
       <div className="pt-2.5 space-y-0.5">
         <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider flex items-center gap-1.5">
           <span>{format(new Date(jornal.created_at), "dd MMM", { locale: ptBR })}</span>
-          {jornal.fonte && <span>· {jornal.fonte}</span>}
           {isRead ? (
             <span className="text-[8px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full normal-case tracking-normal">
               lida
