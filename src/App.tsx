@@ -20,6 +20,7 @@ import JornalListPage from "@/pages/JornalListPage";
 import AloPrefeituraListPage from "@/pages/AloPrefeituraListPage";
 import AloPrefeituraDetailPage from "@/pages/AloPrefeituraDetailPage";
 import VeiculosListPage from "@/pages/VeiculosListPage";
+import VeiculoDetailPage from "@/pages/VeiculoDetailPage";
 import NovoVeiculoPage from "@/pages/NovoVeiculoPage";
 import DesapegaListPage from "@/pages/DesapegaListPage";
 import NovoDesapegaPage from "@/pages/NovoDesapegaPage";
@@ -70,6 +71,7 @@ const App = () => (
               <Route path="/cidade/:slug/alo-prefeitura" element={<AloPrefeituraListPage />} />
               <Route path="/cidade/:slug/alo-prefeitura/:itemId" element={<AloPrefeituraDetailPage />} />
               <Route path="/cidade/:slug/veiculos" element={<VeiculosListPage />} />
+              <Route path="/cidade/:slug/veiculos/:veiculoId" element={<VeiculoDetailPage />} />
               <Route path="/cidade/:slug/veiculos/novo" element={<NovoVeiculoPage />} />
               <Route path="/cidade/:slug/desapega" element={<DesapegaListPage />} />
               <Route path="/cidade/:slug/desapega/novo" element={<NovoDesapegaPage />} />

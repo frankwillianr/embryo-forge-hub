@@ -122,9 +122,7 @@ const VeiculosListPage = () => {
         .gte("preco", precoRange[0])
         .lte("preco", precoRange[1])
         .gte("quilometragem", kmRange[0])
-        .lte("quilometragem", kmRange[1])
-        .order("destaque", { ascending: false })
-        .order("created_at", { ascending: false });
+        .lte("quilometragem", kmRange[1]);
 
       if (marcaId) query = query.eq("marca_id", marcaId);
       if (modeloId) query = query.eq("modelo_id", modeloId);
@@ -134,7 +132,9 @@ const VeiculosListPage = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+
+      // Embaralhar aleatoriamente
+      return data?.sort(() => Math.random() - 0.5) || [];
     },
     enabled: !!cidade?.id,
   });
