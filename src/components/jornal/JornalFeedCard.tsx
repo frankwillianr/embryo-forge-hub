@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Volume2, VolumeX, MoreHorizontal, Play, Trash2 } from "lucide-react";
+import { Heart, MessageCircle, Volume2, VolumeX, MoreHorizontal, Play, Trash2, X } from "lucide-react";
 import { type Jornal, parseImagens } from "@/types/jornal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -98,7 +98,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
         .eq("user_fingerprint", fingerprint)
         .maybeSingle();
 
-      return data?.tipo as "like" | "dislike" | null;
+      return (data?.tipo as "like" | "dislike") || null;
     },
   });
 
@@ -147,6 +147,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
         .from("rel_cidade_jornal_comentarios")
         .select(`
           id,
+          user_id,
           comentario,
           created_at,
           profiles:user_id (nome, foto_url)
@@ -536,13 +537,19 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
       <Sheet open={showCommentSheet} onOpenChange={setShowCommentSheet}>
         <SheetContent
           side="bottom"
-          className="h-[85vh] rounded-t-[20px] p-0 pb-safe"
+          className="h-[85vh] rounded-t-[20px] p-0 pb-safe [&>button]:hidden"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <SheetHeader className="px-4 py-3 border-b border-border/50">
+          <SheetHeader className="px-4 py-3 border-b border-border/50 flex-row items-center justify-between space-y-0">
             <SheetTitle className="text-base font-semibold">
               Comentários {comentariosCount > 0 && `(${comentariosCount})`}
             </SheetTitle>
+            <button
+              onClick={() => setShowCommentSheet(false)}
+              className="rounded-full p-1.5 hover:bg-muted transition-colors"
+            >
+              <X className="h-5 w-5 text-muted-foreground" />
+            </button>
           </SheetHeader>
 
           <div className="flex flex-col h-[calc(100%-60px)]">
