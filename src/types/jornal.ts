@@ -13,6 +13,7 @@ export interface Jornal {
   descricao: string;
   descricao_curta?: string | null;
   fonte?: string | null;
+  categoria?: string | null;
   video_url?: string | null;
   imagens?: string[] | string | null;
   created_at: string;
