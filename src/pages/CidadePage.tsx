@@ -58,8 +58,8 @@ const CidadePage = () => {
   });
 
   // Inicializa push notifications com o ID da cidade
-  const { permissionStatus } = usePushNotifications({ 
-    cidadeId: cidade?.id || null 
+  const { permissionStatus } = usePushNotifications({
+    cidadeId: cidade?.id || null
   });
 
   useEffect(() => {
@@ -83,7 +83,6 @@ const CidadePage = () => {
     return () => {
       if (activeTab === "home") {
         sessionStorage.setItem(`home-scroll-${slug}`, String(lastScrollY.current));
-        console.log(`[NAV] Desmontando CidadePage, scroll salvo: ${lastScrollY.current}`);
       }
     };
   }, [activeTab, slug]);
@@ -92,7 +91,6 @@ const CidadePage = () => {
   useEffect(() => {
     const saved = sessionStorage.getItem(`home-scroll-${slug}`);
     if (saved && Number(saved) > 0) {
-      console.log(`[NAV] Montando CidadePage, restaurando scroll: ${saved}`);
       setTimeout(() => {
         window.scrollTo({ top: Number(saved), behavior: "instant" });
       }, 150);
@@ -104,14 +102,9 @@ const CidadePage = () => {
   useEffect(() => {
     const state = location.state as { tab?: TabType } | null;
     if (state?.tab) {
-      console.log(`[NAV] Location state detectado: tab="${state.tab}", scrollY atual: ${window.scrollY}`);
-      // Salva scroll da aba atual antes de trocar
       scrollPositions.current[activeTab] = window.scrollY;
-      console.log(`[NAV] Salvando scroll de "${activeTab}": ${window.scrollY}`);
       setActiveTab(state.tab);
-      // Scroll to top para a nova aba
       window.scrollTo({ top: 0, behavior: "instant" });
-      // Clear the state to avoid re-triggering
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state]);
@@ -120,7 +113,7 @@ const CidadePage = () => {
   const handleTestPush = async () => {
     try {
       toast.loading("Enviando push de teste...");
-      
+
       const response = await fetch(
         "https://umauozcntfxgphzbiifz.supabase.co/functions/v1/send-push-notification",
         {
@@ -137,13 +130,13 @@ const CidadePage = () => {
 
       const result = await response.json();
       toast.dismiss();
-      
+
       if (result.success) {
         toast.success(`Push enviado! ${result.sent} dispositivo(s)`);
       } else {
         toast.error(result.error || "Erro ao enviar push");
       }
-      
+
       console.log("Resultado do push:", result);
     } catch (error) {
       toast.dismiss();
@@ -155,24 +148,17 @@ const CidadePage = () => {
   const isHome = activeTab === "home";
 
   const switchTab = (tab: TabType) => {
-    const savedScroll = window.scrollY;
-    scrollPositions.current[activeTab] = savedScroll;
-    console.log(`[NAV] Saindo de "${activeTab}" (scroll salvo: ${savedScroll})`);
-    console.log(`[NAV] Indo para "${tab}" (scroll restaurar: ${scrollPositions.current[tab]})`);
+    scrollPositions.current[activeTab] = window.scrollY;
     setActiveTab(tab);
     setTimeout(() => {
-      const target = scrollPositions.current[tab];
-      console.log(`[NAV] Restaurando scroll de "${tab}" para ${target}`);
-      window.scrollTo({ top: target, behavior: "instant" });
+      window.scrollTo({ top: scrollPositions.current[tab], behavior: "instant" });
     }, 0);
   };
 
   const handleHomeClick = () => {
     if (activeTab === "home") {
-      console.log(`[NAV] Já está na home, scroll to top`);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      console.log(`[NAV] Voltando para home`);
       switchTab("home");
     }
   };
@@ -193,7 +179,7 @@ const CidadePage = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Main Content */}
-      <main className="flex-1 overflow-auto pb-20">
+      <main className="flex-1 pb-20">
         {isHome ? (
           <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} userName={firstName} />
         ) : (
@@ -210,7 +196,7 @@ const CidadePage = () => {
             </h1>
           </header>
         )}
-        
+
         <div className="animate-in fade-in duration-300">
           {renderSection()}
         </div>

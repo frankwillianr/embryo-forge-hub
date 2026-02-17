@@ -266,7 +266,7 @@ const NovoVeiculoPage = () => {
       navigate(`/cidade/${slug}/veiculos`);
     },
     onError: (error: unknown) => {
-      console.error("Erro ao criar anúncio:", error);
+      console.error("Erro ao criar anúncio:", JSON.stringify(error, null, 2));
       const msg = error instanceof Error ? error.message
         : (error as { message?: string })?.message || "Tente novamente mais tarde.";
       toast({
