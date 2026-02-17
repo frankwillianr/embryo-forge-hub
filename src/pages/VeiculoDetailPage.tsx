@@ -11,12 +11,13 @@ import {
   MapPin,
   Phone,
   MessageCircle,
-  Share2,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
+  XCircle,
+  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import FipePriceCompact from "@/components/veiculos/FipePriceCompact";
 
 const combustivelLabels: Record<string, string> = {
@@ -35,6 +36,13 @@ const condicaoLabels: Record<string, string> = {
   usado: "Usado",
 };
 
+const cambioLabels: Record<string, string> = {
+  manual: "Manual",
+  automatico: "Automático",
+  automatizado: "Automatizado",
+  cvt: "CVT",
+};
+
 const VeiculoDetailPage = () => {
   const { slug, veiculoId } = useParams<{ slug: string; veiculoId: string }>();
   const navigate = useNavigate();
@@ -48,10 +56,7 @@ const VeiculoDetailPage = () => {
         .from("rel_cidade_veiculos")
         .select(`
           *,
-          marca:marca_id(id, nome),
-          modelo:modelo_id(id, nome),
-          imagens:rel_cidade_veiculos_imagens(imagem_url, ordem),
-          perfil:user_id(nome, telefone)
+          imagens:rel_cidade_veiculos_imagens(imagem_url, ordem)
         `)
         .eq("id", veiculoId)
         .maybeSingle();
@@ -74,34 +79,16 @@ const VeiculoDetailPage = () => {
     return new Intl.NumberFormat("pt-BR").format(value);
   };
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: veiculo?.titulo,
-          text: `${veiculo?.marca?.nome} ${veiculo?.modelo?.nome} - ${formatPrice(veiculo?.preco || 0)}`,
-          url,
-        });
-      } catch (err) {
-        // User cancelled share
-      }
-    } else {
-      navigator.clipboard.writeText(url);
-      toast.success("Link copiado!");
-    }
-  };
-
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
-      `Olá! Vi seu anúncio de ${veiculo?.marca?.nome} ${veiculo?.modelo?.nome} no app e gostaria de mais informações.`
+      `Olá! Vi seu anúncio de ${veiculo?.fipe_marca_nome} ${veiculo?.fipe_modelo_nome} no app e gostaria de mais informações.`
     );
-    const phone = veiculo?.perfil?.telefone?.replace(/\D/g, "");
+    const phone = (veiculo?.whatsapp || veiculo?.telefone)?.replace(/\D/g, "");
     window.open(`https://wa.me/55${phone}?text=${message}`, "_blank");
   };
 
   const handleCall = () => {
-    const phone = veiculo?.perfil?.telefone;
+    const phone = veiculo?.telefone;
     window.open(`tel:${phone}`, "_blank");
   };
 
@@ -128,9 +115,9 @@ const VeiculoDetailPage = () => {
   const imagens = veiculo.imagens?.sort((a, b) => a.ordem - b.ordem) || [];
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-36">
       {/* Header */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 pt-safe bg-background/95 backdrop-blur-sm border-b border-border/50">
+      <header className="sticky top-0 z-50 flex items-center px-4 py-3 pt-safe bg-background/95 backdrop-blur-sm border-b border-border/50">
         <Button
           variant="ghost"
           size="icon"
@@ -138,9 +125,6 @@ const VeiculoDetailPage = () => {
           onClick={() => navigate(`/cidade/${slug}/veiculos`)}
         >
           <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleShare}>
-          <Share2 className="h-4 w-4" />
         </Button>
       </header>
 
@@ -203,7 +187,7 @@ const VeiculoDetailPage = () => {
         {/* Título e Preço */}
         <div>
           <p className="text-sm text-muted-foreground uppercase tracking-wide">
-            {veiculo.marca?.nome} {veiculo.modelo?.nome}
+            {veiculo.fipe_marca_nome} {veiculo.fipe_modelo_nome}
           </p>
           <h1 className="text-2xl font-bold text-foreground mt-1">
             {veiculo.titulo}
@@ -216,8 +200,8 @@ const VeiculoDetailPage = () => {
               fipeMarcaCodigo={veiculo.fipe_marca_codigo}
               fipeModeloCodigo={veiculo.fipe_modelo_codigo}
               fipeVersaoCodigo={veiculo.fipe_versao_codigo}
-              marcaNome={veiculo.marca?.nome || veiculo.fipe_marca_nome}
-              modeloNome={veiculo.modelo?.nome || veiculo.fipe_modelo_nome}
+              marcaNome={veiculo.fipe_marca_nome}
+              modeloNome={veiculo.fipe_modelo_nome}
               anoModelo={veiculo.ano_modelo.toString()}
               combustivel={veiculo.combustivel}
               precoAnunciado={veiculo.preco}
@@ -228,7 +212,7 @@ const VeiculoDetailPage = () => {
         {/* Especificações */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Calendar className="h-5 w-5 text-muted-foreground" />
+            <Calendar className="h-5 w-5 text-muted-foreground flex-shrink-0" />
             <div>
               <p className="text-xs text-muted-foreground">Ano</p>
               <p className="text-sm font-medium">
@@ -237,37 +221,88 @@ const VeiculoDetailPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Gauge className="h-5 w-5 text-muted-foreground" />
+            <Gauge className="h-5 w-5 text-muted-foreground flex-shrink-0" />
             <div>
-              <p className="text-xs text-muted-foreground">Km</p>
-              <p className="text-sm font-medium">{formatKm(veiculo.quilometragem)}</p>
+              <p className="text-xs text-muted-foreground">Quilometragem</p>
+              <p className="text-sm font-medium">{formatKm(veiculo.quilometragem)} km</p>
             </div>
           </div>
           <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Fuel className="h-5 w-5 text-muted-foreground" />
+            <Fuel className="h-5 w-5 text-muted-foreground flex-shrink-0" />
             <div>
               <p className="text-xs text-muted-foreground">Combustível</p>
               <p className="text-sm font-medium">
-                {combustivelLabels[veiculo.combustivel]}
+                {combustivelLabels[veiculo.combustivel] || veiculo.combustivel}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-            <Car className="h-5 w-5 text-muted-foreground" />
+            <Car className="h-5 w-5 text-muted-foreground flex-shrink-0" />
             <div>
               <p className="text-xs text-muted-foreground">Condição</p>
               <p className="text-sm font-medium">
-                {condicaoLabels[veiculo.condicao]}
+                {condicaoLabels[veiculo.condicao] || veiculo.condicao}
               </p>
             </div>
           </div>
+          {veiculo.cambio && (
+            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+              <Settings2 className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              <div>
+                <p className="text-xs text-muted-foreground">Câmbio</p>
+                <p className="text-sm font-medium">
+                  {cambioLabels[veiculo.cambio] || veiculo.cambio}
+                </p>
+              </div>
+            </div>
+          )}
+          {veiculo.cor && (
+            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+              <div className="h-5 w-5 flex-shrink-0 flex items-center justify-center">
+                <div className="h-4 w-4 rounded-full border border-border bg-muted" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Cor</p>
+                <p className="text-sm font-medium capitalize">{veiculo.cor}</p>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Diferenciais */}
+        {(veiculo.aceita_troca || veiculo.ipva_pago || veiculo.licenciado ||
+          veiculo.unico_dono || veiculo.com_manual || veiculo.chave_reserva) && (
+          <div>
+            <h2 className="text-base font-semibold mb-3">Diferenciais</h2>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Aceita troca", value: veiculo.aceita_troca },
+                { label: "IPVA pago", value: veiculo.ipva_pago },
+                { label: "Licenciado", value: veiculo.licenciado },
+                { label: "Único dono", value: veiculo.unico_dono },
+                { label: "Com manual", value: veiculo.com_manual },
+                { label: "Chave reserva", value: veiculo.chave_reserva },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center gap-2">
+                  {value ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-muted-foreground/40 flex-shrink-0" />
+                  )}
+                  <span className={`text-sm ${value ? "text-foreground" : "text-muted-foreground/50 line-through"}`}>
+                    {label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Descrição */}
         {veiculo.descricao && (
           <div>
-            <h2 className="text-lg font-semibold mb-2">Descrição</h2>
-            <p className="text-muted-foreground whitespace-pre-line">
+            <h2 className="text-base font-semibold mb-2">Descrição</h2>
+            <p className="text-muted-foreground whitespace-pre-line text-sm leading-relaxed">
               {veiculo.descricao}
             </p>
           </div>
@@ -276,36 +311,14 @@ const VeiculoDetailPage = () => {
         {/* Localização */}
         {veiculo.localizacao && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
+            <MapPin className="h-4 w-4 flex-shrink-0" />
             <span>{veiculo.localizacao}</span>
-          </div>
-        )}
-
-        {/* Vendedor */}
-        {veiculo.perfil && (
-          <div className="border-t border-border pt-4">
-            <h2 className="text-lg font-semibold mb-3">Vendedor</h2>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-lg font-semibold text-primary">
-                  {veiculo.perfil.nome?.charAt(0)?.toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <p className="font-medium">{veiculo.perfil.nome}</p>
-                {veiculo.perfil.telefone && (
-                  <p className="text-sm text-muted-foreground">
-                    {veiculo.perfil.telefone}
-                  </p>
-                )}
-              </div>
-            </div>
           </div>
         )}
       </div>
 
       {/* Footer Fixo - Botões de Contato */}
-      {veiculo.perfil?.telefone && (
+      {veiculo.telefone && (
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4 pb-safe">
           <div className="flex gap-3">
             <Button
