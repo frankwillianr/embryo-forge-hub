@@ -55,18 +55,27 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
 
       {/* Conteúdo minimalista */}
       <div className="pt-2.5 space-y-0.5">
-        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider flex items-center gap-1.5">
-          <span>{format(new Date(jornal.created_at), "dd MMM", { locale: ptBR })}</span>
-          {isRead ? (
-            <span className="text-[8px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full normal-case tracking-normal">
-              lida
-            </span>
-          ) : (
-            <span className="text-[8px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full normal-case tracking-normal">
-              não lida
-            </span>
-          )}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+            {format(new Date(jornal.created_at), "dd MMM", { locale: ptBR })}
+          </span>
+          <div className="flex items-center gap-1 ml-auto">
+            {jornal.categoria && (
+              <span className="text-[8px] bg-accent/10 text-accent px-1.5 py-0.5 rounded-full">
+                {jornal.categoria}
+              </span>
+            )}
+            {isRead ? (
+              <span className="text-[8px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full">
+                lida
+              </span>
+            ) : (
+              <span className="text-[8px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
+                não lida
+              </span>
+            )}
+          </div>
+        </div>
         <h3 className="font-medium text-foreground line-clamp-2 text-[13px] leading-tight tracking-tight">
           {jornal.titulo}
         </h3>

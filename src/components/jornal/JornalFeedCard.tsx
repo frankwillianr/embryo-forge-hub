@@ -509,24 +509,23 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
 
         {/* Título e descrição */}
         <div className="mt-1 mb-3">
-          <p className="text-[13px] text-foreground leading-relaxed">
-            <span className="font-semibold mr-1.5">Jornal</span>
-            <span className="font-medium">{jornal.titulo}</span>
+          <p className="text-[14px] text-foreground leading-relaxed font-semibold">
+            {jornal.titulo}
           </p>
           {descricao && (
-            <div className="text-[13px] text-muted-foreground leading-relaxed mt-1 whitespace-pre-line">
+            <div className="text-[13px] text-muted-foreground leading-relaxed mt-1">
               {shouldTruncate && !showFullText ? (
                 <>
-                  {descricao.slice(0, 100)}...
+                  <p className="whitespace-pre-line line-clamp-3">{descricao}</p>
                   <button
                     onClick={() => setShowFullText(true)}
-                    className="text-foreground ml-1.5 font-semibold hover:text-muted-foreground transition-colors"
+                    className="text-foreground font-semibold hover:text-muted-foreground transition-colors mt-0.5"
                   >
                     mais
                   </button>
                 </>
               ) : (
-                descricao
+                <p className="whitespace-pre-line">{descricao}</p>
               )}
             </div>
           )}
@@ -537,7 +536,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
       <Sheet open={showCommentSheet} onOpenChange={setShowCommentSheet}>
         <SheetContent
           side="bottom"
-          className="h-[85vh] rounded-t-[20px] p-0 pb-safe [&>button]:hidden"
+          className="h-[85dvh] max-h-[85vh] rounded-t-[20px] p-0 pb-safe [&>button]:hidden"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <SheetHeader className="px-4 py-3 border-b border-border/50 flex-row items-center justify-between space-y-0">
@@ -616,7 +615,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
                     rows={1}
-                    className="resize-none text-sm min-h-[36px]"
+                    className="resize-none text-base min-h-[36px]"
                   />
                   <Button
                     size="sm"

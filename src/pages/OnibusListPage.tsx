@@ -1,9 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bus, Search, Clock, ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Search, ChevronRight, MapPin, Info } from "lucide-react";
 
 interface LinhaOnibus {
   numero_linha: string;
@@ -16,17 +13,11 @@ interface LinhaOnibus {
 type DiaType = "semana" | "sabado" | "domingo";
 
 function parseHorarios(horarios: string[], dia: DiaType) {
-  // horarios[0] = headers dos dias (ex: "SEGUNDA A SEXTA | SÁBADO | DOMINGO E FERIADO")
-  // horarios[1] = destinos (ex: "BAIRRO | CENTRO | BAIRRO | CENTRO | ...")
-  // horarios[2] = endereços de saída
-  // horarios[3+] = horários separados por |
-
   if (!horarios || horarios.length < 4) return { destinos: [], saidas: [], rows: [], observacoes: [] };
 
   const destinos = horarios[1]?.split("|").map(s => s.trim()) || [];
   const saidas = horarios[2]?.split("|").map(s => s.trim()) || [];
 
-  // Columns per day: 2 (ida e volta)
   const colStart = dia === "semana" ? 0 : dia === "sabado" ? 2 : 4;
 
   const destinosPair = [destinos[colStart] || "", destinos[colStart + 1] || ""];
@@ -56,7 +47,6 @@ function parseHorarios(horarios: string[], dia: DiaType) {
     }
   }
 
-  // Filter empty rows
   const filtered = rows.filter(r => r[0] || r[1]);
 
   return { destinos: destinosPair, saidas: saidasPair, rows: filtered, observacoes };
@@ -82,8 +72,8 @@ const OnibusListPage = () => {
       .catch(console.error);
   }, []);
 
-  const filtered = useMemo(() => 
-    linhas.filter(l => 
+  const filtered = useMemo(() =>
+    linhas.filter(l =>
       l.numero_linha.toLowerCase().includes(searchTerm.toLowerCase())
     ),
     [linhas, searchTerm]
@@ -93,145 +83,197 @@ const OnibusListPage = () => {
     setExpandedId(prev => prev === id ? null : id);
   };
 
+  const dias: { key: DiaType; label: string }[] = [
+    { key: "semana", label: "Seg-Sex" },
+    { key: "sabado", label: "Sábado" },
+    { key: "domingo", label: "Dom/Feriado" },
+  ];
+
   return (
-    <div className="min-h-screen bg-background pb-4">
-      {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 pt-safe border-b border-border/50 bg-background/95 backdrop-blur-sm">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}`)}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-2">
-          <Bus className="h-5 w-5 text-primary" />
-          <h1 className="text-base font-semibold">Horário de Ônibus</h1>
+    <div className="min-h-screen bg-background pb-8">
+      {/* Header iOS style */}
+      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-xl border-b border-border/30">
+        <div className="flex items-center px-4 py-2 pt-safe">
+          <button
+            onClick={() => navigate(`/cidade/${slug}`)}
+            className="flex items-center gap-1 text-primary active:opacity-60 transition-opacity"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="text-[15px]">Voltar</span>
+          </button>
+        </div>
+        <div className="px-5 pb-3">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Horários</h1>
         </div>
       </header>
 
-      {/* Dia da semana */}
-      <div className="px-4 pt-3 pb-2">
-        <Tabs value={diaAtivo} onValueChange={(v) => setDiaAtivo(v as DiaType)}>
-          <TabsList className="w-full">
-            <TabsTrigger value="semana" className="flex-1 text-xs">Seg-Sex</TabsTrigger>
-            <TabsTrigger value="sabado" className="flex-1 text-xs">Sábado</TabsTrigger>
-            <TabsTrigger value="domingo" className="flex-1 text-xs">Dom/Feriado</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
+      <div className="px-5 pt-4 space-y-4">
+        {/* Segmented Control iOS */}
+        <div className="flex bg-muted/60 rounded-[10px] p-[3px]">
+          {dias.map((dia) => (
+            <button
+              key={dia.key}
+              onClick={() => setDiaAtivo(dia.key)}
+              className={`flex-1 py-2 text-[13px] font-medium rounded-[8px] transition-all duration-200 ${
+                diaAtivo === dia.key
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {dia.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Search */}
-      <div className="px-4 pb-3">
+        {/* Search iOS style */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar linha ou bairro..."
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+          <input
+            type="text"
+            placeholder="Buscar linha ou bairro"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="w-full bg-muted/50 rounded-xl py-2.5 pl-10 pr-4 text-[15px] text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
         </div>
-      </div>
 
-      {/* Lista de linhas */}
-      <div className="px-4 space-y-2">
-        {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Bus className="w-8 h-8 text-muted-foreground" />
+        {/* Contagem */}
+        {filtered.length > 0 && !searchTerm && (
+          <p className="text-[13px] text-muted-foreground">
+            {filtered.length} linhas disponíveis
+          </p>
+        )}
+
+        {/* Lista de linhas */}
+        <div className="space-y-2">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Search className="w-10 h-10 text-muted-foreground/30 mb-3" />
+              <p className="text-[15px] font-medium text-foreground">
+                {searchTerm ? "Nenhum resultado" : "Carregando..."}
+              </p>
+              {searchTerm && (
+                <p className="text-[13px] text-muted-foreground mt-1">
+                  Tente outro termo de busca
+                </p>
+              )}
             </div>
-            <h3 className="font-medium text-foreground mb-1">Nenhuma linha encontrada</h3>
-            <p className="text-sm text-muted-foreground">
-              {searchTerm ? "Tente buscar por outro termo" : "Carregando linhas..."}
-            </p>
-          </div>
-        ) : (
-          filtered.map((linha) => {
-            const id = linha.numero_linha;
-            const isExpanded = expandedId === id;
-            const parsed = isExpanded ? parseHorarios(linha.horarios, diaAtivo) : null;
-            // Extract the line number
-            const numero = linha.numero_linha.split(" ")[0];
-            const nome = linha.numero_linha.substring(numero.length).trim();
+          ) : (
+            filtered.map((linha) => {
+              const id = linha.numero_linha;
+              const isExpanded = expandedId === id;
+              const parsed = isExpanded ? parseHorarios(linha.horarios, diaAtivo) : null;
+              const numero = linha.numero_linha.split(" ")[0];
+              const nome = linha.numero_linha.substring(numero.length).trim();
 
-            return (
-              <div key={id} className="rounded-xl border border-border bg-card overflow-hidden">
-                {/* Linha header */}
-                <button
-                  onClick={() => toggleExpand(id)}
-                  className="w-full flex items-center gap-3 p-3 text-left"
+              return (
+                <div
+                  key={id}
+                  className="bg-card rounded-2xl overflow-hidden transition-all duration-200"
+                  style={{ boxShadow: isExpanded ? "0 2px 12px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.04)" }}
                 >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <span className="text-sm font-bold text-primary">{numero}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-semibold text-foreground line-clamp-1">{nome}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      <Clock className="inline h-3 w-3 mr-1" />
-                      Toque para ver horários
-                    </p>
-                  </div>
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  )}
-                </button>
-
-                {/* Horários expandidos */}
-                {isExpanded && parsed && (
-                  <div className="border-t border-border px-3 pb-3">
-                    {/* Destinos */}
-                    <div className="grid grid-cols-2 gap-2 py-2">
-                      {parsed.destinos.map((dest, i) => (
-                        <div key={i} className="text-center">
-                          <span className="text-[10px] uppercase font-semibold text-primary tracking-wider">
-                            {dest || "—"}
-                          </span>
-                          {parsed.saidas[i] && (
-                            <p className="text-[9px] text-muted-foreground/70 mt-0.5 line-clamp-2">
-                              {parsed.saidas[i]}
-                            </p>
-                          )}
-                        </div>
-                      ))}
+                  {/* Card header */}
+                  <button
+                    onClick={() => toggleExpand(id)}
+                    className="w-full flex items-center gap-3.5 p-4 text-left active:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex-shrink-0 w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-[13px] font-bold text-primary">{numero}</span>
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[15px] font-semibold text-foreground line-clamp-1">{nome}</h3>
+                    </div>
+                    <ChevronRight
+                      className={`h-4 w-4 text-muted-foreground/40 flex-shrink-0 transition-transform duration-200 ${
+                        isExpanded ? "rotate-90" : ""
+                      }`}
+                    />
+                  </button>
 
-                    {/* Tabela de horários */}
-                    {parsed.rows.length > 0 ? (
-                      <div className="space-y-0.5">
-                        {parsed.rows.map((row, i) => (
-                          <div
-                            key={i}
-                            className={`grid grid-cols-2 gap-2 py-1.5 px-2 rounded-lg text-center ${
-                              i % 2 === 0 ? "bg-muted/30" : ""
-                            }`}
-                          >
-                            <span className="text-sm font-mono text-foreground">{row[0] || "—"}</span>
-                            <span className="text-sm font-mono text-foreground">{row[1] || "—"}</span>
+                  {/* Horários expandidos */}
+                  {isExpanded && parsed && (
+                    <div className="px-4 pb-4">
+                      {/* Destinos */}
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        {parsed.destinos.map((dest, i) => (
+                          <div key={i} className="bg-muted/40 rounded-xl p-3">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <MapPin className="h-3 w-3 text-primary" />
+                              <span className="text-[11px] font-semibold text-primary uppercase tracking-wide">
+                                {dest || "—"}
+                              </span>
+                            </div>
+                            {parsed.saidas[i] && (
+                              <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
+                                {parsed.saidas[i]}
+                              </p>
+                            )}
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground text-center py-4">
-                        Sem horários para este dia
-                      </p>
-                    )}
 
-                    {/* Observações */}
-                    {parsed.observacoes.length > 0 && (
-                      <div className="mt-3 p-2 bg-muted/30 rounded-lg">
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Observações</p>
-                        {parsed.observacoes.map((obs, i) => (
-                          <p key={i} className="text-[11px] text-muted-foreground leading-snug">
-                            {obs}
+                      {/* Tabela de horários */}
+                      {parsed.rows.length > 0 ? (
+                        <div className="rounded-xl overflow-hidden border border-border/40">
+                          {/* Header da tabela */}
+                          <div className="grid grid-cols-2 bg-muted/40">
+                            {parsed.destinos.map((dest, i) => (
+                              <div key={i} className="py-2 px-3 text-center">
+                                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                                  {dest || "—"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          {/* Linhas de horário */}
+                          {parsed.rows.map((row, i) => (
+                            <div
+                              key={i}
+                              className={`grid grid-cols-2 ${
+                                i % 2 === 0 ? "bg-background" : "bg-muted/20"
+                              }`}
+                            >
+                              <div className="py-2 px-3 text-center border-r border-border/20">
+                                <span className="text-[14px] font-mono text-foreground tabular-nums">
+                                  {row[0] || "—"}
+                                </span>
+                              </div>
+                              <div className="py-2 px-3 text-center">
+                                <span className="text-[14px] font-mono text-foreground tabular-nums">
+                                  {row[1] || "—"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center">
+                          <p className="text-[14px] text-muted-foreground">
+                            Sem horários para este dia
                           </p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
+                        </div>
+                      )}
+
+                      {/* Observações */}
+                      {parsed.observacoes.length > 0 && (
+                        <div className="mt-3 flex gap-2 p-3 bg-primary/5 rounded-xl">
+                          <Info className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
+                          <div>
+                            {parsed.observacoes.map((obs, i) => (
+                              <p key={i} className="text-[12px] text-muted-foreground leading-relaxed">
+                                {obs}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );
