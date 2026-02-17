@@ -61,7 +61,6 @@ const OnibusHorizontalList = ({ cidadeSlug }: OnibusHorizontalListProps) => {
         <button
           onClick={() => {
             navigate(`/cidade/${cidadeSlug}/onibus`);
-            window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           className="flex items-center gap-0.5 text-xs font-medium text-primary"
         >
@@ -78,7 +77,6 @@ const OnibusHorizontalList = ({ cidadeSlug }: OnibusHorizontalListProps) => {
               key={linha.id}
               onClick={() => {
                 navigate(`/cidade/${cidadeSlug}/onibus`);
-                window.scrollTo({ top: 0, behavior: "smooth" });
               }}
               className="min-w-[150px] max-w-[150px] flex-shrink-0 bg-card border border-border rounded-2xl p-3 text-left hover:border-primary/30 transition-colors"
             >

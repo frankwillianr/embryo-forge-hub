@@ -68,6 +68,38 @@ const CidadePage = () => {
     }
   }, [permissionStatus]);
 
+  // Track scroll position continuamente via ref
+  const lastScrollY = useRef(0);
+  useEffect(() => {
+    const handleScroll = () => {
+      lastScrollY.current = window.scrollY;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Salva scroll da Home ao sair da rota (componente desmonta)
+  useEffect(() => {
+    return () => {
+      if (activeTab === "home") {
+        sessionStorage.setItem(`home-scroll-${slug}`, String(lastScrollY.current));
+        console.log(`[NAV] Desmontando CidadePage, scroll salvo: ${lastScrollY.current}`);
+      }
+    };
+  }, [activeTab, slug]);
+
+  // Restaura scroll da Home ao montar
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`home-scroll-${slug}`);
+    if (saved && Number(saved) > 0) {
+      console.log(`[NAV] Montando CidadePage, restaurando scroll: ${saved}`);
+      setTimeout(() => {
+        window.scrollTo({ top: Number(saved), behavior: "instant" });
+      }, 150);
+      sessionStorage.removeItem(`home-scroll-${slug}`);
+    }
+  }, []);
+
   // Handle navigation state (e.g., from cinema horizontal list)
   useEffect(() => {
     const state = location.state as { tab?: TabType } | null;

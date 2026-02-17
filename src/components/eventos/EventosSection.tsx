@@ -65,7 +65,6 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
         </h2>
         <button
           onClick={() => {
-            window.scrollTo({ top: 0, behavior: "smooth" });
             navigate(`/cidade/${cidadeSlug}/eventos`);
           }}
           className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"

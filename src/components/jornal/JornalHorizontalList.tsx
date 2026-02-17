@@ -77,7 +77,6 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
         <button
           onClick={() => {
             console.log(`[NAV] Jornal "Ver todas" clicado, scrollY atual: ${window.scrollY}`);
-            window.scrollTo({ top: 0, behavior: "smooth" });
             navigate(`/cidade/${cidadeSlug}/jornal`);
           }}
           className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
