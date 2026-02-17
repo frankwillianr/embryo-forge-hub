@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Home, Newspaper, Film, Megaphone, Menu, ArrowLeft, Bell } from "lucide-react";
@@ -34,6 +34,9 @@ const CidadePage = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const { profile } = useAuth();
+  const scrollPositions = useRef<Record<TabType, number>>({
+    home: 0, cinema: 0, prefeitura: 0, menu: 0,
+  });
 
   // Get first name from profile
   const firstName = profile?.nome?.split(" ")[0] || null;
@@ -113,9 +116,20 @@ const CidadePage = () => {
 
   const isHome = activeTab === "home";
 
+  const switchTab = (tab: TabType) => {
+    scrollPositions.current[activeTab] = window.scrollY;
+    setActiveTab(tab);
+    setTimeout(() => {
+      window.scrollTo({ top: scrollPositions.current[tab], behavior: "instant" });
+    }, 0);
+  };
+
   const handleHomeClick = () => {
-    setActiveTab("home");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (activeTab === "home") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      switchTab("home");
+    }
   };
 
   const renderSection = () => {
@@ -142,7 +156,7 @@ const CidadePage = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setActiveTab("home")}
+              onClick={() => switchTab("home")}
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -193,10 +207,7 @@ const CidadePage = () => {
             </button>
 
             <button
-              onClick={() => {
-                setActiveTab("cinema");
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
+              onClick={() => switchTab("cinema")}
               className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
                 activeTab === "cinema"
                   ? "text-primary"
@@ -208,10 +219,7 @@ const CidadePage = () => {
             </button>
 
             <button
-              onClick={() => {
-                setActiveTab("prefeitura");
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
+              onClick={() => switchTab("prefeitura")}
               className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
                 activeTab === "prefeitura"
                   ? "text-primary"
@@ -223,10 +231,7 @@ const CidadePage = () => {
             </button>
 
             <button
-              onClick={() => {
-                setActiveTab("menu");
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
+              onClick={() => switchTab("menu")}
               className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
                 activeTab === "menu"
                   ? "text-primary"
