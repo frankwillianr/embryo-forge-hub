@@ -64,6 +64,29 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
     const read = JSON.parse(localStorage.getItem("jornal-lidos") || "[]");
     return read.includes(jornal.id);
   });
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  // iOS keyboard detection via visualViewport
+  useEffect(() => {
+    if (!showCommentSheet) {
+      setKeyboardHeight(0);
+      return;
+    }
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const onResize = () => {
+      const diff = window.innerHeight - viewport.height;
+      setKeyboardHeight(diff > 50 ? diff : 0);
+    };
+
+    viewport.addEventListener("resize", onResize);
+    viewport.addEventListener("scroll", onResize);
+    return () => {
+      viewport.removeEventListener("resize", onResize);
+      viewport.removeEventListener("scroll", onResize);
+    };
+  }, [showCommentSheet]);
 
   // Ouvir mudanças no audioManager global
   useEffect(() => {
@@ -536,7 +559,13 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
       <Sheet open={showCommentSheet} onOpenChange={setShowCommentSheet}>
         <SheetContent
           side="bottom"
-          className="h-[85dvh] max-h-[85vh] rounded-t-[20px] p-0 pb-safe [&>button]:hidden"
+          className="rounded-t-[20px] p-0 [&>button]:hidden transition-[height] duration-150"
+          style={{
+            height: keyboardHeight > 0
+              ? `calc(85dvh - ${keyboardHeight}px)`
+              : "85dvh",
+            paddingBottom: keyboardHeight > 0 ? 0 : "env(safe-area-inset-bottom, 0px)",
+          }}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <SheetHeader className="px-4 py-3 border-b border-border/50 flex-row items-center justify-between space-y-0">
