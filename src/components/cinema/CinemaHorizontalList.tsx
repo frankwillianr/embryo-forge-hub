@@ -1,7 +1,16 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Film, ChevronRight, Play, Clock, Tag } from "lucide-react";
+import { Film, Play, Clock, Tag, Timer, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { Cinema } from "@/types/cinema";
 
 interface CinemaHorizontalListProps {
@@ -10,6 +19,7 @@ interface CinemaHorizontalListProps {
 
 const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
   const navigate = useNavigate();
+  const [selectedFilme, setSelectedFilme] = useState<Cinema | null>(null);
 
   const { data: filmes = [], isLoading } = useQuery({
     queryKey: ["cinema-home", cidadeSlug],
@@ -37,6 +47,11 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
     enabled: !!cidadeSlug,
   });
 
+  const getYouTubeEmbedUrl = (url: string) => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
+    return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1` : null;
+  };
+
   if (isLoading) {
     return (
       <div className="px-5 py-4 space-y-3">
@@ -51,6 +66,10 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
   }
 
   if (filmes.length === 0) return null;
+
+  const embedUrl = selectedFilme?.trailer_url
+    ? getYouTubeEmbedUrl(selectedFilme.trailer_url)
+    : null;
 
   return (
     <div className="py-6">
@@ -80,7 +99,8 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
           {filmes.map((filme) => (
             <div
               key={filme.id}
-              className="min-w-[140px] max-w-[140px] flex-shrink-0"
+              className="min-w-[140px] max-w-[140px] flex-shrink-0 cursor-pointer active:scale-[0.97] transition-transform"
+              onClick={() => setSelectedFilme(filme)}
             >
               {/* Poster */}
               <div className="w-full aspect-[2/3] rounded-xl overflow-hidden bg-muted/30 relative group">
@@ -132,6 +152,99 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
           ))}
         </div>
       </div>
+
+      {/* Modal de detalhes do filme */}
+      <Dialog open={!!selectedFilme} onOpenChange={(open) => !open && setSelectedFilme(null)}>
+        <DialogContent className="w-[calc(100%-20px)] max-w-lg p-0 overflow-hidden rounded-[10px]">
+          {selectedFilme && (
+            <>
+              {/* Banner do filme */}
+              {selectedFilme.banner_url && (
+                <div className="aspect-[2/3] max-h-[280px] w-full overflow-hidden">
+                  <img
+                    src={selectedFilme.banner_url}
+                    alt={selectedFilme.nome_filme}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="p-4 space-y-3">
+                <DialogHeader>
+                  <DialogTitle className="text-lg leading-tight">
+                    {selectedFilme.nome_filme}
+                  </DialogTitle>
+                </DialogHeader>
+
+                {/* Cinema */}
+                {selectedFilme.nome_cinema && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {selectedFilme.nome_cinema}
+                  </div>
+                )}
+
+                {/* Gênero e Duração */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {selectedFilme.genero && (
+                    <Badge variant="secondary" className="text-[11px] h-6 gap-1">
+                      <Tag className="h-3 w-3" />
+                      {selectedFilme.genero}
+                    </Badge>
+                  )}
+                  {selectedFilme.duracao && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Timer className="h-3.5 w-3.5" />
+                      {selectedFilme.duracao}
+                    </span>
+                  )}
+                </div>
+
+                {/* Sinopse */}
+                {selectedFilme.sinopse && (
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {selectedFilme.sinopse}
+                  </p>
+                )}
+
+                {/* Horários */}
+                {selectedFilme.horarios && selectedFilme.horarios.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Clock className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-medium text-foreground">Horários</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedFilme.horarios.map((hora, idx) => (
+                        <span
+                          key={idx}
+                          className="text-xs font-medium px-3 py-1 rounded-full bg-primary/10 text-primary"
+                        >
+                          {hora}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Trailer */}
+                {embedUrl && (
+                  <div className="pt-1">
+                    <div className="aspect-video w-full rounded-xl overflow-hidden">
+                      <iframe
+                        src={embedUrl}
+                        className="w-full h-full"
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
