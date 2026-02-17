@@ -81,6 +81,7 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
         </h2>
         <button
           onClick={() => {
+            console.log(`[NAV] Cinema "Ver todos" clicado, scrollY atual: ${window.scrollY}`);
             window.scrollTo({ top: 0, behavior: "smooth" });
             navigate(`/cidade/${cidadeSlug}`, { state: { tab: "cinema" } });
           }}

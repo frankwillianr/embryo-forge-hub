@@ -72,6 +72,7 @@ const CidadePage = () => {
   useEffect(() => {
     const state = location.state as { tab?: TabType } | null;
     if (state?.tab) {
+      console.log(`[NAV] Location state detectado: tab="${state.tab}", scrollY atual: ${window.scrollY}`);
       setActiveTab(state.tab);
       // Clear the state to avoid re-triggering
       navigate(location.pathname, { replace: true, state: {} });
@@ -117,17 +118,24 @@ const CidadePage = () => {
   const isHome = activeTab === "home";
 
   const switchTab = (tab: TabType) => {
-    scrollPositions.current[activeTab] = window.scrollY;
+    const savedScroll = window.scrollY;
+    scrollPositions.current[activeTab] = savedScroll;
+    console.log(`[NAV] Saindo de "${activeTab}" (scroll salvo: ${savedScroll})`);
+    console.log(`[NAV] Indo para "${tab}" (scroll restaurar: ${scrollPositions.current[tab]})`);
     setActiveTab(tab);
     setTimeout(() => {
-      window.scrollTo({ top: scrollPositions.current[tab], behavior: "instant" });
+      const target = scrollPositions.current[tab];
+      console.log(`[NAV] Restaurando scroll de "${tab}" para ${target}`);
+      window.scrollTo({ top: target, behavior: "instant" });
     }, 0);
   };
 
   const handleHomeClick = () => {
     if (activeTab === "home") {
+      console.log(`[NAV] Já está na home, scroll to top`);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
+      console.log(`[NAV] Voltando para home`);
       switchTab("home");
     }
   };
