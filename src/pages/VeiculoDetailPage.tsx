@@ -130,19 +130,18 @@ const VeiculoDetailPage = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b border-border pt-safe">
-        <div className="flex items-center justify-between px-4 py-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(`/cidade/${slug}/veiculos`)}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleShare}>
-            <Share2 className="h-5 w-5" />
-          </Button>
-        </div>
+      <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 pt-safe bg-background/95 backdrop-blur-sm border-b border-border/50">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => navigate(`/cidade/${slug}/veiculos`)}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleShare}>
+          <Share2 className="h-4 w-4" />
+        </Button>
       </header>
 
       {/* Galeria de Imagens */}
@@ -214,8 +213,11 @@ const VeiculoDetailPage = () => {
               {formatPrice(veiculo.preco)}
             </p>
             <FipePriceCompact
-              marcaNome={veiculo.marca?.nome}
-              modeloNome={veiculo.modelo?.nome}
+              fipeMarcaCodigo={veiculo.fipe_marca_codigo}
+              fipeModeloCodigo={veiculo.fipe_modelo_codigo}
+              fipeVersaoCodigo={veiculo.fipe_versao_codigo}
+              marcaNome={veiculo.marca?.nome || veiculo.fipe_marca_nome}
+              modeloNome={veiculo.modelo?.nome || veiculo.fipe_modelo_nome}
               anoModelo={veiculo.ano_modelo.toString()}
               combustivel={veiculo.combustivel}
               precoAnunciado={veiculo.preco}

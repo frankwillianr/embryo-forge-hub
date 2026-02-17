@@ -12,6 +12,9 @@ interface VeiculoCardProps {
     combustivel: string;
     condicao: string;
     destaque: boolean;
+    fipe_marca_codigo?: string;
+    fipe_modelo_codigo?: string;
+    fipe_versao_codigo?: string;
     fipe_marca_nome?: string;
     fipe_modelo_nome?: string;
     marca?: { nome: string } | null;
@@ -108,6 +111,9 @@ const VeiculoCard = ({ veiculo, onClick, cidadeSlug }: VeiculoCardProps) => {
               {formatPrice(veiculo.preco)}
             </span>
             <FipePriceCompact
+              fipeMarcaCodigo={veiculo.fipe_marca_codigo}
+              fipeModeloCodigo={veiculo.fipe_modelo_codigo}
+              fipeVersaoCodigo={veiculo.fipe_versao_codigo}
               marcaNome={marcaNome}
               modeloNome={modeloNome}
               anoModelo={veiculo.ano_modelo.toString()}

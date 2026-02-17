@@ -122,9 +122,9 @@ const VeiculosListPage = () => {
         .gte("quilometragem", kmRange[0])
         .lte("quilometragem", kmRange[1]);
 
-      if (marcaId) query = query.eq("fipe_marca_id", marcaId);
-      if (modeloId) query = query.eq("fipe_modelo_id", modeloId);
-      if (versaoId) query = query.eq("fipe_versao_id", versaoId);
+      if (marcaId) query = query.eq("fipe_marca_codigo", marcaId);
+      if (modeloId) query = query.eq("fipe_modelo_codigo", modeloId);
+      if (versaoId) query = query.eq("fipe_versao_codigo", versaoId);
       if (combustivel) query = query.eq("combustivel", combustivel);
       if (condicao) query = query.eq("condicao", condicao);
       if (searchTerm) query = query.ilike("titulo", `%${searchTerm}%`);

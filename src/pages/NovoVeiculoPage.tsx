@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Upload, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, X, Loader2, Check, ChevronsUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fipeApi } from "@/services/fipeApi";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import FipePrice from "@/components/veiculos/FipePrice";
 
 const combustivelOptions = [
@@ -54,6 +69,7 @@ const NovoVeiculoPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Form state
   const [marcaId, setMarcaId] = useState("");
@@ -79,6 +95,11 @@ const NovoVeiculoPage = () => {
   const [unicoDono, setUnicoDono] = useState(false);
   const [comManual, setComManual] = useState(false);
   const [chaveReserva, setChaveReserva] = useState(false);
+
+  // Combobox open states
+  const [marcaOpen, setMarcaOpen] = useState(false);
+  const [modeloOpen, setModeloOpen] = useState(false);
+  const [versaoOpen, setVersaoOpen] = useState(false);
 
   // Imagens
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -158,20 +179,29 @@ const NovoVeiculoPage = () => {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!cidade?.id) throw new Error("Cidade não encontrada");
+      if (!user?.id) throw new Error("Você precisa estar logado para anunciar");
 
       setUploading(true);
 
       // Criar o anúncio
+      const marcaNome = marcas?.find(m => m.codigo === marcaId)?.nome || "";
+      const modeloNome = modelos?.find(m => m.codigo.toString() === modeloId)?.nome || "";
+      const versaoNome = versoes?.find(v => v.codigo === versaoId)?.nome || null;
+
+      const dataExpiracao = new Date();
+      dataExpiracao.setDate(dataExpiracao.getDate() + 30);
+
       const { data: veiculo, error: veiculoError } = await supabase
         .from("rel_cidade_veiculos")
         .insert({
           cidade_id: cidade.id,
-          fipe_marca_id: marcaId,
-          fipe_marca_nome: marcas?.find(m => m.codigo === marcaId)?.nome,
-          fipe_modelo_id: modeloId,
-          fipe_modelo_nome: modelos?.find(m => m.codigo.toString() === modeloId)?.nome,
-          fipe_versao_id: versaoId || null,
-          fipe_versao_nome: versoes?.find(v => v.codigo === versaoId)?.nome || null,
+          user_id: user.id,
+          fipe_marca_codigo: marcaId,
+          fipe_marca_nome: marcaNome,
+          fipe_modelo_codigo: modeloId,
+          fipe_modelo_nome: modeloNome,
+          fipe_versao_codigo: versaoId || null,
+          fipe_versao_nome: versaoNome,
           titulo,
           descricao: descricao || null,
           preco: parseFloat(preco.replace(/\D/g, "")) / 100,
@@ -190,6 +220,8 @@ const NovoVeiculoPage = () => {
           unico_dono: unicoDono,
           com_manual: comManual,
           chave_reserva: chaveReserva,
+          status: "ativo",
+          data_expiracao: dataExpiracao.toISOString(),
         })
         .select()
         .single();
@@ -233,11 +265,13 @@ const NovoVeiculoPage = () => {
       });
       navigate(`/cidade/${slug}/veiculos`);
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
       console.error("Erro ao criar anúncio:", error);
+      const msg = error instanceof Error ? error.message
+        : (error as { message?: string })?.message || "Tente novamente mais tarde.";
       toast({
         title: "Erro ao criar anúncio",
-        description: "Tente novamente mais tarde.",
+        description: msg,
         variant: "destructive",
       });
     },
@@ -250,9 +284,9 @@ const NovoVeiculoPage = () => {
     e.preventDefault();
     
     // Validações básicas
-    if (!marcaId || !modeloId || !versaoId || !titulo || !preco || !anoFabricacao ||
+    if (!marcaId || !modeloId || !titulo || !preco || !anoFabricacao ||
         !anoModelo || !cor || !combustivel || !cambio || !quilometragem ||
-        !condicao || !telefone) {
+        !condicao || telefone.replace(/\D/g, "").length < 10) {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha todos os campos obrigatórios.",
@@ -276,6 +310,14 @@ const NovoVeiculoPage = () => {
   const formatNumber = (value: string) => {
     const numbers = value.replace(/\D/g, "");
     return parseInt(numbers || "0").toLocaleString("pt-BR");
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, "").slice(0, 11);
+    if (numbers.length <= 2) return numbers.length ? `(${numbers}` : "";
+    if (numbers.length <= 6) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    if (numbers.length <= 10) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
   };
 
   return (
@@ -327,57 +369,148 @@ const NovoVeiculoPage = () => {
         <div className="space-y-3">
           <div className="space-y-2">
             <Label>Marca *</Label>
-            <Select value={marcaId} onValueChange={(v) => {
-              setMarcaId(v);
-              setModeloId("");
-              setVersaoId("");
-            }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a marca" />
-              </SelectTrigger>
-              <SelectContent>
-                {marcas?.map((marca) => (
-                  <SelectItem key={marca.codigo} value={marca.codigo}>
-                    {marca.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={marcaOpen} onOpenChange={setMarcaOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={marcaOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  {marcaId
+                    ? marcas?.find((m) => m.codigo === marcaId)?.nome
+                    : "Selecione a marca"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar marca..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhuma marca encontrada.</CommandEmpty>
+                    <CommandGroup>
+                      {marcas?.map((marca) => (
+                        <CommandItem
+                          key={marca.codigo}
+                          value={marca.nome}
+                          onSelect={() => {
+                            setMarcaId(marca.codigo);
+                            setModeloId("");
+                            setVersaoId("");
+                            setMarcaOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              marcaId === marca.codigo ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {marca.nome}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">
             <Label>Modelo *</Label>
-            <Select value={modeloId} onValueChange={(v) => {
-              setModeloId(v);
-              setVersaoId("");
-            }} disabled={!marcaId}>
-              <SelectTrigger>
-                <SelectValue placeholder={marcaId ? "Selecione o modelo" : "Escolha a marca primeiro"} />
-              </SelectTrigger>
-              <SelectContent>
-                {modelos?.map((modelo) => (
-                  <SelectItem key={modelo.codigo} value={modelo.codigo.toString()}>
-                    {modelo.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={modeloOpen} onOpenChange={setModeloOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={modeloOpen}
+                  className="w-full justify-between font-normal"
+                  disabled={!marcaId}
+                >
+                  {modeloId
+                    ? modelos?.find((m) => m.codigo.toString() === modeloId)?.nome
+                    : marcaId ? "Selecione o modelo" : "Escolha a marca primeiro"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar modelo..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum modelo encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      {modelos?.map((modelo) => (
+                        <CommandItem
+                          key={modelo.codigo}
+                          value={modelo.nome}
+                          onSelect={() => {
+                            setModeloId(modelo.codigo.toString());
+                            setVersaoId("");
+                            setModeloOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              modeloId === modelo.codigo.toString() ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {modelo.nome}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">
             <Label>Versão / Ano *</Label>
-            <Select value={versaoId} onValueChange={setVersaoId} disabled={!modeloId}>
-              <SelectTrigger>
-                <SelectValue placeholder={modeloId ? "Selecione a versão" : "Escolha o modelo primeiro"} />
-              </SelectTrigger>
-              <SelectContent>
-                {versoes?.map((versao) => (
-                  <SelectItem key={versao.codigo} value={versao.codigo}>
-                    {versao.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={versaoOpen} onOpenChange={setVersaoOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={versaoOpen}
+                  className="w-full justify-between font-normal"
+                  disabled={!modeloId}
+                >
+                  {versaoId
+                    ? versoes?.find((v) => v.codigo === versaoId)?.nome
+                    : modeloId ? "Selecione a versão" : "Escolha o modelo primeiro"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar versão..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhuma versão encontrada.</CommandEmpty>
+                    <CommandGroup>
+                      {versoes?.map((versao) => (
+                        <CommandItem
+                          key={versao.codigo}
+                          value={versao.nome}
+                          onSelect={() => {
+                            setVersaoId(versao.codigo);
+                            setVersaoOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              versaoId === versao.codigo ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {versao.nome}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
@@ -547,7 +680,8 @@ const NovoVeiculoPage = () => {
               <Input
                 placeholder="(00) 00000-0000"
                 value={telefone}
-                onChange={(e) => setTelefone(e.target.value)}
+                inputMode="numeric"
+                onChange={(e) => setTelefone(formatPhone(e.target.value))}
               />
             </div>
             <div className="space-y-2">
@@ -555,7 +689,8 @@ const NovoVeiculoPage = () => {
               <Input
                 placeholder="(00) 00000-0000"
                 value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
+                inputMode="numeric"
+                onChange={(e) => setWhatsapp(formatPhone(e.target.value))}
               />
             </div>
           </div>
