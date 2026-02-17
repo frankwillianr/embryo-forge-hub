@@ -73,7 +73,12 @@ const CidadePage = () => {
     const state = location.state as { tab?: TabType } | null;
     if (state?.tab) {
       console.log(`[NAV] Location state detectado: tab="${state.tab}", scrollY atual: ${window.scrollY}`);
+      // Salva scroll da aba atual antes de trocar
+      scrollPositions.current[activeTab] = window.scrollY;
+      console.log(`[NAV] Salvando scroll de "${activeTab}": ${window.scrollY}`);
       setActiveTab(state.tab);
+      // Scroll to top para a nova aba
+      window.scrollTo({ top: 0, behavior: "instant" });
       // Clear the state to avoid re-triggering
       navigate(location.pathname, { replace: true, state: {} });
     }
