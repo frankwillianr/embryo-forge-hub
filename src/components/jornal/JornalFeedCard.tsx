@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Volume2, VolumeX, MoreHorizontal, Play, Trash2, X } from "lucide-react";
+import { Heart, MessageCircle, Volume2, VolumeX, Play, Trash2, X } from "lucide-react";
 import { type Jornal, parseImagens } from "@/types/jornal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +51,8 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
-  const fingerprint = getFingerprint();
+  // Usar user.id como fingerprint quando logado para consistência
+  const fingerprint = user?.id || getFingerprint();
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showFullText, setShowFullText] = useState(false);
@@ -191,21 +192,20 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   // Mutation para reagir (like)
   const reactMutation = useMutation({
     mutationFn: async (tipo: "like" | "dislike") => {
-      // Buscar reação atual do banco para garantir estado correto
+      // Buscar reação atual do banco
       const { data: currentReaction } = await supabase
         .from("rel_cidade_jornal_reacoes")
-        .select("tipo")
+        .select("id, tipo")
         .eq("jornal_id", jornal.id)
         .eq("user_fingerprint", fingerprint)
         .maybeSingle();
 
-      // Se já tem a mesma reação, remove
+      // Se já tem a mesma reação, remove pelo ID
       if (currentReaction?.tipo === tipo) {
         const { error } = await supabase
           .from("rel_cidade_jornal_reacoes")
           .delete()
-          .eq("jornal_id", jornal.id)
-          .eq("user_fingerprint", fingerprint);
+          .eq("id", currentReaction.id);
         if (error) throw error;
         return null;
       } else {
@@ -220,7 +220,23 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
         return tipo;
       }
     },
-    onSuccess: () => {
+    onMutate: async (tipo) => {
+      // Optimistic update
+      await queryClient.cancelQueries({ queryKey: ["jornal-reaction-feed", jornal.id, fingerprint] });
+      const previousReaction = queryClient.getQueryData(["jornal-reaction-feed", jornal.id, fingerprint]);
+      queryClient.setQueryData(
+        ["jornal-reaction-feed", jornal.id, fingerprint],
+        (old: string | null) => old === tipo ? null : tipo
+      );
+      return { previousReaction };
+    },
+    onError: (_err, _tipo, context) => {
+      queryClient.setQueryData(
+        ["jornal-reaction-feed", jornal.id, fingerprint],
+        context?.previousReaction
+      );
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["jornal-feed", jornal.id] });
       queryClient.invalidateQueries({ queryKey: ["jornal-reaction-feed", jornal.id, fingerprint] });
     },
@@ -370,44 +386,40 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   return (
     <article id={`jornal-${jornal.id}`} className="border-b border-border/50 relative mb-6 scroll-mt-16">
       {/* Header - perfil estilo Instagram */}
-      <div className="flex items-center justify-between px-3 py-2.5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent p-[2px]">
+      <div className="flex items-center px-3 py-2.5">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent p-[2px] flex-shrink-0">
             <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
               <span className="text-xs font-semibold text-foreground">
                 J
               </span>
             </div>
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[13px] font-semibold text-foreground leading-tight">
-                Jornal da Cidade
-              </span>
-              {isRead ? (
-                <span className="text-[9px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full leading-none">
-                  lida
-                </span>
-              ) : (
-                <span className="text-[9px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full leading-none">
-                  não lida
-                </span>
-              )}
-            </div>
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-[13px] font-semibold text-foreground leading-tight">
+              Jornal da Cidade
+            </span>
             <span className="text-[11px] text-muted-foreground">
               {formatDistanceToNow(new Date(jornal.created_at), { addSuffix: true, locale: ptBR })}
-              {jornal.categoria && (
-                <>
-                  {" · "}
-                  <span className="text-primary">{jornal.categoria}</span>
-                </>
-              )}
             </span>
           </div>
         </div>
-        <button className="p-2 -mr-2">
-          <MoreHorizontal className="h-5 w-5 text-foreground" />
-        </button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {jornal.categoria && (
+            <span className="text-[9px] bg-accent/10 text-accent px-1.5 py-0.5 rounded-full leading-none">
+              {jornal.categoria}
+            </span>
+          )}
+          {isRead ? (
+            <span className="text-[9px] bg-emerald-500/15 text-emerald-600 px-1.5 py-0.5 rounded-full leading-none">
+              lida
+            </span>
+          ) : (
+            <span className="text-[9px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full leading-none">
+              não lida
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Imagem/Carrossel */}
@@ -544,7 +556,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
                     onClick={() => setShowFullText(true)}
                     className="text-foreground font-semibold hover:text-muted-foreground transition-colors mt-0.5"
                   >
-                    mais
+                    ver mais...
                   </button>
                 </>
               ) : (

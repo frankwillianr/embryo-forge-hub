@@ -84,7 +84,7 @@ const AloPrefeituraListPage = () => {
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}`)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-base font-semibold text-foreground">Alô Prefeitura</h1>
+        <h1 className="text-base font-semibold text-foreground">Mural da Cidade</h1>
       </header>
 
       {/* Feed estilo Instagram */}

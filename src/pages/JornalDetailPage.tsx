@@ -61,7 +61,8 @@ const JornalDetailPage = () => {
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [activeVoice, setActiveVoice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const fingerprint = getFingerprint();
+  // Usar user.id como fingerprint quando logado para consistência
+  const fingerprint = user?.id || getFingerprint();
 
   // Touch handling for swipe
   const touchStartX = useRef<number | null>(null);
@@ -168,14 +169,23 @@ const JornalDetailPage = () => {
   // Mutation para reagir
   const reactMutation = useMutation({
     mutationFn: async ({ tipo, currentReaction }: { tipo: "like" | "dislike"; currentReaction: "like" | "dislike" | null | undefined }) => {
-      // Se já tem a mesma reação, remove
+      // Se já tem a mesma reação, remove pelo ID
       if (currentReaction === tipo) {
-        const { error } = await supabase
+        // Buscar o ID do registro para deletar
+        const { data: reacao } = await supabase
           .from("rel_cidade_jornal_reacoes")
-          .delete()
+          .select("id")
           .eq("jornal_id", jornalId)
-          .eq("user_fingerprint", fingerprint);
-        if (error) throw error;
+          .eq("user_fingerprint", fingerprint)
+          .maybeSingle();
+
+        if (reacao) {
+          const { error } = await supabase
+            .from("rel_cidade_jornal_reacoes")
+            .delete()
+            .eq("id", reacao.id);
+          if (error) throw error;
+        }
         return null;
       } else {
         // Upsert reação (adiciona ou troca)

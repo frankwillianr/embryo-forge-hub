@@ -97,7 +97,7 @@ const AloPrefeituraVerticalList = ({ cidadeSlug }: AloPrefeituraVerticalListProp
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Megaphone className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-foreground">Alô Prefeitura</h2>
+            <h2 className="text-lg font-semibold text-foreground">Mural da Cidade</h2>
           </div>
           <button
             onClick={() => setModalOpen(true)}

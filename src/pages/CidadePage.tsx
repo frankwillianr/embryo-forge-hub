@@ -24,7 +24,7 @@ const navItems = [
 const sectionTitles: Record<TabType, string> = {
   home: "Home",
   cinema: "Cinema",
-  prefeitura: "Alô Prefeitura",
+  prefeitura: "Mural da Cidade",
   menu: "Menu",
 };
 

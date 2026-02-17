@@ -83,7 +83,7 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
     {
       icon: Phone,
       label: "Denúncias",
-      description: "Alô Prefeitura",
+      description: "Mural da Cidade",
       path: `/cidade/${cidadeSlug}/minhas-denuncias`,
       color: "text-red-600",
       bgColor: "bg-red-500/10",

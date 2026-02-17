@@ -157,7 +157,7 @@ const AloPrefeituraDetailPage = () => {
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}/alo-prefeitura`)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm text-muted-foreground">Alô Prefeitura</span>
+        <span className="text-sm text-muted-foreground">Mural da Cidade</span>
       </header>
 
       {/* Media - Imagens ou Vídeo */}

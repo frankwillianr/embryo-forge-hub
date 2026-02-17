@@ -62,7 +62,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="text-[13px] font-semibold text-foreground leading-tight">
-                Alô Prefeitura
+                Mural da Cidade
               </span>
             </div>
             <span className="text-[11px] text-muted-foreground">
@@ -133,7 +133,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
         {/* Título e descrição */}
         <div className="mt-1 mb-3">
           <p className="text-[13px] text-foreground leading-relaxed">
-            <span className="font-semibold mr-1.5">Alô Prefeitura</span>
+            <span className="font-semibold mr-1.5">Mural da Cidade</span>
             <span className="font-medium">{item.titulo}</span>
           </p>
           {descricao && (
