@@ -106,7 +106,10 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
             Denunciar
           </button>
           <button
-            onClick={() => navigate(`/cidade/${cidadeSlug}/alo-prefeitura`)}
+            onClick={() => {
+              console.log(`[NAV] Alo Prefeitura "Ver todas" clicado, scrollY atual: ${window.scrollY}`);
+              navigate(`/cidade/${cidadeSlug}/alo-prefeitura`);
+            }}
             className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
           >
             Ver todas

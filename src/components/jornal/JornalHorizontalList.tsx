@@ -76,6 +76,7 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
         </h2>
         <button
           onClick={() => {
+            console.log(`[NAV] Jornal "Ver todas" clicado, scrollY atual: ${window.scrollY}`);
             window.scrollTo({ top: 0, behavior: "smooth" });
             navigate(`/cidade/${cidadeSlug}/jornal`);
           }}
