@@ -155,9 +155,9 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
 
       {/* Modal de detalhes do filme */}
       <Dialog open={!!selectedFilme} onOpenChange={(open) => !open && setSelectedFilme(null)}>
-        <DialogContent className="w-[calc(100%-20px)] max-w-lg p-0 overflow-hidden rounded-[10px]">
+        <DialogContent className="w-[calc(100%-20px)] max-w-lg p-0 overflow-hidden rounded-[10px] max-h-[85vh] flex flex-col">
           {selectedFilme && (
-            <>
+            <div className="overflow-y-auto flex-1">
               {/* Banner do filme */}
               {selectedFilme.banner_url && (
                 <div className="aspect-[2/3] max-h-[280px] w-full overflow-hidden">
@@ -241,7 +241,7 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
                   </div>
                 )}
               </div>
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>
