@@ -108,17 +108,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
         </div>
       </div>
 
-      {/* Ofertas da Cidade */}
-      <OfertasSection cidadeSlug={cidadeSlug} />
-
-      {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-2">
-        <div className="flex flex-col gap-2 w-20">
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        </div>
-      </div>
-
       {/* Alô Prefeitura */}
       <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
 
@@ -154,6 +143,17 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       {/* Shows e Eventos */}
       <EventosSection cidadeSlug={cidadeSlug} />
+
+      {/* Separador Linha Dupla */}
+      <div className="flex items-center justify-center my-2">
+        <div className="flex flex-col gap-2 w-20">
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        </div>
+      </div>
+
+      {/* Ofertas da Cidade */}
+      <OfertasSection cidadeSlug={cidadeSlug} />
 
     </div>
   );
