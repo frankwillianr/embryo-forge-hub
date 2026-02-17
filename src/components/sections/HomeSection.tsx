@@ -90,7 +90,7 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
 
       {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-10">
+      <div className="flex items-center justify-center my-2">
         <div className="flex flex-col gap-2 w-20">
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
@@ -101,7 +101,7 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       <ServicosSection cidadeSlug={cidadeSlug} />
 
       {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-10">
+      <div className="flex items-center justify-center my-2">
         <div className="flex flex-col gap-2 w-20">
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
@@ -112,7 +112,7 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       <OfertasSection cidadeSlug={cidadeSlug} />
 
       {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-10">
+      <div className="flex items-center justify-center my-2">
         <div className="flex flex-col gap-2 w-20">
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
@@ -123,7 +123,7 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
 
       {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-10">
+      <div className="flex items-center justify-center my-2">
         <div className="flex flex-col gap-2 w-20">
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
@@ -134,7 +134,7 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       <QuickAccessCards cidadeSlug={cidadeSlug} />
 
       {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-10">
+      <div className="flex items-center justify-center my-2">
         <div className="flex flex-col gap-2 w-20">
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
@@ -145,7 +145,7 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       <CinemaHorizontalList cidadeSlug={cidadeSlug} />
 
       {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-10">
+      <div className="flex items-center justify-center my-2">
         <div className="flex flex-col gap-2 w-20">
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />

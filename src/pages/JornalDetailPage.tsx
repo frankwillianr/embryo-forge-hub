@@ -420,67 +420,91 @@ const JornalDetailPage = () => {
 
         <h1 className="text-xl font-bold text-foreground">{jornal.titulo}</h1>
 
-        {/* Botão de narração - Web Speech API */}
+        {/* Botão de narração */}
         <div className="flex flex-wrap gap-2">
-          {[
-            { id: "voice-2", name: "Ouvir notícia", rate: 1.3, pitch: 0.85 },
-          ].map(({ id, name, rate, pitch }) => (
-            <button
-              key={id}
-              onClick={(e) => {
-                e.stopPropagation();
-                // Se está falando, para
-                if (isSpeaking) {
-                  window.speechSynthesis.cancel();
-                  setIsSpeaking(false);
+          <button
+            disabled={isLoadingAudio}
+            onClick={async (e) => {
+              e.stopPropagation();
+
+              // Parar se estiver tocando
+              if (isSpeaking) {
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
+                }
+                setIsSpeaking(false);
+                setActiveVoice(null);
+                return;
+              }
+
+              setActiveVoice("voice-2");
+
+              // Determina a URL do áudio (pode já estar no jornal ou precisa gerar)
+              let audioUrl = jornal.audio_url;
+
+              if (!audioUrl) {
+                // Gera o áudio via Edge Function e salva no banco
+                setIsLoadingAudio(true);
+                try {
+                  const res = await fetch(
+                    "https://umauozcntfxgphzbiifz.supabase.co/functions/v1/generate-jornal-audio",
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtYXVvemNudGZ4Z3BoemJpaWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODk3ODksImV4cCI6MjA4NTY2NTc4OX0.xiB4Tr3j8lQVoeaLlj0O_Dk4HZGQg_ciKa3AE8Joi1g",
+                      },
+                      body: JSON.stringify({ jornalId: jornal.id }),
+                    }
+                  );
+                  const result = await res.json();
+                  if (result.audioUrl) {
+                    audioUrl = result.audioUrl;
+                    // Atualiza o cache local para próximas vezes sem precisar chamar a API
+                    queryClient.setQueryData(["jornal-detail", jornalId], (old: typeof jornal) => ({
+                      ...old,
+                      audio_url: audioUrl,
+                    }));
+                  }
+                } catch {
+                  toast.error("Erro ao gerar áudio");
+                  setIsLoadingAudio(false);
                   setActiveVoice(null);
                   return;
+                } finally {
+                  setIsLoadingAudio(false);
                 }
+              }
 
-                setActiveVoice(id);
+              if (!audioUrl) {
+                toast.error("Não foi possível gerar o áudio");
+                setActiveVoice(null);
+                return;
+              }
 
-                const text = `${jornal.titulo}. ${jornal.descricao?.replace(/\\n/g, ' ') || ""}`;
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = "pt-BR";
-                utterance.rate = rate;
-                utterance.pitch = pitch;
-
-                const allVoices = window.speechSynthesis.getVoices();
-                const ptVoices = allVoices.filter(v => v.lang.startsWith("pt"));
-                const voiceIndex = parseInt(id.split("-")[1]) - 1;
-                if (ptVoices.length > voiceIndex) {
-                  utterance.voice = ptVoices[voiceIndex];
-                } else if (ptVoices.length > 0) {
-                  utterance.voice = ptVoices[voiceIndex % ptVoices.length];
-                }
-
-                utterance.onend = () => { setIsSpeaking(false); setActiveVoice(null); };
-                utterance.onerror = (e) => {
-                  if (e.error !== 'canceled') {
-                    setIsSpeaking(false);
-                    setActiveVoice(null);
-                  }
-                };
-                window.speechSynthesis.speak(utterance);
-                setIsSpeaking(true);
-              }}
-              disabled={isLoadingAudio && activeVoice !== id}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all active:scale-95 disabled:opacity-40 ${
-                activeVoice === id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "text-foreground border-border/60 hover:border-primary/40"
-              }`}
-            >
-              {isLoadingAudio && activeVoice === id ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : isSpeaking && activeVoice === id ? (
-                <VolumeX className="h-3 w-3" />
-              ) : (
-                <Volume2 className="h-3 w-3" />
-              )}
-              🎙 {name}
-            </button>
-          ))}
+              const audio = new Audio(audioUrl);
+              audioRef.current = audio;
+              audio.onended = () => { setIsSpeaking(false); setActiveVoice(null); };
+              audio.onerror = () => { setIsSpeaking(false); setActiveVoice(null); toast.error("Erro ao reproduzir áudio"); };
+              audio.play();
+              setIsSpeaking(true);
+            }}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-all active:scale-95 disabled:opacity-40 ${
+              activeVoice === "voice-2"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "text-foreground border-border/60 hover:border-primary/40"
+            }`}
+          >
+            {isLoadingAudio ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : isSpeaking && activeVoice === "voice-2" ? (
+              <VolumeX className="h-3 w-3" />
+            ) : (
+              <Volume2 className="h-3 w-3" />
+            )}
+            🎙 {isLoadingAudio ? "Gerando áudio..." : "Ouvir notícia"}
+          </button>
         </div>
 
         {/* Descrição com imagens intercaladas */}

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Volume2, VolumeX, Play, Trash2, X } from "lucide-react";
+import { Heart, MessageCircle, Volume2, VolumeX, Play, Trash2, X, Loader2 } from "lucide-react";
 import { type Jornal, parseImagens } from "@/types/jornal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +59,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const [showCommentSheet, setShowCommentSheet] = useState(false);
   const [comentario, setComentario] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const [comentarioToDelete, setComentarioToDelete] = useState<string | null>(null);
   const [isRead, setIsRead] = useState(() => {
@@ -355,6 +356,8 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
     comentarMutation.mutate(comentario.trim());
   };
 
+  const cachedAudioUrl = useRef<string | null>(jornal.audio_url || null);
+
   const handleSpeakClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -364,19 +367,43 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
       return;
     }
 
+    if (isLoadingAudio) return;
+
     try {
-      // Se tem áudio pré-gerado, usa ele
-      if (jornal.audio_url) {
-        await audioManager.playAudio(jornal.audio_url, jornal.id);
+      let audioUrl = cachedAudioUrl.current;
+
+      // Se não tem áudio, gera via Edge Function
+      if (!audioUrl) {
+        setIsLoadingAudio(true);
+        const res = await fetch(
+          "https://umauozcntfxgphzbiifz.supabase.co/functions/v1/generate-jornal-audio",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtYXVvemNudGZ4Z3BoemJpaWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwODk3ODksImV4cCI6MjA4NTY2NTc4OX0.xiB4Tr3j8lQVoeaLlj0O_Dk4HZGQg_ciKa3AE8Joi1g",
+            },
+            body: JSON.stringify({ jornalId: jornal.id }),
+          }
+        );
+        const result = await res.json();
+        if (result.audioUrl) {
+          audioUrl = result.audioUrl;
+          cachedAudioUrl.current = audioUrl;
+        }
+        setIsLoadingAudio(false);
+      }
+
+      if (audioUrl) {
+        await audioManager.playAudio(audioUrl, jornal.id);
       } else {
-        // Fallback para Web Speech API
-        const text = `${jornal.titulo}. ${descricao || ""}`;
-        audioManager.playSpeech(text, jornal.id);
+        toast.error("Não foi possível gerar o áudio");
       }
     } catch (error) {
       console.error("Error playing audio:", error);
       toast.error("Erro ao reproduzir áudio");
       setIsSpeaking(false);
+      setIsLoadingAudio(false);
     }
   };
 
@@ -518,10 +545,16 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
           </div>
           <button
             onClick={handleSpeakClick}
-            className="active:scale-90 transition-transform flex items-center gap-1.5"
+            disabled={isLoadingAudio}
+            className="active:scale-90 transition-transform flex items-center gap-1.5 disabled:opacity-50"
             title={isSpeaking ? "Parar narração" : "Ouvir notícia"}
           >
-            {isSpeaking ? (
+            {isLoadingAudio ? (
+              <>
+                <Loader2 className="h-5 w-5 text-foreground animate-spin" />
+                <span className="text-[13px] text-foreground font-medium">Gerando...</span>
+              </>
+            ) : isSpeaking ? (
               <>
                 <VolumeX className="h-5 w-5 text-foreground" />
                 <span className="text-[13px] text-foreground font-medium">Pausar</span>
