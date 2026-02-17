@@ -100,7 +100,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
       }
     });
 
-    return unsubscribe;
+    return () => { unsubscribe(); };
   }, [jornal.id]);
 
   const containerRef = useRef<HTMLDivElement>(null);
