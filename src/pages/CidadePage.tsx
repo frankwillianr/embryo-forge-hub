@@ -43,7 +43,7 @@ const CidadePage = () => {
 
   // Busca dados da cidade
   const { data: cidade } = useQuery({
-    queryKey: ["cidade", slug],
+    queryKey: ["cidade-detail", slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cidade")
@@ -52,6 +52,7 @@ const CidadePage = () => {
         .maybeSingle();
 
       if (error) throw error;
+      
       return data;
     },
     enabled: !!slug,
