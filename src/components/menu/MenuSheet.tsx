@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2 } from "lucide-react";
+import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
   Sheet,
@@ -32,6 +34,8 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleLogin = () => {
     onOpenChange(false);
@@ -46,6 +50,22 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
     setShowLogoutConfirm(false);
     await signOut();
     onOpenChange(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase.rpc("delete_own_account");
+      if (error) throw error;
+      await signOut();
+      onOpenChange(false);
+      toast.success("Conta deletada com sucesso");
+    } catch (err) {
+      toast.error("Erro ao deletar conta. Tente novamente.");
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const handleNavigate = (path: string) => {
@@ -131,14 +151,24 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
             </div>
 
             {user ? (
-              <Button 
-                variant="dark"
-                onClick={handleLogoutClick}
-                className="w-full rounded-xl"
-              >
-                <LogOut className="h-4 w-4" />
-                Sair da conta
-              </Button>
+              <div className="space-y-2">
+                <Button 
+                  variant="dark"
+                  onClick={handleLogoutClick}
+                  className="w-full rounded-xl"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sair da conta
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full rounded-xl text-destructive border-destructive/30 hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Deletar minha conta
+                </Button>
+              </div>
             ) : (
               <Button 
                 variant="dark"
@@ -260,6 +290,23 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
               className="flex-1 sm:flex-none bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Sair
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar sua conta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é irreversível. Todos os seus dados, anúncios, empresas e postagens serão permanentemente removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="flex-1 sm:flex-none" disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAccount} disabled={deleting} className="flex-1 sm:flex-none bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deletando..." : "Deletar conta"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
