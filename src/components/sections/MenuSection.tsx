@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, MessageCircle } from "lucide-react";
+import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, MessageCircle, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
   AlertDialog,
@@ -24,6 +26,8 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleLogin = () => {
     navigate(`/cidade/${cidadeSlug}/auth`);
@@ -32,6 +36,21 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
   const handleLogoutConfirm = async () => {
     setShowLogoutConfirm(false);
     await signOut();
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase.rpc("delete_own_account");
+      if (error) throw error;
+      await signOut();
+      toast.success("Conta deletada com sucesso");
+    } catch (err) {
+      toast.error("Erro ao deletar conta. Tente novamente.");
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const firstName = profile?.nome?.split(" ")[0];
@@ -168,7 +187,7 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
 
       {/* Logout - Minimalista */}
       {user && (
-        <div className="mt-auto px-5 py-6 border-t border-border">
+        <div className="mt-auto px-5 py-6 border-t border-border space-y-3">
           <button
             onClick={() => setShowLogoutConfirm(true)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors"
@@ -176,34 +195,41 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
             <LogOut className="h-[18px] w-[18px]" />
             <span>Sair da conta</span>
           </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 text-sm text-destructive/70 hover:text-destructive transition-colors"
+          >
+            <Trash2 className="h-[18px] w-[18px]" />
+            <span>Deletar minha conta</span>
+          </button>
         </div>
       )}
 
-      {/* Footer - Minimalista */}
-      <div className="px-5 py-4 border-t border-border">
-        <p className="text-[10px] text-center text-muted-foreground/60">
-          v1.0.0
-        </p>
-      </div>
-
-      {/* Logout Confirmation Modal */}
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Sair da conta?</AlertDialogTitle>
+            <AlertDialogDescription>Você tem certeza que deseja sair da sua conta?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="flex-1 sm:flex-none">Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogoutConfirm} className="flex-1 sm:flex-none bg-destructive text-destructive-foreground hover:bg-destructive/90">Sair</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar sua conta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Você tem certeza que deseja sair da sua conta?
+              Esta ação é irreversível. Todos os seus dados, anúncios, empresas e postagens serão permanentemente removidos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row gap-2 sm:gap-0">
-            <AlertDialogCancel className="flex-1 sm:flex-none">
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleLogoutConfirm}
-              className="flex-1 sm:flex-none bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Sair
+            <AlertDialogCancel className="flex-1 sm:flex-none" disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAccount} disabled={deleting} className="flex-1 sm:flex-none bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deletando..." : "Deletar conta"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
