@@ -58,6 +58,7 @@ import EventoDetailPage from "@/pages/EventoDetailPage";
 import EventosListPage from "@/pages/EventosListPage";
 import OnibusListPage from "@/pages/OnibusListPage";
 import CuponsListPage from "@/pages/CuponsListPage";
+import MeusCuponsPage from "@/pages/MeusCuponsPage";
 import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
 import SuportePage from "@/pages/SuportePage";
 const queryClient = new QueryClient();
@@ -116,6 +117,7 @@ const App = () => (
               <Route path="/cidade/:slug/eventos/:eventoId" element={<EventoDetailPage />} />
               <Route path="/cidade/:slug/onibus" element={<OnibusListPage />} />
               <Route path="/cidade/:slug/cupons" element={<CuponsListPage />} />
+              <Route path="/cidade/:slug/meus-cupons" element={<MeusCuponsPage />} />
               <Route path="/cidade/:slug/auth" element={<AuthPage />} />
             </Route>
 

@@ -157,6 +157,48 @@ GRANT SELECT ON cupom_public TO authenticated;
 COMMENT ON TABLE checkin IS 'Check-in diário; 7 consecutivos desbloqueiam cupons.';
 COMMENT ON TABLE cupom IS 'Cupons de desconto; código revelado após checkins_necessarios dias.';
 
+-- CPF no perfil (proteção no cupom ao pegar)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cpf TEXT;
+COMMENT ON COLUMN profiles.cpf IS 'CPF exibido no cupom como proteção contra print/screenshot.';
+
+-- Cupom pego pelo usuário (status pego + validade 30 dias)
+CREATE TABLE IF NOT EXISTS usuario_cupom (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  cupom_id UUID NOT NULL REFERENCES cupom(id) ON DELETE CASCADE,
+  cidade_id UUID NOT NULL REFERENCES cidade(id) ON DELETE CASCADE,
+  validade DATE NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, cupom_id)
+);
+CREATE INDEX IF NOT EXISTS idx_usuario_cupom_user ON usuario_cupom(user_id);
+CREATE INDEX IF NOT EXISTS idx_usuario_cupom_validade ON usuario_cupom(validade);
+ALTER TABLE usuario_cupom ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can insert own usuario_cupom" ON usuario_cupom;
+CREATE POLICY "Users can insert own usuario_cupom" ON usuario_cupom FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own usuario_cupom" ON usuario_cupom;
+CREATE POLICY "Users can view own usuario_cupom" ON usuario_cupom FOR SELECT TO authenticated USING (auth.uid() = user_id);
+COMMENT ON TABLE usuario_cupom IS 'Cupons que o usuário pegou; validade 30 dias.';
+
+-- Cupom de empresa pego pelo usuário (Meus cupons)
+CREATE TABLE IF NOT EXISTS usuario_cupom_empresa (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  empresa_id UUID NOT NULL REFERENCES rel_cidade_servico_empresa(id) ON DELETE CASCADE,
+  cidade_id UUID NOT NULL REFERENCES cidade(id) ON DELETE CASCADE,
+  validade DATE NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(user_id, empresa_id)
+);
+CREATE INDEX IF NOT EXISTS idx_usuario_cupom_empresa_user ON usuario_cupom_empresa(user_id);
+CREATE INDEX IF NOT EXISTS idx_usuario_cupom_empresa_validade ON usuario_cupom_empresa(validade);
+ALTER TABLE usuario_cupom_empresa ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can insert own usuario_cupom_empresa" ON usuario_cupom_empresa;
+CREATE POLICY "Users can insert own usuario_cupom_empresa" ON usuario_cupom_empresa FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view own usuario_cupom_empresa" ON usuario_cupom_empresa;
+CREATE POLICY "Users can view own usuario_cupom_empresa" ON usuario_cupom_empresa FOR SELECT TO authenticated USING (auth.uid() = user_id);
+COMMENT ON TABLE usuario_cupom_empresa IS 'Cupons de empresa que o usuário pegou; validade 30 dias.';
+
 
 -- -----------------------------------------------------------------------------
 -- OPCIONAL: Inserir um cupom de exemplo (troque 'UUID-DA-CIDADE' pelo id da cidade)

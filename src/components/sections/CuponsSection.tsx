@@ -1,12 +1,32 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Tag, Lock, Copy, Check, Building2 } from "lucide-react";
+import { Tag, Lock, Copy, Check, Building2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+
+function formatCPF(val: string): string {
+  const d = val.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+  if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+}
+
+function validarCPF(cpf: string): boolean {
+  const d = cpf.replace(/\D/g, "");
+  return d.length === 11 && /^\d+$/.test(d);
+}
 
 function getTodayLocal(): string {
   const d = new Date();
@@ -63,10 +83,17 @@ interface CuponsSectionProps {
 }
 
 const CuponsSection = ({ cidadeSlug }: CuponsSectionProps) => {
-  const { user } = useAuth();
+  const { user, profile, refetchProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [modalCupom, setModalCupom] = useState<CupomCidadeRow | null>(null);
+  const [modalEmpresa, setModalEmpresa] = useState<CupomEmpresaRow | null>(null);
+  const [modalEmpresaStep, setModalEmpresaStep] = useState<"pegar" | "exibindo">("pegar");
+  const [cpfInput, setCpfInput] = useState("");
+  const [modalStep, setModalStep] = useState<"form" | "sucesso">("form");
+  const [validadeClaimed, setValidadeClaimed] = useState<string | null>(null);
 
   const { data: cidade } = useQuery({
     queryKey: ["cidade-id-cupons", cidadeSlug],
@@ -139,11 +166,92 @@ const CuponsSection = ({ cidadeSlug }: CuponsSectionProps) => {
     enabled: !!cidade?.id,
   });
 
+  const { data: meusCuponsPegos = [] } = useQuery({
+    queryKey: ["usuario-cupom", user?.id, cidade?.id],
+    queryFn: async () => {
+      if (!user?.id || !cidade?.id) return [];
+      const { data, error } = await supabase
+        .from("usuario_cupom")
+        .select("cupom_id, validade")
+        .eq("user_id", user.id)
+        .eq("cidade_id", cidade.id)
+        .gte("validade", getTodayLocal());
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id && !!cidade?.id,
+  });
+
+  const cupomIdsPegos = useMemo(
+    () => new Set((meusCuponsPegos as { cupom_id: string }[]).map((u) => u.cupom_id)),
+    [meusCuponsPegos]
+  );
+
+  const pegarCupomMutation = useMutation({
+    mutationFn: async ({ cupomId, cpf }: { cupomId: string; cpf: string | null }) => {
+      if (!user?.id || !cidade?.id) throw new Error("Não autenticado");
+      const validade = new Date();
+      validade.setDate(validade.getDate() + 30);
+      const validadeStr = validade.toISOString().split("T")[0];
+      if (cpf && cpf.replace(/\D/g, "").length === 11) {
+        await supabase.from("profiles").update({ cpf: cpf.replace(/\D/g, "") }).eq("id", user.id);
+      }
+      const { error } = await supabase.from("usuario_cupom").insert({
+        user_id: user.id,
+        cupom_id: cupomId,
+        cidade_id: cidade.id,
+        validade: validadeStr,
+      });
+      if (error) throw error;
+    },
+    onSuccess: async (_, { cpf }) => {
+      const d = new Date();
+      d.setDate(d.getDate() + 30);
+      setValidadeClaimed(d.toISOString().split("T")[0]);
+      if (cpf) await refetchProfile();
+      queryClient.invalidateQueries({ queryKey: ["usuario-cupom"] });
+      queryClient.invalidateQueries({ queryKey: ["meus-cupons"] });
+      queryClient.invalidateQueries({ queryKey: ["cupons"] });
+      queryClient.invalidateQueries({ queryKey: ["cidade-id-cupons"] });
+      setModalStep("sucesso");
+    },
+    onError: (e) => {
+      toast({ title: "Erro ao pegar cupom", description: e.message, variant: "destructive" });
+    },
+  });
+
+  const pegarCupomEmpresaMutation = useMutation({
+    mutationFn: async (empresaId: string) => {
+      if (!user?.id || !cidade?.id) throw new Error("Não autenticado");
+      const validade = new Date();
+      validade.setDate(validade.getDate() + 30);
+      const validadeStr = validade.toISOString().split("T")[0];
+      const { error } = await supabase.from("usuario_cupom_empresa").insert({
+        user_id: user.id,
+        empresa_id: empresaId,
+        cidade_id: cidade.id,
+        validade: validadeStr,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["meus-cupons"] });
+      setModalEmpresaStep("exibindo");
+    },
+    onError: (e: Error & { code?: string }) => {
+      if (e.code === "23505" || e.message?.includes("duplicate") || e.message?.includes("unique")) {
+        setModalEmpresaStep("exibindo");
+        return;
+      }
+      toast({ title: "Erro ao pegar cupom", description: e.message, variant: "destructive" });
+    },
+  });
+
   const itensCupom: CupomItem[] = useMemo(() => {
-    const empresaItens: CupomItem[] = cuponsEmpresa.map((e) => ({ tipo: "empresa" as const, data: e }));
     const cidadeItens: CupomItem[] = cuponsCidade.map((c) => ({ tipo: "cidade" as const, data: c }));
-    return [...empresaItens, ...cidadeItens];
-  }, [cuponsEmpresa, cuponsCidade]);
+    const empresaItens: CupomItem[] = cuponsEmpresa.map((e) => ({ tipo: "empresa" as const, data: e }));
+    return [...cidadeItens, ...empresaItens];
+  }, [cuponsCidade, cuponsEmpresa]);
 
   const isLoading = loadingCupons || loadingEmpresas;
   const consecutivos = diasConsecutivos(checkins);
@@ -209,7 +317,14 @@ const CuponsSection = ({ cidadeSlug }: CuponsSectionProps) => {
                   <button
                     key={`emp-${e.id}`}
                     type="button"
-                    onClick={() => navigate(`/cidade/${cidadeSlug}/servicos/${e.categoria}/${e.id}`)}
+                    onClick={() => {
+                      if (!user) {
+                        navigate(`/cidade/${cidadeSlug}/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
+                        return;
+                      }
+                      setModalEmpresa(e);
+                      setModalEmpresaStep("pegar");
+                    }}
                     className="flex-shrink-0 w-56 cupom-ticket text-left hover:opacity-90 transition-opacity"
                   >
                     <div className="cupom-ticket-main">
@@ -221,7 +336,7 @@ const CuponsSection = ({ cidadeSlug }: CuponsSectionProps) => {
                       {descontoTexto && (
                         <p className="text-xs text-muted-foreground mt-0.5">{descontoTexto}</p>
                       )}
-                      <p className="text-[10px] text-muted-foreground/80 mt-2">Toque para ver a empresa</p>
+                      <p className="text-[10px] text-muted-foreground/80 mt-2">Pegar cupom</p>
                     </div>
                     <div className="cupom-ticket-stub">
                       <span className="cupom-ticket-stub-text">{e.cupom_nome}</span>
@@ -231,11 +346,33 @@ const CuponsSection = ({ cidadeSlug }: CuponsSectionProps) => {
               }
               const c = item.data;
               const desbloqueado = !!user && consecutivos >= (c.checkins_necessarios ?? 7);
+              const jaPegou = cupomIdsPegos.has(c.id);
               const codigoExibir = desbloqueado && c.codigo ? c.codigo : (c.codigo_censurado || "••••••••");
+              const podePegar = desbloqueado && c.codigo && !jaPegou;
               return (
-                <div
+                <button
                   key={`cid-${c.id}`}
-                  className="flex-shrink-0 w-56 cupom-ticket"
+                  type="button"
+                  onClick={() => {
+                    if (!user) {
+                      navigate(`/cidade/${cidadeSlug}/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
+                      return;
+                    }
+                    if (podePegar) {
+                      setModalCupom(c);
+                      setModalStep("form");
+                      setCpfInput(profile?.cpf ? formatCPF(profile.cpf) : "");
+                    }
+                    if (jaPegou && desbloqueado) {
+                      setModalCupom(c);
+                      setModalStep("sucesso");
+                      const uc = (meusCuponsPegos as { cupom_id: string; validade: string }[]).find(
+                        (u) => u.cupom_id === c.id
+                      );
+                      setValidadeClaimed(uc?.validade ?? null);
+                    }
+                  }}
+                  className="flex-shrink-0 w-56 cupom-ticket text-left hover:opacity-90 transition-opacity"
                 >
                   <div className="cupom-ticket-main">
                     <h3 className="font-medium text-sm text-foreground truncate">{c.titulo}</h3>
@@ -246,12 +383,16 @@ const CuponsSection = ({ cidadeSlug }: CuponsSectionProps) => {
                       <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
                         {codigoExibir}
                       </code>
-                      {desbloqueado && c.codigo ? (
+                      {podePegar ? (
+                        <span className="text-[10px] text-primary font-medium">Pegar cupom</span>
+                      ) : jaPegou ? (
+                        <span className="text-[10px] text-muted-foreground">Já pegou</span>
+                      ) : desbloqueado && c.codigo ? (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-7 w-7 p-0"
-                          onClick={(ev) => handleCopy(ev, c.id, c.codigo!)}
+                          onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); handleCopy(ev, c.id, c.codigo!); }}
                         >
                           {copiedId === c.id ? (
                             <Check className="h-3.5 w-3.5 text-emerald-600" />
@@ -272,12 +413,205 @@ const CuponsSection = ({ cidadeSlug }: CuponsSectionProps) => {
                   <div className="cupom-ticket-stub">
                     <span className="cupom-ticket-stub-text">{codigoExibir}</span>
                   </div>
-                </div>
+                </button>
               );
             })
           )}
         </div>
       </div>
+
+      <Dialog
+        open={!!modalCupom || !!modalEmpresa}
+        onOpenChange={(open) => {
+          if (!open) {
+            setModalCupom(null);
+            setModalEmpresa(null);
+            setModalEmpresaStep("pegar");
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          {modalEmpresa ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>{modalEmpresaStep === "exibindo" ? "Seu cupom" : "Pegar cupom"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                {modalEmpresaStep === "pegar" ? (
+                  <>
+                    <div className="rounded-xl bg-muted/50 p-4">
+                      <div className="flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="font-medium text-sm text-foreground">{modalEmpresa.nome}</span>
+                      </div>
+                      <p className="text-xs text-primary font-medium mt-1.5">{modalEmpresa.cupom_nome}</p>
+                      {formatDesconto(modalEmpresa.cupom_valor, modalEmpresa.cupom_tipo) && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {formatDesconto(modalEmpresa.cupom_valor, modalEmpresa.cupom_tipo)}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      className="w-full"
+                      disabled={pegarCupomEmpresaMutation.isPending}
+                      onClick={() => pegarCupomEmpresaMutation.mutate(modalEmpresa.id)}
+                    >
+                      {pegarCupomEmpresaMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Pegar cupom"
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="relative w-full max-w-[280px] mx-auto cupom-ticket">
+                      <div className="cupom-ticket-main">
+                        <div className="flex items-center gap-1.5">
+                          <Building2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="font-medium text-sm text-foreground">{modalEmpresa.nome}</span>
+                        </div>
+                        <p className="text-xs text-primary font-medium mt-1.5">{modalEmpresa.cupom_nome}</p>
+                        {formatDesconto(modalEmpresa.cupom_valor, modalEmpresa.cupom_tipo) && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatDesconto(modalEmpresa.cupom_valor, modalEmpresa.cupom_tipo)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="cupom-ticket-stub">
+                        <span className="cupom-ticket-stub-text">{modalEmpresa.cupom_nome}</span>
+                      </div>
+                      <div
+                        className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+                        style={{ mixBlendMode: "multiply", opacity: 0.4 }}
+                        aria-hidden
+                      >
+                        <span className="text-[10px] font-mono text-foreground/90 rotate-[-18deg] whitespace-nowrap">
+                          CPF: {formatCPF(profile?.cpf)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-center text-muted-foreground">
+                      Apresente este cupom na empresa. O CPF identifica o titular.
+                    </p>
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        const emp = modalEmpresa;
+                        setModalEmpresa(null);
+                        setModalEmpresaStep("pegar");
+                        if (emp) navigate(`/cidade/${cidadeSlug}/servicos/${emp.categoria}/${emp.id}`);
+                      }}
+                    >
+                      Ver página da empresa
+                    </Button>
+                  </>
+                )}
+              </div>
+            </>
+          ) : modalCupom ? (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  {modalStep === "sucesso" ? "Seu cupom" : "Pegar cupom"}
+                </DialogTitle>
+              </DialogHeader>
+              {modalStep === "form" ? (
+                <div className="space-y-4 pt-2">
+                  <div className="rounded-xl bg-muted/50 p-4">
+                    <h3 className="font-medium text-sm">{modalCupom.titulo}</h3>
+                    {modalCupom.descricao && (
+                      <p className="text-xs text-muted-foreground mt-1">{modalCupom.descricao}</p>
+                    )}
+                    <p className="text-xs font-mono mt-2 text-primary">{modalCupom.codigo_censurado || "••••••••"}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Seu CPF será exibido no cupom como proteção. Em caso de print ou compartilhamento, o CPF identifica o titular.
+                  </p>
+                  {(!profile?.cpf || profile.cpf.replace(/\D/g, "").length !== 11) && (
+                    <div className="space-y-2">
+                      <Label htmlFor="modal-cpf">CPF *</Label>
+                      <Input
+                        id="modal-cpf"
+                        placeholder="000.000.000-00"
+                        value={cpfInput}
+                        onChange={(e) => setCpfInput(formatCPF(e.target.value))}
+                        maxLength={14}
+                      />
+                    </div>
+                  )}
+                  <Button
+                    className="w-full"
+                    disabled={
+                      pegarCupomMutation.isPending ||
+                      (!profile?.cpf || profile.cpf.replace(/\D/g, "").length !== 11) && !validarCPF(cpfInput)
+                    }
+                    onClick={() => {
+                      const cpfToUse = profile?.cpf?.replace(/\D/g, "").length === 11
+                        ? null
+                        : cpfInput.replace(/\D/g, "").length === 11
+                          ? cpfInput
+                          : null;
+                      if ((profile?.cpf?.replace(/\D/g, "").length === 11) || validarCPF(cpfInput)) {
+                        pegarCupomMutation.mutate({ cupomId: modalCupom.id, cpf: cpfToUse });
+                      }
+                    }}
+                  >
+                    {pegarCupomMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Pegar cupom"
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4 pt-2">
+                  <p className="text-xs text-muted-foreground">Válido até {validadeClaimed ? new Date(validadeClaimed + "T12:00:00").toLocaleDateString("pt-BR") : "—"}</p>
+                  <div className="relative w-full max-w-[280px] mx-auto cupom-ticket">
+                    <div className="cupom-ticket-main">
+                      <h3 className="font-medium text-sm text-foreground">{modalCupom.titulo}</h3>
+                      {modalCupom.descricao && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{modalCupom.descricao}</p>
+                      )}
+                      <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded mt-2 inline-block">
+                        {modalCupom.codigo || modalCupom.codigo_censurado}
+                      </code>
+                    </div>
+                    <div className="cupom-ticket-stub">
+                      <span className="cupom-ticket-stub-text">{modalCupom.codigo || modalCupom.codigo_censurado}</span>
+                    </div>
+                    <div
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+                      style={{ mixBlendMode: "multiply", opacity: 0.4 }}
+                      aria-hidden
+                    >
+                      <span className="text-[10px] font-mono text-foreground/90 rotate-[-18deg] whitespace-nowrap">
+                        CPF: {formatCPF(profile?.cpf || cpfInput)}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-center text-muted-foreground">
+                    O CPF aparece no cupom para proteção contra uso indevido.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      if (modalCupom.codigo) {
+                        navigator.clipboard.writeText(modalCupom.codigo);
+                        toast({ title: "Código copiado!" });
+                      }
+                      setModalCupom(null);
+                    }}
+                  >
+                    Copiar código e fechar
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

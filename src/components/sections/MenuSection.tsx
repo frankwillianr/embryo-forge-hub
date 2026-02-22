@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, MessageCircle, Trash2, FileText } from "lucide-react";
+import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, MessageCircle, Trash2, FileText, Tag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -111,6 +111,14 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
       path: `/cidade/${cidadeSlug}/minhas-solicitacoes-orcamento`,
       color: "text-amber-600",
       bgColor: "bg-amber-500/10",
+    },
+    {
+      icon: Tag,
+      label: "Meus cupons",
+      description: "Cupons que você pegou",
+      path: `/cidade/${cidadeSlug}/meus-cupons`,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-500/10",
     },
   ];
 
