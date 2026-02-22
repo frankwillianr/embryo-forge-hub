@@ -86,19 +86,19 @@ const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) =>
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
           {
             headers: {
-              "Accept-Language": "pt-BR",
-            },
+              "Accept-Language": "pt-BR"
+            }
           }
         );
         const data = await response.json();
-        
+
         const address = data.address;
-        const neighborhood = 
-          address.suburb || 
-          address.neighbourhood || 
-          address.district || 
-          address.city_district || 
-          "";
+        const neighborhood =
+        address.suburb ||
+        address.neighbourhood ||
+        address.district ||
+        address.city_district ||
+        "";
         const city = address.city || address.town || address.municipality || "";
 
         setLocation({ neighborhood, city });
@@ -113,10 +113,10 @@ const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) =>
           `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`
         );
         const data = await response.json();
-        
+
         const weatherCode = data.current.weather_code;
         let condition: WeatherData["condition"] = "clear";
-        
+
         if (weatherCode >= 61 && weatherCode <= 99) {
           condition = "rainy";
         } else if (weatherCode >= 3 && weatherCode <= 60) {
@@ -125,7 +125,7 @@ const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) =>
 
         setWeather({
           temperature: Math.round(data.current.temperature_2m),
-          condition,
+          condition
         });
       } catch (error) {
         console.error("Erro ao buscar clima:", error);
@@ -164,15 +164,15 @@ const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) =>
   return (
     <div className="relative w-full aspect-[16/9] overflow-hidden">
       {/* Background Image */}
-      {bannerUrl ? (
-        <img
-          src={bannerUrl}
-          alt={cidadeNome || "Banner da cidade"}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-primary" />
-      )}
+      {bannerUrl ?
+      <img
+        src={bannerUrl}
+        alt={cidadeNome || "Banner da cidade"}
+        className="absolute inset-0 w-full h-full object-cover" /> :
+
+
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/80 to-primary" />
+      }
 
       {/* Dark overlay for text readability */}
       <div className="absolute inset-0 bg-black/30" />
@@ -186,7 +186,7 @@ const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) =>
       <div className="relative z-10 h-full flex flex-col justify-end p-6 text-white">
         <div className="flex items-center gap-2 mb-2">
           <TimeIcon className="h-5 w-5" />
-          <span className="text-sm font-medium opacity-90">
+          <span className="text-sm font-medium opacity-90 my-0">
             {getGreeting(timeOfDay)}
           </span>
         </div>
@@ -197,29 +197,29 @@ const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) =>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {loading ? (
-              <div className="flex items-center gap-2">
+            {loading ?
+            <div className="flex items-center gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 <span className="text-sm">Carregando...</span>
-              </div>
-            ) : weather ? (
-              <div className="flex items-center gap-2">
+              </div> :
+            weather ?
+            <div className="flex items-center gap-2">
                 {WeatherIcon && <WeatherIcon className="h-5 w-5" />}
                 <span className="text-lg font-semibold">{weather.temperature}°C</span>
-              </div>
-            ) : null}
+              </div> :
+            null}
           </div>
 
-          {location?.neighborhood && (
-            <div className="flex items-center gap-1 text-sm opacity-90">
+          {location?.neighborhood &&
+          <div className="flex items-center gap-1 text-sm opacity-90">
               <MapPin className="h-4 w-4" />
               <span>{location.neighborhood}</span>
             </div>
-          )}
+          }
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 export default CidadeBanner;
