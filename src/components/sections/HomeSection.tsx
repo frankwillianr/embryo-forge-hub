@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import BannerCarousel from "@/components/BannerCarousel";
 import JornalHorizontalList from "@/components/jornal/JornalHorizontalList";
-import CheckinSection from "@/components/sections/CheckinSection";
 import CuponsSection from "@/components/sections/CuponsSection";
 import SolicitarOrcamentoSection from "@/components/sections/SolicitarOrcamentoSection";
 import AloPrefeituraHorizontalList from "@/components/aloPrefeitura/AloPrefeituraHorizontalList";
@@ -132,15 +131,12 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       <Separador />
 
-      {/* 9. Check-in diário */}
-      <CheckinSection cidadeSlug={cidadeSlug} />
-
-      {/* 10. Cupons de desconto */}
+      {/* 9. Cupons de desconto */}
       <CuponsSection cidadeSlug={cidadeSlug} />
 
       <Separador />
 
-      {/* 11. Orçamentos */}
+      {/* 10. Orçamentos */}
       <SolicitarOrcamentoSection cidadeSlug={cidadeSlug} />
     </div>
   );

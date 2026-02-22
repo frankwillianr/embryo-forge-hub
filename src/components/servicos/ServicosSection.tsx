@@ -244,6 +244,9 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("beleza");
+  const gridScrollRef = useRef<HTMLDivElement>(null);
+  const tabRefsRef = useRef<(HTMLButtonElement | null)[]>([]);
+  const isScrollingByUserRef = useRef(false);
 
   const categoriaAtual = categorias.find((c) => c.id === categoriaSelecionada) || categorias[0];
 
@@ -311,6 +314,45 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
     setIsSearchFocused(false);
     handleClick(servicoId);
   };
+
+  const handleGridScroll = useCallback(() => {
+    const el = gridScrollRef.current;
+    if (!el || isScrollingByUserRef.current) return;
+    const w = el.offsetWidth;
+    const index = Math.round(el.scrollLeft / w);
+    const i = Math.max(0, Math.min(index, categorias.length - 1));
+    if (categorias[i] && categorias[i].id !== categoriaSelecionada) {
+      setCategoriaSelecionada(categorias[i].id);
+    }
+  }, [categoriaSelecionada]);
+
+  const handleTabClick = useCallback((catId: string) => {
+    const index = categorias.findIndex((c) => c.id === catId);
+    if (index < 0) return;
+    setCategoriaSelecionada(catId);
+    const el = gridScrollRef.current;
+    if (el) {
+      isScrollingByUserRef.current = true;
+      el.scrollTo({ left: index * el.offsetWidth, behavior: "smooth" });
+      setTimeout(() => { isScrollingByUserRef.current = false; }, 400);
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = gridScrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", handleGridScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleGridScroll);
+  }, [handleGridScroll]);
+
+  // Ao mudar a categoria (rolagem do grid ou clique na tab), a barra de títulos acompanha
+  useEffect(() => {
+    const index = categorias.findIndex((c) => c.id === categoriaSelecionada);
+    const tabEl = tabRefsRef.current[index];
+    if (tabEl) {
+      tabEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [categoriaSelecionada]);
 
   return (
     <div className="py-6">
@@ -386,13 +428,14 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </div>
       </div>
 
-      {/* Categorias - Tabs estilo iOS */}
-      <div className="overflow-x-auto scrollbar-hide mb-4">
+      {/* Categorias - Tabs estilo iOS (rolagem horizontal; acompanha a categoria ao rolar o grid) */}
+      <div className="overflow-x-auto scrollbar-hide mb-4 scroll-smooth">
         <div className="flex gap-0 px-5 border-b border-border/30">
-          {categorias.map((cat) => (
+          {categorias.map((cat, index) => (
             <button
               key={cat.id}
-              onClick={() => setCategoriaSelecionada(cat.id)}
+              ref={(el) => { tabRefsRef.current[index] = el; }}
+              onClick={() => handleTabClick(cat.id)}
               className={`flex-shrink-0 flex items-center gap-1 px-4 pb-2.5 text-[13px] font-medium transition-all relative ${
                 categoriaSelecionada === cat.id
                   ? "text-foreground"
@@ -416,28 +459,42 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         cidadeSlug={cidadeSlug}
       />
 
-      {/* Grid de serviços da categoria selecionada */}
-      <div className="px-5">
-        <div className="grid grid-cols-4 gap-y-6 gap-x-3">
-          {categoriaAtual.servicos.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleClick(item.id)}
-              className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
+      {/* Grid de serviços: rolagem horizontal por categoria (ao rolar muda a categoria) */}
+      <div
+        ref={gridScrollRef}
+        className="overflow-x-auto overflow-y-hidden scrollbar-hide snap-x snap-mandatory scroll-smooth"
+        style={{ scrollSnapType: "x mandatory" }}
+      >
+        <div className="flex" style={{ width: `${categorias.length * 100}%` }}>
+          {categorias.map((cat) => (
+            <div
+              key={cat.id}
+              className="flex-shrink-0 snap-start px-5"
+              style={{ width: `${100 / categorias.length}%`, minWidth: `${100 / categorias.length}%` }}
             >
-              {item.icon ? (
-                <img
-                  src={item.icon}
-                  alt={item.nome}
-                  className="w-11 h-11 object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
-                />
-              ) : (
-                <span className="text-[32px] leading-none">{item.emoji}</span>
-              )}
-              <span className="text-[11px] text-muted-foreground text-center leading-tight line-clamp-2">
-                {item.nome}
-              </span>
-            </button>
+              <div className="grid grid-cols-4 gap-y-6 gap-x-3">
+                {cat.servicos.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleClick(item.id)}
+                    className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
+                  >
+                    {item.icon ? (
+                      <img
+                        src={item.icon}
+                        alt={item.nome}
+                        className="w-11 h-11 object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
+                      />
+                    ) : (
+                      <span className="text-[32px] leading-none">{item.emoji}</span>
+                    )}
+                    <span className="text-[11px] text-muted-foreground text-center leading-tight line-clamp-2">
+                      {item.nome}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>

@@ -1,30 +1,26 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Home, Newspaper, Film, Megaphone, Menu, ArrowLeft, Bell } from "lucide-react";
+import { Home, Newspaper, Film, Megaphone, Menu, Map, ArrowLeft, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CidadeBanner from "@/components/CidadeBanner";
 import HomeSection from "@/components/sections/HomeSection";
 import CinemaSection from "@/components/sections/CinemaSection";
 import AloPrefeituraSection from "@/components/sections/AloPrefeituraSection";
 import MenuSection from "@/components/sections/MenuSection";
+import MapaEmpresasView from "@/components/mapa/MapaEmpresasView";
 import { Button } from "@/components/ui/button";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
-type TabType = "home" | "cinema" | "prefeitura" | "menu";
-
-const navItems = [
-  { id: "home" as TabType, title: "Home", icon: Home },
-  { id: "cinema" as TabType, title: "Cinema", icon: Film },
-  { id: "prefeitura" as TabType, title: "Prefeitura", icon: Megaphone },
-];
+type TabType = "home" | "cinema" | "prefeitura" | "maps" | "menu";
 
 const sectionTitles: Record<TabType, string> = {
   home: "Home",
   cinema: "Cinema",
   prefeitura: "Mural da Cidade",
+  maps: "Mapa",
   menu: "Menu",
 };
 
@@ -35,7 +31,7 @@ const CidadePage = () => {
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const { profile } = useAuth();
   const scrollPositions = useRef<Record<TabType, number>>({
-    home: 0, cinema: 0, prefeitura: 0, menu: 0,
+    home: 0, cinema: 0, prefeitura: 0, maps: 0, menu: 0,
   });
 
   // Get first name from profile
@@ -172,6 +168,15 @@ const CidadePage = () => {
         return <CinemaSection cidadeSlug={slug} />;
       case "prefeitura":
         return <AloPrefeituraSection cidadeSlug={slug} />;
+      case "maps":
+        return cidade?.id ? (
+          <MapaEmpresasView
+            cidadeId={cidade.id}
+            cidadeSlug={slug ?? ""}
+            cidadeNome={cidade.nome}
+            onClose={() => switchTab("home")}
+          />
+        ) : null;
       case "menu":
         return <MenuSection cidadeNome={cidade?.nome} cidadeSlug={slug} />;
     }
@@ -183,7 +188,7 @@ const CidadePage = () => {
       <main className="flex-1 pb-20">
         {isHome ? (
           <CidadeBanner bannerUrl={cidade?.banner_url} cidadeNome={cidade?.nome} userName={firstName} />
-        ) : (
+        ) : activeTab !== "maps" ? (
           <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
             <Button
               variant="ghost"
@@ -196,7 +201,7 @@ const CidadePage = () => {
               {sectionTitles[activeTab]}
             </h1>
           </header>
-        )}
+        ) : null}
 
         <div className="animate-in fade-in duration-300">
           {renderSection()}
@@ -260,6 +265,18 @@ const CidadePage = () => {
             >
               <Megaphone className="h-5 w-5" />
               <span className="text-[9px] font-medium">Alô</span>
+            </button>
+
+            <button
+              onClick={() => switchTab("maps")}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
+                activeTab === "maps"
+                  ? "text-primary"
+                  : "text-gray-400 hover:text-white"
+              }`}
+            >
+              <Map className="h-5 w-5" />
+              <span className="text-[9px] font-medium">Maps</span>
             </button>
 
             <button

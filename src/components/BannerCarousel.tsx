@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Megaphone } from "lucide-react";
 import type { Banner } from "@/types/banner";
@@ -8,21 +8,68 @@ interface BannerCarouselProps {
   cidadeSlug?: string;
 }
 
+const SLIDE_WIDTH_PERCENT = 78;
+const PEEK_PERCENT = (100 - SLIDE_WIDTH_PERCENT) / 2;
+
 const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const isInfinite = banners.length >= 2;
+  const infiniteBanners = isInfinite ? [...banners, ...banners, ...banners] : banners;
+  const totalSlides = infiniteBanners.length;
+  const middleStart = isInfinite ? banners.length : 0;
+
+  const [currentIndex, setCurrentIndex] = useState(middleStart);
+  const [isJumping, setIsJumping] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [translateX, setTranslateX] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setContainerWidth(el.offsetWidth));
+    ro.observe(el);
+    setContainerWidth(el.offsetWidth);
+    return () => ro.disconnect();
+  }, []);
+
   const nextSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % banners.length);
-  }, [banners.length]);
+    if (isInfinite) {
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      setCurrentIndex((prev) => (prev + 1) % banners.length);
+    }
+  }, [isInfinite, banners.length]);
 
   const prevSlide = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
-  }, [banners.length]);
+    if (isInfinite) {
+      setCurrentIndex((prev) => prev - 1);
+    } else {
+      setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
+    }
+  }, [isInfinite, banners.length]);
+
+  // Scroll infinito: ao chegar nas bordas do bloco do meio, repõe sem transição
+  useEffect(() => {
+    if (!isInfinite || isDragging) return;
+    const t = setTimeout(() => {
+      if (currentIndex >= 2 * banners.length) {
+        setIsJumping(true);
+        setCurrentIndex(banners.length);
+        const t2 = setTimeout(() => setIsJumping(false), 50);
+        return () => clearTimeout(t2);
+      }
+      if (currentIndex < banners.length) {
+        setIsJumping(true);
+        setCurrentIndex(2 * banners.length - 1);
+        const t2 = setTimeout(() => setIsJumping(false), 50);
+        return () => clearTimeout(t2);
+      }
+    }, 520);
+    return () => clearTimeout(t);
+  }, [currentIndex, isInfinite, isDragging, banners.length]);
 
   // Auto-scroll every 4 seconds (pausado durante drag)
   useEffect(() => {
@@ -99,24 +146,26 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
     return null;
   }
 
+  const logicalIndex = currentIndex % banners.length;
+  const currentBanner = banners[logicalIndex];
+
   const handleBannerClick = (bannerId: string) => {
-    // Só navega se não foi um drag
     if (Math.abs(translateX) < 10) {
       navigate(`/cidade/${cidadeSlug}/banner/${bannerId}`);
     }
   };
 
-  // Calcular transform com drag offset
-  const baseTransform = -currentIndex * 100;
-  const dragOffset = containerRef.current 
-    ? (translateX / containerRef.current.offsetWidth) * 100 
-    : 0;
+  const GAP = 8;
+  const slideWidthPx = containerWidth * (SLIDE_WIDTH_PERCENT / 100);
+  const peekPx = containerWidth * (PEEK_PERCENT / 100);
+  // Centralizar o slide ativo: ele começa em peekPx para mostrar pedaço à esquerda e à direita
+  const transformPx = peekPx - currentIndex * (slideWidthPx + GAP) + translateX;
 
   return (
-    <div className="p-5">
-      <div 
+    <div className="px-4 py-5">
+      <div
         ref={containerRef}
-        className="relative w-full overflow-hidden rounded-[20px] touch-pan-y"
+        className="relative w-full overflow-hidden touch-pan-y"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -125,21 +174,24 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Slides Container */}
+        {/* Track: slides alinhados; transform centraliza o ativo (peek dos dois lados) */}
         <div
-          className={`flex ${isDragging ? '' : 'transition-transform duration-500 ease-out'}`}
-          style={{ 
-            transform: `translateX(${baseTransform + dragOffset}%)`,
-            cursor: isDragging ? 'grabbing' : 'grab'
+          className={`flex ${isDragging || isJumping ? "" : "transition-transform duration-500 ease-out"}`}
+          style={{
+            width: totalSlides * slideWidthPx + (totalSlides - 1) * GAP,
+            gap: GAP,
+            transform: `translateX(${transformPx}px)`,
+            cursor: isDragging ? "grabbing" : "grab",
           }}
         >
-          {banners.map((banner) => (
+          {infiniteBanners.map((banner, idx) => (
             <div
-              key={banner.id}
-              className="w-full flex-shrink-0 select-none"
+              key={`${banner.id}-${idx}`}
+              className="flex-shrink-0 select-none"
+              style={{ width: slideWidthPx }}
               onClick={() => handleBannerClick(banner.id)}
             >
-              <div className="aspect-[16/9] w-full">
+              <div className="aspect-[16/9] w-full rounded-2xl overflow-hidden shadow-md">
                 <img
                   src={banner.imagem_url}
                   alt={banner.titulo}
@@ -151,32 +203,35 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
           ))}
         </div>
 
-        {/* Botão Saiba Mais - canto esquerdo */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            const currentBanner = banners[currentIndex];
-            if (currentBanner) {
-              navigate(`/cidade/${cidadeSlug}/banner/${currentBanner.id}`);
-            }
-          }}
-          className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/80 text-[10px] font-medium hover:bg-black/60 transition-colors"
+        {/* Botão Saiba Mais - no card central (só no slide ativo visualmente) */}
+        <div
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none w-[78%] flex justify-start px-3 box-border"
+          style={{ maxWidth: "calc(78vw - 1rem)" }}
         >
-          Saiba mais
-        </button>
-
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (currentBanner) {
+                navigate(`/cidade/${cidadeSlug}/banner/${currentBanner.id}`);
+              }
+            }}
+            className="pointer-events-auto flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white/90 text-[10px] font-medium hover:bg-black/60 transition-colors"
+          >
+            Saiba mais
+          </button>
+        </div>
       </div>
 
-      {/* Linha abaixo do carrossel: dots (se houver mais de 1) + link Anunciar */}
+      {/* Linha abaixo do carrossel: dots à esquerda, Anunciar à direita */}
       <div className="flex items-center justify-between gap-3 pt-3 px-0.5">
         {banners.length > 1 ? (
-          <div className="flex justify-center gap-1.5 flex-1">
+          <div className="flex justify-start gap-1.5">
             {banners.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index)}
+                onClick={() => setCurrentIndex(isInfinite ? middleStart + index : index)}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  index === currentIndex
+                  index === logicalIndex
                     ? "bg-primary/70 w-4"
                     : "bg-muted-foreground/20 w-1.5 hover:bg-muted-foreground/40"
                 }`}

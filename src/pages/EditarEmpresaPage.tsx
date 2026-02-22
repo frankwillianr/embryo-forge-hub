@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import ImageUpload from "@/components/shared/ImageUpload";
 import VideoUpload from "@/components/shared/VideoUpload";
 import { CATEGORIAS_SERVICO } from "@/lib/categoriasServico";
+import { geocodeEndereco } from "@/lib/geocode";
 
 const categoriasOrdenadas = Object.entries(CATEGORIAS_SERVICO).sort((a, b) =>
   a[1].localeCompare(b[1], "pt-BR")
@@ -91,6 +92,22 @@ const EditarEmpresaPage = () => {
       return data;
     },
     enabled: !!empresaId,
+  });
+
+  // Nome da cidade para geocoding
+  const { data: cidade } = useQuery({
+    queryKey: ["cidade", empresa?.cidade_id],
+    queryFn: async () => {
+      if (!empresa?.cidade_id) return null;
+      const { data, error } = await supabase
+        .from("cidade")
+        .select("id, nome")
+        .eq("id", empresa.cidade_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!empresa?.cidade_id,
   });
 
   // Fetch fotos
@@ -242,6 +259,14 @@ const EditarEmpresaPage = () => {
       const categoriaPrincipal = categoriasSelecionadas[0] ?? null;
       const adicionais: string[] = categoriasSelecionadas.slice(1, MAX_CATEGORIAS);
 
+      const coords = await geocodeEndereco({
+        cep: cep.replace(/\D/g, "") || undefined,
+        rua: endereco || undefined,
+        numero: numero || undefined,
+        bairro: bairro || undefined,
+        cidade: cidade?.nome,
+      });
+
       const { data: updatedList, error: empresaError } = await supabase
         .from("rel_cidade_servico_empresa")
         .update({
@@ -256,6 +281,8 @@ const EditarEmpresaPage = () => {
           endereco_numero: numero || null,
           endereco_bairro: bairro || null,
           endereco_complemento: complemento || null,
+          latitude: coords?.latitude ?? null,
+          longitude: coords?.longitude ?? null,
           horario_funcionamento: horarios,
           banner_oferta_url: bannerOferta[0] || null,
           video_url: videoUrl || null,
@@ -297,6 +324,7 @@ const EditarEmpresaPage = () => {
       queryClient.invalidateQueries({ queryKey: ["minhas-empresas"] });
       queryClient.invalidateQueries({ queryKey: ["servico-empresas"] });
       queryClient.invalidateQueries({ queryKey: ["empresa-editar", empresaId] });
+      queryClient.invalidateQueries({ queryKey: ["mapa-empresas"] });
       toast({
         title: "Empresa atualizada!",
         description: "As informações foram salvas com sucesso.",
@@ -601,6 +629,9 @@ const EditarEmpresaPage = () => {
               onChange={(e) => setComplemento(e.target.value)}
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            O endereço é usado para exibir sua empresa no mapa da cidade (localização obtida automaticamente).
+          </p>
         </div>
 
         {/* Horário de funcionamento */}

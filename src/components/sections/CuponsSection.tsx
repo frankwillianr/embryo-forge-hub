@@ -147,7 +147,6 @@ const CuponsSection = ({ cidadeSlug }: CuponsSectionProps) => {
 
   const isLoading = loadingCupons || loadingEmpresas;
   const consecutivos = diasConsecutivos(checkins);
-  const cuponsBloqueados = !user || consecutivos < 7;
 
   const handleCopy = (e: React.MouseEvent, id: string, codigo: string) => {
     e.preventDefault();
@@ -181,19 +180,11 @@ const CuponsSection = ({ cidadeSlug }: CuponsSectionProps) => {
         </button>
       </div>
       <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
-        Check-ins consecutivos para desbloquear
+        Descontos na sua cidade
       </p>
 
-      <div className="overflow-x-auto scrollbar-hide relative">
-        {cuponsBloqueados && (
-          <div
-            className="absolute inset-0 z-10 cursor-not-allowed"
-            aria-hidden
-          />
-        )}
-        <div
-          className={`flex gap-3 px-5 pb-2 transition-[filter] ${cuponsBloqueados ? "blur-[2px] pointer-events-none select-none" : ""}`}
-        >
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="flex gap-3 px-5 pb-2">
           {isLoading ? (
             [1, 2, 3].map((i) => (
               <div key={i} className="flex-shrink-0 w-56 h-28 rounded-xl bg-muted/50 animate-pulse" />

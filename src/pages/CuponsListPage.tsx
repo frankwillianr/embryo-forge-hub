@@ -150,7 +150,6 @@ const CuponsListPage = () => {
   });
 
   const consecutivos = diasConsecutivos(checkins);
-  const cuponsBloqueados = !user || consecutivos < 7;
 
   const itensCupom: CupomItem[] = useMemo(() => {
     const empresaItens: CupomItem[] = cuponsEmpresa.map((e) => ({ tipo: "empresa" as const, data: e }));
@@ -226,17 +225,8 @@ const CuponsListPage = () => {
             </p>
           </div>
         ) : (
-          <div className="relative space-y-3">
-            {cuponsBloqueados && (
-              <div
-                className="absolute inset-0 z-10 cursor-not-allowed rounded-lg"
-                aria-hidden
-              />
-            )}
-            <div
-              className={`space-y-3 transition-[filter] ${cuponsBloqueados ? "blur-[2px] pointer-events-none select-none" : ""}`}
-            >
-              {itensFiltrados.map((item) => {
+          <div className="space-y-3">
+            {itensFiltrados.map((item) => {
                 if (item.tipo === "empresa") {
                   const e = item.data;
                   const descontoTexto = formatDesconto(e.cupom_valor, e.cupom_tipo);
@@ -333,7 +323,6 @@ const CuponsListPage = () => {
                   </div>
                 );
               })}
-            </div>
           </div>
         )}
       </div>

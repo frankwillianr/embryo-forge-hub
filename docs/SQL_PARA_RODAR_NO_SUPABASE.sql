@@ -134,6 +134,8 @@ CREATE TABLE IF NOT EXISTS cupom (
 CREATE INDEX IF NOT EXISTS idx_cupom_cidade ON cupom(cidade_id);
 CREATE INDEX IF NOT EXISTS idx_cupom_ativo ON cupom(ativo) WHERE ativo = true;
 
+ALTER TABLE cupom ADD COLUMN IF NOT EXISTS categoria TEXT;
+
 ALTER TABLE cupom ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Anyone can view cupom list" ON cupom;
@@ -142,10 +144,11 @@ CREATE POLICY "Authenticated can view cupom"
   ON cupom FOR SELECT TO authenticated
   USING (ativo = true);
 
+-- View sempre com as mesmas colunas (incluindo categoria) para evitar erro "cannot drop columns from view" ao reexecutar
 CREATE OR REPLACE VIEW cupom_public
   WITH (security_invoker = false)
 AS
-  SELECT id, cidade_id, titulo, descricao, codigo_censurado, checkins_necessarios, ativo, created_at
+  SELECT id, cidade_id, titulo, descricao, codigo_censurado, checkins_necessarios, ativo, created_at, categoria
   FROM cupom WHERE ativo = true;
 
 GRANT SELECT ON cupom_public TO anon;
@@ -247,6 +250,13 @@ ALTER TABLE rel_cidade_servico_empresa
   ADD COLUMN IF NOT EXISTS cupom_valor NUMERIC(10, 2),
   ADD COLUMN IF NOT EXISTS cupom_tipo TEXT CHECK (cupom_tipo IS NULL OR cupom_tipo IN ('real', 'porcentagem'));
 
+-- Lat/long para exibir empresas no mapa (pins)
+ALTER TABLE rel_cidade_servico_empresa
+  ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION,
+  ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
+COMMENT ON COLUMN rel_cidade_servico_empresa.latitude IS 'Latitude para exibir a empresa no mapa';
+COMMENT ON COLUMN rel_cidade_servico_empresa.longitude IS 'Longitude para exibir a empresa no mapa';
+
 -- Policy para poder EDITAR a empresa (salvar alterações)
 ALTER TABLE rel_cidade_servico_empresa ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can update own empresa" ON rel_cidade_servico_empresa;
@@ -301,3 +311,38 @@ ALTER TABLE cupom ADD COLUMN IF NOT EXISTS categoria TEXT;
 CREATE OR REPLACE VIEW cupom_public WITH (security_invoker = false) AS
   SELECT id, cidade_id, titulo, descricao, codigo_censurado, checkins_necessarios, ativo, created_at, categoria
   FROM cupom WHERE ativo = true;
+
+
+-- -----------------------------------------------------------------------------
+-- Realtime: mensagens do chat de orçamento em tempo real
+-- -----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'solicitacao_orcamento_mensagem'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE solicitacao_orcamento_mensagem;
+  END IF;
+END $$;
+
+
+-- -----------------------------------------------------------------------------
+-- Leitura por participante (checkmarks "visualizado" no chat)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS solicitacao_orcamento_conversa_leitura (
+  conversa_id UUID NOT NULL REFERENCES solicitacao_orcamento_conversa(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  read_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (conversa_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_orcamento_leitura_conversa ON solicitacao_orcamento_conversa_leitura(conversa_id);
+ALTER TABLE solicitacao_orcamento_conversa_leitura ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Read as participant" ON solicitacao_orcamento_conversa_leitura;
+CREATE POLICY "Read as participant" ON solicitacao_orcamento_conversa_leitura FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM solicitacao_orcamento_conversa c JOIN solicitacao_orcamento so ON so.id = c.solicitacao_id WHERE c.id = conversa_id AND (c.user_id = auth.uid() OR so.user_id = auth.uid())));
+DROP POLICY IF EXISTS "Insert own read" ON solicitacao_orcamento_conversa_leitura;
+CREATE POLICY "Insert own read" ON solicitacao_orcamento_conversa_leitura FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Update own read" ON solicitacao_orcamento_conversa_leitura;
+CREATE POLICY "Update own read" ON solicitacao_orcamento_conversa_leitura FOR UPDATE TO authenticated USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'solicitacao_orcamento_conversa_leitura') THEN ALTER PUBLICATION supabase_realtime ADD TABLE solicitacao_orcamento_conversa_leitura; END IF; END $$;

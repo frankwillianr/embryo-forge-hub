@@ -21,6 +21,7 @@ import VideoUpload from "@/components/shared/VideoUpload";
 import EmpresaPricingInfo from "@/components/servicos/EmpresaPricingInfo";
 import EmpresaPreviewModal from "@/components/servicos/EmpresaPreviewModal";
 import { CATEGORIAS_SERVICO } from "@/lib/categoriasServico";
+import { geocodeEndereco } from "@/lib/geocode";
 
 interface HorarioFuncionamento {
   dia: string;
@@ -201,6 +202,14 @@ const NovaEmpresaPage = () => {
       const categoriaPrincipal = categoriasSelecionadas[0];
       const adicionais = categoriasSelecionadas.slice(1, MAX_CATEGORIAS);
 
+      const coords = await geocodeEndereco({
+        cep: cep.replace(/\D/g, "") || undefined,
+        rua: endereco || undefined,
+        numero: numero || undefined,
+        bairro: bairro || undefined,
+        cidade: cidade.nome,
+      });
+
       const { data: empresa, error: empresaError } = await supabase
         .from("rel_cidade_servico_empresa")
         .insert({
@@ -217,6 +226,8 @@ const NovaEmpresaPage = () => {
           endereco_numero: numero || null,
           endereco_bairro: bairro || null,
           endereco_complemento: complemento || null,
+          latitude: coords?.latitude ?? null,
+          longitude: coords?.longitude ?? null,
           horario_funcionamento: horarios,
           banner_oferta_url: bannerOferta[0] || null,
           video_url: videoUrl || null,
@@ -574,6 +585,9 @@ const NovaEmpresaPage = () => {
               onChange={(e) => setComplemento(e.target.value)}
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            O endereço é usado para exibir sua empresa no mapa da cidade (localização obtida automaticamente).
+          </p>
         </div>
 
         {/* Horário de funcionamento */}

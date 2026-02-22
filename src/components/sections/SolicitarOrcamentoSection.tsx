@@ -1,9 +1,17 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { FileText, Inbox, Plus, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -37,13 +45,33 @@ const CATEGORIA_LABEL: Record<string, string> = {
   outros: "Outros",
 };
 
+type SolicitacaoRow = {
+  id: string;
+  categoria: string;
+  descricao: string | null;
+  status: string;
+  created_at: string;
+  cep: string | null;
+  nome_solicitante_censurado: string | null;
+  bairro: string | null;
+  user_id: string | null;
+};
+
 interface SolicitarOrcamentoSectionProps {
   cidadeSlug?: string;
 }
 
+const STATUS_LABEL: Record<string, string> = {
+  aberta: "Aberta",
+  em_andamento: "Em andamento",
+  concluida: "Concluída",
+  cancelada: "Cancelada",
+};
+
 const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [modalSolicitacao, setModalSolicitacao] = useState<SolicitacaoRow | null>(null);
 
   const { data: cidade } = useQuery({
     queryKey: ["cidade-id", cidadeSlug],
@@ -125,7 +153,11 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
               {solicitacoes.map((s) => (
                 <div
                   key={s.id}
-                  className="flex-shrink-0 w-56 p-3 rounded-xl border border-border bg-card text-left flex flex-col"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setModalSolicitacao(s)}
+                  onKeyDown={(e) => e.key === "Enter" && setModalSolicitacao(s)}
+                  className="flex-shrink-0 w-56 p-3 rounded-xl border border-border bg-card text-left flex flex-col cursor-pointer hover:bg-muted/30 transition-colors"
                 >
                   <p className="text-xs font-medium text-primary">
                     {CATEGORIA_LABEL[s.categoria] || s.categoria}
@@ -143,7 +175,8 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
                       size="sm"
                       variant="ghost"
                       className="mt-2 w-full text-xs h-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (user) navigate(`/cidade/${cidadeSlug}/orcamentos/${s.id}/enviar`);
                         else navigate(`/cidade/${cidadeSlug}/auth?redirect=${encodeURIComponent(`/cidade/${cidadeSlug}/orcamentos`)}`);
                       }}
@@ -234,6 +267,70 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
           </Button>
         </div>
       )}
+
+      {/* Modal com dados completos do orçamento */}
+      <Dialog open={!!modalSolicitacao} onOpenChange={(open) => !open && setModalSolicitacao(null)}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-base">
+              {modalSolicitacao ? CATEGORIA_LABEL[modalSolicitacao.categoria] || modalSolicitacao.categoria : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {modalSolicitacao && (
+            <div className="space-y-4 text-sm">
+              <div>
+                <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide mb-1">Descrição</p>
+                <p className="text-foreground whitespace-pre-wrap">{modalSolicitacao.descricao || "—"}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Status</p>
+                  <p className="text-foreground">{STATUS_LABEL[modalSolicitacao.status] || modalSolicitacao.status}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Data</p>
+                  <p className="text-foreground">{format(new Date(modalSolicitacao.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</p>
+                </div>
+                {modalSolicitacao.bairro && (
+                  <div>
+                    <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Bairro</p>
+                    <p className="text-foreground">{modalSolicitacao.bairro}</p>
+                  </div>
+                )}
+                {modalSolicitacao.cep && (
+                  <div>
+                    <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide mb-0.5">CEP</p>
+                    <p className="text-foreground font-mono">{String(modalSolicitacao.cep).replace(/(\d{5})(\d{3})/, "$1-$2")}</p>
+                  </div>
+                )}
+                <div className={modalSolicitacao.bairro || modalSolicitacao.cep ? "col-span-2" : ""}>
+                  <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide mb-0.5">Solicitado por</p>
+                  <p className="text-foreground">{modalSolicitacao.nome_solicitante_censurado || "Anônimo"}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="flex-row gap-2 sm:gap-2">
+            {modalSolicitacao && user?.id !== modalSolicitacao.user_id && (
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  setModalSolicitacao(null);
+                  if (user) navigate(`/cidade/${cidadeSlug}/orcamentos/${modalSolicitacao.id}/enviar`);
+                  else navigate(`/cidade/${cidadeSlug}/auth?redirect=${encodeURIComponent(`/cidade/${cidadeSlug}/orcamentos`)}`);
+                }}
+              >
+                <Send className="h-3.5 w-3 mr-1.5" />
+                Enviar orçamento
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setModalSolicitacao(null)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
