@@ -257,6 +257,11 @@ ALTER TABLE rel_cidade_servico_empresa
 COMMENT ON COLUMN rel_cidade_servico_empresa.latitude IS 'Latitude para exibir a empresa no mapa';
 COMMENT ON COLUMN rel_cidade_servico_empresa.longitude IS 'Longitude para exibir a empresa no mapa';
 
+-- Logomarca da empresa (URL da imagem)
+ALTER TABLE rel_cidade_servico_empresa
+  ADD COLUMN IF NOT EXISTS logomarca_url TEXT;
+COMMENT ON COLUMN rel_cidade_servico_empresa.logomarca_url IS 'URL da logomarca da empresa (upload opcional)';
+
 -- Policy para poder EDITAR a empresa (salvar alterações)
 ALTER TABLE rel_cidade_servico_empresa ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can update own empresa" ON rel_cidade_servico_empresa;

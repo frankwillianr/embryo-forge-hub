@@ -225,3 +225,10 @@ All colors MUST be HSL.
     transform: scale(1);
   }
 }
+
+/* Marcador do mapa: só a bolinha, sem quadrado em volta */
+.mapa-bola-wrapper.leaflet-div-icon {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}

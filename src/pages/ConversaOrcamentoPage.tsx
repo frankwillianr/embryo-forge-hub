@@ -249,8 +249,8 @@ const ConversaOrcamentoPage = () => {
   const cepFormatado = formatarCep(solicitacao.cep);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-safe">
-      <header className="sticky top-0 z-10 flex items-center gap-2 p-3 pt-safe border-b border-border bg-background shrink-0">
+    <div className="h-dvh bg-background flex flex-col overflow-hidden pb-safe">
+      <header className="shrink-0 flex items-center gap-2 p-3 pt-safe border-b border-border bg-background">
         <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate(`/cidade/${slug}/orcamentos`)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
@@ -263,50 +263,50 @@ const ConversaOrcamentoPage = () => {
         </div>
       </header>
 
-      {/* Card de informações fixo (sem rolagem) */}
-      <div className="shrink-0 border-b border-border bg-card max-h-[220px] overflow-y-auto">
-        <div className="p-4 flex flex-col gap-3">
-          <div>
+      {/* Card de informações compacto (sem scroll, cabe na tela) */}
+      <div className="shrink-0 border-b border-border bg-card overflow-hidden">
+        <div className="p-3 flex flex-col gap-2">
+          <div className="min-w-0">
             <p className="text-[10px] font-medium text-primary uppercase tracking-wide">Descrição</p>
-            <p className="text-sm text-foreground mt-0.5">{solicitacao.descricao}</p>
+            <p className="text-xs text-foreground mt-0.5 line-clamp-2">{solicitacao.descricao}</p>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Categoria</p>
-              <p className="text-foreground font-medium">{categoriaLabel}</p>
+              <span className="text-muted-foreground">Categoria </span>
+              <span className="text-foreground font-medium">{categoriaLabel}</span>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Data da solicitação</p>
-              <p className="text-foreground">{format(new Date(solicitacao.created_at), "dd/MM/yyyy", { locale: ptBR })}</p>
+              <span className="text-muted-foreground">Data </span>
+              <span className="text-foreground">{format(new Date(solicitacao.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
             </div>
             {solicitacao.bairro && (
               <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Bairro</p>
-                <p className="text-foreground">{solicitacao.bairro}</p>
+                <span className="text-muted-foreground">Bairro </span>
+                <span className="text-foreground">{solicitacao.bairro}</span>
               </div>
             )}
             {cepFormatado && (
               <div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">CEP</p>
-                <p className="text-foreground font-mono">{cepFormatado}</p>
+                <span className="text-muted-foreground">CEP </span>
+                <span className="text-foreground font-mono">{cepFormatado}</span>
               </div>
             )}
             <div className="col-span-2">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cliente</p>
-              <p className="text-foreground">{nomeCliente || solicitacao.nome_solicitante_censurado || "Anônimo"}</p>
+              <span className="text-muted-foreground">Cliente </span>
+              <span className="text-foreground">{nomeCliente || solicitacao.nome_solicitante_censurado || "Anônimo"}</span>
             </div>
             {chatIniciado && nomeEmpresa && (
               <div className="col-span-2">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Empresa respondendo</p>
-                <p className="text-foreground">{nomeEmpresa}</p>
+                <span className="text-muted-foreground">Empresa </span>
+                <span className="text-foreground">{nomeEmpresa}</span>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Área de mensagens (única que rola) */}
-      <div className="flex-1 flex flex-col min-h-0">
+      {/* Área de mensagens (única que rola, dentro da viewport) */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {loadingMensagens ? (
           <div className="flex-1 flex items-center justify-center p-6">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -317,7 +317,7 @@ const ConversaOrcamentoPage = () => {
             <p className="text-xs text-muted-foreground/80 mt-1">Envie uma mensagem para iniciar.</p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-2 space-y-2.5">
             {mensagens.map((m) => {
               const isEu = m.user_id === user?.id;
               const nomeRemetente = isEu
@@ -329,20 +329,20 @@ const ConversaOrcamentoPage = () => {
               return (
                 <div key={m.id} className={`flex ${isEu ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                    className={`max-w-[70%] min-w-0 rounded-2xl px-3 py-1 text-sm shadow-sm ${
                       isEu
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
-                        : "bg-muted text-foreground rounded-bl-sm"
+                        ? "bg-[#007AFF] text-white rounded-br-md"
+                        : "bg-[#E9E9EB] text-[#1C1C1E] dark:bg-[#2C2C2E] dark:text-[#E5E5EA] rounded-bl-md"
                     }`}
                   >
-                    <p className="text-[10px] font-medium opacity-90 mb-0.5">{nomeRemetente}</p>
-                    <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                    <div className="flex items-center justify-end gap-1.5 mt-1">
-                      <span className={`text-[10px] ${isEu ? "opacity-80" : "text-muted-foreground"}`}>
+                    <p className="text-[10px] font-semibold opacity-95 mb-0.5 leading-none">{nomeRemetente}</p>
+                    <p className="whitespace-pre-wrap break-words leading-tight text-[13px]">{m.body}</p>
+                    <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                      <span className={`text-[10px] ${isEu ? "text-white/80" : "text-muted-foreground"}`}>
                         {format(new Date(m.created_at), "HH:mm", { locale: ptBR })}
                       </span>
                       {isEu && (
-                        <span className={visualizado ? "opacity-100" : "opacity-50"}>
+                        <span className={visualizado ? "text-white" : "text-white/50"}>
                           <CheckCheck className="h-3 w-3" />
                         </span>
                       )}

@@ -15,20 +15,30 @@ import { ArrowLeft, Loader2, MapPin, Clock, MessageCircle, Instagram, ExternalLi
 import { supabase } from "@/integrations/supabase/client";
 import { CATEGORIAS_SERVICO } from "@/lib/categoriasServico";
 
-// Ícone padrão do Leaflet quebra com bundlers; usar um marcador customizado
-const createDefaultIcon = () =>
-  L.icon({
-    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
+const BOLA_SIZE = 44;
+const BOLA_ANCHOR = BOLA_SIZE / 2;
+
+/** Ícone do marcador: bolinha com logo (ou inicial do nome se não tiver logo) */
+function createBolaLogoIcon(empresa: EmpresaMapa): L.DivIcon {
+  const escapedUrl = empresa.logomarca_url
+    ? empresa.logomarca_url.replace(/"/g, "&quot;").replace(/</g, "&lt;")
+    : "";
+  const inicial = ((empresa.nome?.trim() || "?")[0].toUpperCase()).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const html = empresa.logomarca_url
+    ? `<div class="mapa-bola-logo" style="width:${BOLA_SIZE}px;height:${BOLA_SIZE}px;border-radius:50%;overflow:hidden;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);background:#e5e7eb;"><img src="${escapedUrl}" alt="" style="width:100%;height:100%;object-fit:cover;" /></div>`
+    : `<div class="mapa-bola-logo mapa-bola-fallback" style="width:${BOLA_SIZE}px;height:${BOLA_SIZE}px;border-radius:50%;overflow:hidden;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);background:#6366f1;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">${inicial}</div>`;
+  return L.divIcon({
+    html,
+    className: "mapa-bola-wrapper leaflet-div-icon",
+    iconSize: [BOLA_SIZE, BOLA_SIZE],
+    iconAnchor: [BOLA_ANCHOR, BOLA_ANCHOR],
   });
+}
 
 const GV_CENTER: [number, number] = [-18.8544, -41.9453];
 const GV_ZOOM = 13;
+const GV_MIN_ZOOM = 14;
+const GV_MAX_ZOOM = 18;
 
 type EmpresaMapa = {
   id: string;
@@ -36,6 +46,7 @@ type EmpresaMapa = {
   categoria: string;
   latitude: number;
   longitude: number;
+  logomarca_url: string | null;
 };
 
 type HorarioDia = { dia: string; aberto: boolean; abertura: string; fechamento: string };
@@ -76,6 +87,18 @@ function AjustarBounds({ empresas }: { empresas: EmpresaMapa[] }) {
   return null;
 }
 
+function AplicarLimitesZoom() {
+  const map = useMap();
+  useEffect(() => {
+    map.setMinZoom(GV_MIN_ZOOM);
+    map.setMaxZoom(GV_MAX_ZOOM);
+    const curZoom = map.getZoom();
+    if (curZoom < GV_MIN_ZOOM) map.setZoom(GV_MIN_ZOOM);
+    if (curZoom > GV_MAX_ZOOM) map.setZoom(GV_MAX_ZOOM);
+  }, [map]);
+  return null;
+}
+
 export default function MapaEmpresasView({
   cidadeId,
   cidadeSlug,
@@ -90,7 +113,7 @@ export default function MapaEmpresasView({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rel_cidade_servico_empresa")
-        .select("id, nome, categoria, latitude, longitude")
+        .select("id, nome, categoria, latitude, longitude, logomarca_url")
         .eq("cidade_id", cidadeId)
         .eq("status", "ativo")
         .not("latitude", "is", null)
@@ -120,8 +143,6 @@ export default function MapaEmpresasView({
     },
     enabled: !!selectedEmpresaId,
   });
-
-  const defaultIcon = createDefaultIcon();
 
   const formatEndereco = (e: EmpresaCompleta) => {
     const parts = [e.endereco_rua, e.endereco_numero, e.endereco_bairro].filter(Boolean);
@@ -164,9 +185,12 @@ export default function MapaEmpresasView({
         <MapContainer
           center={GV_CENTER}
           zoom={GV_ZOOM}
+          minZoom={GV_MIN_ZOOM}
+          maxZoom={GV_MAX_ZOOM}
           className="w-full h-full z-0"
           scrollWheelZoom
         >
+          <AplicarLimitesZoom />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -175,7 +199,7 @@ export default function MapaEmpresasView({
             <Marker
               key={empresa.id}
               position={[empresa.latitude, empresa.longitude]}
-              icon={defaultIcon}
+              icon={createBolaLogoIcon(empresa)}
               eventHandlers={{
                 click: () => setSelectedEmpresaId(empresa.id),
               }}

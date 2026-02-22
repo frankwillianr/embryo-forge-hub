@@ -61,6 +61,7 @@ const EditarEmpresaPage = () => {
   const [bairro, setBairro] = useState("");
   const [complemento, setComplemento] = useState("");
   const [fotos, setFotos] = useState<string[]>([]);
+  const [logomarca, setLogomarca] = useState<string[]>([]);
   const [bannerOferta, setBannerOferta] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [loadingCep, setLoadingCep] = useState(false);
@@ -139,6 +140,7 @@ const EditarEmpresaPage = () => {
     setNumero(empresa.endereco_numero || "");
     setBairro(empresa.endereco_bairro || "");
     setComplemento(empresa.endereco_complemento || "");
+    setLogomarca(empresa.logomarca_url ? [empresa.logomarca_url] : []);
     setBannerOferta(empresa.banner_oferta_url ? [empresa.banner_oferta_url] : []);
     setVideoUrl(empresa.video_url || null);
     const adicionais = (empresa.categorias_adicionais as string[] | null) || [];
@@ -284,6 +286,7 @@ const EditarEmpresaPage = () => {
           latitude: coords?.latitude ?? null,
           longitude: coords?.longitude ?? null,
           horario_funcionamento: horarios,
+          logomarca_url: logomarca[0] || null,
           banner_oferta_url: bannerOferta[0] || null,
           video_url: videoUrl || null,
           cupom_nome: cupomNome.trim() || null,
@@ -435,6 +438,21 @@ const EditarEmpresaPage = () => {
             maxImages={6}
             bucket="servicos"
             folder="empresas"
+          />
+        </div>
+
+        {/* Logomarca */}
+        <div className="space-y-2">
+          <Label>Logomarca (opcional)</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Imagem da marca/logo da empresa (recomendado quadrado)
+          </p>
+          <ImageUpload
+            images={logomarca}
+            onChange={setLogomarca}
+            maxImages={1}
+            bucket="servicos"
+            folder="logomarcas"
           />
         </div>
 

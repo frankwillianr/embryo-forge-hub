@@ -355,7 +355,7 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
   }, [categoriaSelecionada]);
 
   return (
-    <div className="py-6">
+    <div className="pt-6 pb-2">
       {/* Header com busca integrada */}
       <div className="px-5 mb-5">
         <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5 mb-0.5">
@@ -402,7 +402,7 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
       </div>
 
       {/* Destaques */}
-      <div className="px-5 mb-6">
+      <div className="px-5 mb-4">
         <div className="grid grid-cols-2 gap-2.5">
           <button
             onClick={() => handleClick("veiculos")}
@@ -428,8 +428,8 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </div>
       </div>
 
-      {/* Categorias - Tabs estilo iOS (rolagem horizontal; acompanha a categoria ao rolar o grid) */}
-      <div className="overflow-x-auto scrollbar-hide mb-4 scroll-smooth">
+      {/* Categorias - Tabs + banner + grid (sempre visíveis) */}
+      <div className="overflow-x-auto scrollbar-hide mb-3 scroll-smooth">
         <div className="flex gap-0 px-5 border-b border-border/30">
           {categorias.map((cat, index) => (
             <button
@@ -452,14 +452,13 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </div>
       </div>
 
-      {/* Banner de ofertas da categoria */}
       <BannerCarousel
         key={categoriaSelecionada}
         banners={bannersCategoria}
         cidadeSlug={cidadeSlug}
       />
 
-      {/* Grid de serviços: rolagem horizontal por categoria (ao rolar muda a categoria) */}
+      {/* Grid de serviços */}
       <div
         ref={gridScrollRef}
         className="overflow-x-auto overflow-y-hidden scrollbar-hide snap-x snap-mandatory scroll-smooth"
@@ -469,15 +468,15 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
           {categorias.map((cat) => (
             <div
               key={cat.id}
-              className="flex-shrink-0 snap-start px-5"
+              className="flex-shrink-0 snap-start px-5 pb-2"
               style={{ width: `${100 / categorias.length}%`, minWidth: `${100 / categorias.length}%` }}
             >
-              <div className="grid grid-cols-4 gap-y-6 gap-x-3">
+              <div className="grid grid-cols-4 gap-y-4 gap-x-3">
                 {cat.servicos.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => handleClick(item.id)}
-                    className="flex flex-col items-center gap-2 active:scale-95 transition-transform"
+                    className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
                   >
                     {item.icon ? (
                       <img
