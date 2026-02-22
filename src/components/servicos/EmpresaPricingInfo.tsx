@@ -17,7 +17,7 @@ const EmpresaPricingInfo = ({ valorAnual }: EmpresaPricingInfoProps) => {
     {
       icon: Image,
       title: "Banner na Home",
-      text: "Seu banner promocional aparece na seção de Ofertas da Cidade, direto na página inicial — a área mais visitada do app!",
+      text: "Seu banner promocional aparece no Mural de ofertas, direto na página inicial — a área mais visitada do app!",
     },
     {
       icon: Eye,

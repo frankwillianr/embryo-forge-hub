@@ -88,6 +88,8 @@ const AuthPage = () => {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const homePath = `/cidade/${slug}`;
+  const redirectUrl = searchParams.get("redirect");
+  const destination = redirectUrl && redirectUrl.startsWith("/cidade/") ? redirectUrl : homePath;
 
   // Fetch city data for banner
   const { data: cidade } = useQuery({
@@ -105,9 +107,9 @@ const AuthPage = () => {
   useEffect(() => {
     // Only redirect if user is logged in AND we're not in the middle of signup
     if (!authLoading && user && !isSigningUp) {
-      navigate(homePath);
+      navigate(destination);
     }
-  }, [user, authLoading, navigate, homePath, isSigningUp]);
+  }, [user, authLoading, navigate, destination, isSigningUp]);
 
   const formatCpf = (value: string) => {
     return value

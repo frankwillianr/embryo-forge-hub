@@ -6,37 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-const categoriasMeta: Record<string, { nome: string; icone: string }> = {
-  entregador: { nome: "Entregador", icone: "🚴" },
-  motorista: { nome: "Motorista", icone: "🚗" },
-  mudancas: { nome: "Mudanças", icone: "🚚" },
-  salao: { nome: "Salão de Beleza", icone: "💇" },
-  manicure: { nome: "Manicure", icone: "💅" },
-  barbeiro: { nome: "Barbeiro", icone: "✂️" },
-  reparos: { nome: "Reparos", icone: "🔧" },
-  eletricista: { nome: "Eletricista", icone: "⚡" },
-  encanador: { nome: "Encanador", icone: "🔧" },
-  pintor: { nome: "Pintor", icone: "🎨" },
-  chaveiro: { nome: "Chaveiro", icone: "🔑" },
-  vidraceiro: { nome: "Vidraceiro", icone: "🪟" },
-  limpeza: { nome: "Limpeza", icone: "✨" },
-  diarista: { nome: "Diarista", icone: "🏠" },
-  dedetizacao: { nome: "Dedetização", icone: "🐛" },
-  obras: { nome: "Obras", icone: "🏗️" },
-  serralheria: { nome: "Serralheria", icone: "🔩" },
-  marceneiro: { nome: "Marceneiro", icone: "🪑" },
-  jardinagem: { nome: "Jardinagem", icone: "🌳" },
-  pet: { nome: "Pet", icone: "🐕" },
-  informatica: { nome: "Informática", icone: "💻" },
-  "ar-condicionado": { nome: "Ar Condicionado", icone: "❄️" },
-  personal: { nome: "Personal Trainer", icone: "💪" },
-  nutricionista: { nome: "Nutricionista", icone: "🍎" },
-  massagista: { nome: "Massagista", icone: "💆" },
-  aulas: { nome: "Aulas Particulares", icone: "📚" },
-  fotografo: { nome: "Fotógrafo", icone: "📸" },
-  eventos: { nome: "Eventos", icone: "🎉" },
-  costura: { nome: "Costura", icone: "🧵" },
-};
+import { CATEGORIAS_SERVICO_META } from "@/lib/categoriasServico";
 
 const ServicoCategoriaPage = () => {
   const { slug, categoriaId } = useParams<{ slug: string; categoriaId: string }>();
@@ -52,8 +22,8 @@ const ServicoCategoriaPage = () => {
     navigate(`/cidade/${slug}/servicos/${categoriaId}/novo`);
   };
 
-  const categoriaMeta = categoriasMeta[categoriaId || ""] || {
-    nome: categoriaId,
+  const categoriaMeta = CATEGORIAS_SERVICO_META[categoriaId || ""] || {
+    nome: categoriaId || "Serviço",
     icone: "📦",
   };
 
@@ -72,7 +42,7 @@ const ServicoCategoriaPage = () => {
     enabled: !!slug,
   });
 
-  // Buscar empresas da categoria
+  // Buscar empresas da categoria (principal ou em categorias_adicionais)
   const { data: empresas, isLoading } = useQuery({
     queryKey: ["servico-empresas", cidade?.id, categoriaId, searchTerm],
     queryFn: async () => {
@@ -83,7 +53,7 @@ const ServicoCategoriaPage = () => {
           fotos:rel_cidade_servico_empresa_foto(id, url, ordem)
         `)
         .eq("cidade_id", cidade!.id)
-        .eq("categoria", categoriaId)
+        .or(`categoria.eq.${categoriaId},categorias_adicionais.cs.{"${categoriaId}"}`)
         .eq("status", "ativo")
         .order("nome", { ascending: true });
 

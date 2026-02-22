@@ -165,36 +165,36 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
           Saiba mais
         </button>
 
-        {/* Botão Anunciar - canto direito */}
+      </div>
+
+      {/* Linha abaixo do carrossel: dots (se houver mais de 1) + link Anunciar */}
+      <div className="flex items-center justify-between gap-3 pt-3 px-0.5">
+        {banners.length > 1 ? (
+          <div className="flex justify-center gap-1.5 flex-1">
+            {banners.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  index === currentIndex
+                    ? "bg-primary/70 w-4"
+                    : "bg-muted-foreground/20 w-1.5 hover:bg-muted-foreground/40"
+                }`}
+                aria-label={`Ir para slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        ) : (
+          <span />
+        )}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/cidade/${cidadeSlug}/banner/novo`);
-          }}
-          className="absolute bottom-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/80 text-[10px] font-medium hover:bg-black/60 transition-colors"
+          onClick={() => navigate(`/cidade/${cidadeSlug}/banner/novo`)}
+          className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
         >
-          <Megaphone className="h-3 w-3" />
+          <Megaphone className="h-3.5 w-3.5" />
           Anunciar
         </button>
       </div>
-
-      {/* Dots Indicator - abaixo da imagem */}
-      {banners.length > 1 && (
-        <div className="flex justify-center gap-1.5 pt-3">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                index === currentIndex
-                  ? "bg-primary/70 w-4"
-                  : "bg-muted-foreground/20 w-1.5 hover:bg-muted-foreground/40"
-              }`}
-              aria-label={`Ir para slide ${index + 1}`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 };

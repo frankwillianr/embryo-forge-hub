@@ -1,16 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Clock } from "lucide-react";
+import { ArrowLeft, Loader2, Clock, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ImageUpload from "@/components/shared/ImageUpload";
 import VideoUpload from "@/components/shared/VideoUpload";
+import { CATEGORIAS_SERVICO } from "@/lib/categoriasServico";
+
+const categoriasOrdenadas = Object.entries(CATEGORIAS_SERVICO).sort((a, b) =>
+  a[1].localeCompare(b[1], "pt-BR")
+);
+const MAX_CATEGORIAS = 3;
 
 interface HorarioFuncionamento {
   dia: string;
@@ -50,6 +63,12 @@ const EditarEmpresaPage = () => {
   const [bannerOferta, setBannerOferta] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [loadingCep, setLoadingCep] = useState(false);
+  const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<string[]>([]);
+  const [buscaCategoria, setBuscaCategoria] = useState("");
+  const categoriasInicializadasRef = useRef(false);
+  const [cupomNome, setCupomNome] = useState("");
+  const [cupomValor, setCupomValor] = useState("");
+  const [cupomTipo, setCupomTipo] = useState<"real" | "porcentagem">("porcentagem");
   const [horarios, setHorarios] = useState<HorarioFuncionamento[]>(
     diasSemana.map((dia) => ({
       dia,
@@ -89,25 +108,65 @@ const EditarEmpresaPage = () => {
     enabled: !!empresaId,
   });
 
-  // Populate form when data loads
+  // Populate form only once when empresa loads (evita sobrescrever categorias ao refetch)
   useEffect(() => {
-    if (empresa) {
-      setNome(empresa.nome || "");
-      setDescricao(empresa.descricao || "");
-      setWhatsapp(formatWhatsapp(empresa.whatsapp || ""));
-      setInstagram(empresa.instagram || "");
-      setCep(empresa.endereco_cep || "");
-      setEndereco(empresa.endereco_rua || "");
-      setNumero(empresa.endereco_numero || "");
-      setBairro(empresa.endereco_bairro || "");
-      setComplemento(empresa.endereco_complemento || "");
-      setBannerOferta(empresa.banner_oferta_url ? [empresa.banner_oferta_url] : []);
-      setVideoUrl(empresa.video_url || null);
-      if (empresa.horario_funcionamento) {
-        setHorarios(empresa.horario_funcionamento as HorarioFuncionamento[]);
-      }
+    if (!empresa || empresa.id !== empresaId) return;
+    if (categoriasInicializadasRef.current) return;
+    categoriasInicializadasRef.current = true;
+    setNome(empresa.nome || "");
+    setDescricao(empresa.descricao || "");
+    setWhatsapp(formatWhatsapp(empresa.whatsapp || ""));
+    setInstagram(empresa.instagram || "");
+    setCep(empresa.endereco_cep || "");
+    setEndereco(empresa.endereco_rua || "");
+    setNumero(empresa.endereco_numero || "");
+    setBairro(empresa.endereco_bairro || "");
+    setComplemento(empresa.endereco_complemento || "");
+    setBannerOferta(empresa.banner_oferta_url ? [empresa.banner_oferta_url] : []);
+    setVideoUrl(empresa.video_url || null);
+    const adicionais = (empresa.categorias_adicionais as string[] | null) || [];
+    setCategoriasSelecionadas(
+      empresa.categoria ? [empresa.categoria, ...adicionais].slice(0, MAX_CATEGORIAS) : adicionais.slice(0, MAX_CATEGORIAS)
+    );
+    if (empresa.horario_funcionamento) {
+      setHorarios(empresa.horario_funcionamento as HorarioFuncionamento[]);
     }
-  }, [empresa]);
+    setCupomNome(empresa.cupom_nome || "");
+    setCupomValor(empresa.cupom_valor != null ? String(empresa.cupom_valor) : "");
+    setCupomTipo((empresa.cupom_tipo === "real" ? "real" : "porcentagem") as "real" | "porcentagem");
+  }, [empresa, empresaId]);
+
+  // Reset flag ao trocar de empresa
+  useEffect(() => {
+    categoriasInicializadasRef.current = false;
+  }, [empresaId]);
+
+  const toggleCategoria = (id: string) => {
+    setCategoriasSelecionadas((prev) => {
+      if (prev.includes(id)) return prev.filter((c) => c !== id);
+      if (prev.length >= MAX_CATEGORIAS) return prev;
+      return [...prev, id];
+    });
+    setBuscaCategoria("");
+  };
+
+  const removerCategoria = (id: string) => {
+    setCategoriasSelecionadas((prev) => prev.filter((c) => c !== id));
+  };
+
+  const buscaNorm = buscaCategoria.trim().toLowerCase();
+  const categoriasParaBusca =
+    buscaNorm.length >= 1
+      ? categoriasOrdenadas.filter(
+          ([id, nome]) =>
+            !categoriasSelecionadas.includes(id) &&
+            (nome.toLowerCase().includes(buscaNorm) || id.toLowerCase().includes(buscaNorm))
+        )
+      : [];
+  const mostrarSugestoes =
+    buscaNorm.length >= 1 &&
+    categoriasParaBusca.length > 0 &&
+    categoriasSelecionadas.length < MAX_CATEGORIAS;
 
   useEffect(() => {
     if (empresaFotos) {
@@ -178,12 +237,16 @@ const EditarEmpresaPage = () => {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async () => {
-      if (!empresaId) throw new Error("ID da empresa não encontrado");
+      if (!empresaId || !user?.id) throw new Error("ID da empresa ou usuário não encontrado");
 
-      // Update empresa
-      const { error: empresaError } = await supabase
+      const categoriaPrincipal = categoriasSelecionadas[0] ?? null;
+      const adicionais: string[] = categoriasSelecionadas.slice(1, MAX_CATEGORIAS);
+
+      const { data: updatedList, error: empresaError } = await supabase
         .from("rel_cidade_servico_empresa")
         .update({
+          categoria: categoriaPrincipal,
+          categorias_adicionais: adicionais,
           nome: nome.trim(),
           descricao: descricao.trim() || null,
           whatsapp: whatsapp.replace(/\D/g, ""),
@@ -196,10 +259,19 @@ const EditarEmpresaPage = () => {
           horario_funcionamento: horarios,
           banner_oferta_url: bannerOferta[0] || null,
           video_url: videoUrl || null,
+          cupom_nome: cupomNome.trim() || null,
+          cupom_valor: cupomNome.trim() && cupomValor ? parseFloat(cupomValor.replace(",", ".")) : null,
+          cupom_tipo: cupomNome.trim() && cupomValor ? cupomTipo : null,
         })
-        .eq("id", empresaId);
+        .eq("id", empresaId)
+        .select("id");
 
       if (empresaError) throw empresaError;
+      if (!updatedList?.length) {
+        throw new Error(
+          "Nenhuma alteração foi salva. Verifique se você é o dono desta empresa e se a coluna 'categorias_adicionais' existe na tabela (rode a migração no Supabase)."
+        );
+      }
 
       // Update fotos - delete old and insert new
       await supabase
@@ -223,6 +295,7 @@ const EditarEmpresaPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["minhas-empresas"] });
+      queryClient.invalidateQueries({ queryKey: ["servico-empresas"] });
       queryClient.invalidateQueries({ queryKey: ["empresa-editar", empresaId] });
       toast({
         title: "Empresa atualizada!",
@@ -239,7 +312,10 @@ const EditarEmpresaPage = () => {
     },
   });
 
-  const isValid = nome.trim().length >= 3 && whatsapp.replace(/\D/g, "").length === 11;
+  const isValid =
+    nome.trim().length >= 3 &&
+    whatsapp.replace(/\D/g, "").length === 11 &&
+    categoriasSelecionadas.length >= 1;
 
   if (isLoading) {
     return (
@@ -266,6 +342,62 @@ const EditarEmpresaPage = () => {
       </header>
 
       <main className="flex-1 p-4 space-y-6 pb-24">
+        {/* Tipos de serviço (até 3) */}
+        <div className="space-y-2">
+          <Label>Tipos de serviço (até 3) *</Label>
+          <p className="text-xs text-muted-foreground">
+            Busque e selecione em quais categorias sua empresa aparecerá. Máximo 3.
+          </p>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Digite para buscar (ex: eletricista, salão...)"
+              value={buscaCategoria}
+              onChange={(e) => setBuscaCategoria(e.target.value)}
+              className="pl-9"
+            />
+            {mostrarSugestoes && (
+              <div className="absolute z-10 top-full left-0 right-0 mt-1 py-1 rounded-lg border border-border bg-card shadow-lg max-h-48 overflow-y-auto">
+                {categoriasParaBusca.slice(0, 12).map(([id, nomeCat]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => toggleCategoria(id)}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors"
+                  >
+                    {nomeCat}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {categoriasSelecionadas.length > 0 && (
+            <div className="pt-2">
+              <p className="text-xs text-muted-foreground mb-2">
+                Selecionados ({categoriasSelecionadas.length}/{MAX_CATEGORIAS})
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {categoriasSelecionadas.map((id) => (
+                  <span
+                    key={id}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground pl-3 pr-1.5 py-1 text-sm"
+                  >
+                    {CATEGORIAS_SERVICO[id] || id}
+                    <button
+                      type="button"
+                      onClick={() => removerCategoria(id)}
+                      className="rounded-full p-0.5 hover:bg-primary-foreground/20"
+                      aria-label="Remover"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Fotos do negócio */}
         <div className="space-y-2">
           <Label>Fotos do negócio</Label>
@@ -360,6 +492,50 @@ const EditarEmpresaPage = () => {
               className="pl-8"
             />
           </div>
+        </div>
+
+        {/* Cupom de desconto */}
+        <div className="space-y-4 pt-4 border-t border-border">
+          <h3 className="font-medium text-foreground">Cupom de desconto (opcional)</h3>
+          <div className="space-y-2">
+            <Label htmlFor="cupom_nome">Nome do cupom</Label>
+            <Input
+              id="cupom_nome"
+              placeholder="Ex: PRIMEIRACOMPRA"
+              value={cupomNome}
+              onChange={(e) => setCupomNome(e.target.value)}
+              maxLength={50}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="cupom_valor">Valor do desconto</Label>
+              <Input
+                id="cupom_valor"
+                placeholder={cupomTipo === "porcentagem" ? "Ex: 10" : "Ex: 50"}
+                value={cupomValor}
+                onChange={(e) => setCupomValor(e.target.value.replace(/[^0-9,.]/g, ""))}
+                inputMode="decimal"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select value={cupomTipo} onValueChange={(v: "real" | "porcentagem") => setCupomTipo(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="real">Real (R$)</SelectItem>
+                  <SelectItem value="porcentagem">Porcentagem (%)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {cupomTipo === "porcentagem"
+              ? "Desconto em % sobre o valor do serviço (ex: 10 = 10%)."
+              : "Desconto em reais (ex: 50 = R$ 50,00)."}
+          </p>
         </div>
 
         {/* Endereço */}

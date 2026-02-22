@@ -72,7 +72,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
         <div>
           <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
             <BadgePercent className="h-4 w-4 text-primary" />
-            Ofertas da Cidade
+            Mural de ofertas
           </h2>
           <p className="text-[12px] text-muted-foreground/70 mt-0.5">
             Promoções imperdíveis

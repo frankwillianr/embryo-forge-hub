@@ -38,6 +38,14 @@ import PetDetailPage from "@/pages/PetDetailPage";
 import NovoPetPage from "@/pages/NovoPetPage";
 import AnunciarPage from "@/pages/AnunciarPage";
 import NovoBannerPage from "@/pages/NovoBannerPage";
+import SolicitarOrcamentoPage from "@/pages/SolicitarOrcamentoPage";
+import MinhasSolicitacoesOrcamentoPage from "@/pages/MinhasSolicitacoesOrcamentoPage";
+import OrcamentosCidadePage from "@/pages/OrcamentosCidadePage";
+import OrcamentosRecebidosPage from "@/pages/OrcamentosRecebidosPage";
+import OrcamentosEnviadosPage from "@/pages/OrcamentosEnviadosPage";
+import ConversaOrcamentoPage from "@/pages/ConversaOrcamentoPage";
+import EnviarOrcamentoPage from "@/pages/EnviarOrcamentoPage";
+import EditarSolicitacaoOrcamentoPage from "@/pages/EditarSolicitacaoOrcamentoPage";
 import AuthPage from "@/pages/AuthPage";
 import MeusAnunciosPage from "@/pages/MeusAnunciosPage";
 import MinhasEmpresasPage from "@/pages/MinhasEmpresasPage";
@@ -49,6 +57,7 @@ import NotFound from "@/pages/NotFound";
 import EventoDetailPage from "@/pages/EventoDetailPage";
 import EventosListPage from "@/pages/EventosListPage";
 import OnibusListPage from "@/pages/OnibusListPage";
+import CuponsListPage from "@/pages/CuponsListPage";
 import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
 import SuportePage from "@/pages/SuportePage";
 const queryClient = new QueryClient();
@@ -87,9 +96,18 @@ const App = () => (
               <Route path="/cidade/:slug/pets/novo" element={<NovoPetPage />} />
               <Route path="/cidade/:slug/pets/:id" element={<PetDetailPage />} />
               <Route path="/cidade/:slug/anunciar" element={<AnunciarPage />} />
+              <Route path="/cidade/:slug/solicitar-orcamento" element={<SolicitarOrcamentoPage />} />
+              <Route path="/cidade/:slug/orcamentos" element={<OrcamentosCidadePage />} />
+              <Route path="/cidade/:slug/orcamentos/recebidos" element={<OrcamentosRecebidosPage />} />
+              <Route path="/cidade/:slug/orcamentos/enviados" element={<OrcamentosEnviadosPage />} />
+              <Route path="/cidade/:slug/orcamentos/conversa/:conversaId" element={<ConversaOrcamentoPage />} />
+              <Route path="/cidade/:slug/orcamentos/:solicitacaoId/enviar" element={<EnviarOrcamentoPage />} />
+              <Route path="/cidade/:slug/editar-solicitacao-orcamento/:id" element={<EditarSolicitacaoOrcamentoPage />} />
+              <Route path="/cidade/:slug/minhas-solicitacoes-orcamento" element={<MinhasSolicitacoesOrcamentoPage />} />
               <Route path="/cidade/:slug/banner/novo" element={<NovoBannerPage />} />
               <Route path="/cidade/:slug/meus-anuncios" element={<MeusAnunciosPage />} />
               <Route path="/cidade/:slug/minhas-empresas" element={<MinhasEmpresasPage />} />
+              <Route path="/cidade/:slug/empresa/novo" element={<NovaEmpresaPage />} />
               <Route path="/cidade/:slug/minhas-empresas/:empresaId/editar" element={<EditarEmpresaPage />} />
               <Route path="/cidade/:slug/meus-veiculos" element={<MeusVeiculosPage />} />
               <Route path="/cidade/:slug/minhas-denuncias" element={<MinhasDenunciasPage />} />
@@ -97,6 +115,7 @@ const App = () => (
               <Route path="/cidade/:slug/eventos" element={<EventosListPage />} />
               <Route path="/cidade/:slug/eventos/:eventoId" element={<EventoDetailPage />} />
               <Route path="/cidade/:slug/onibus" element={<OnibusListPage />} />
+              <Route path="/cidade/:slug/cupons" element={<CuponsListPage />} />
               <Route path="/cidade/:slug/auth" element={<AuthPage />} />
             </Route>
 

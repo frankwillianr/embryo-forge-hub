@@ -2,6 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import BannerCarousel from "@/components/BannerCarousel";
 import JornalHorizontalList from "@/components/jornal/JornalHorizontalList";
+import CheckinSection from "@/components/sections/CheckinSection";
+import CuponsSection from "@/components/sections/CuponsSection";
+import SolicitarOrcamentoSection from "@/components/sections/SolicitarOrcamentoSection";
 import AloPrefeituraHorizontalList from "@/components/aloPrefeitura/AloPrefeituraHorizontalList";
 import ServicosSection from "@/components/servicos/ServicosSection";
 import OfertasSection from "@/components/ofertas/OfertasSection";
@@ -73,9 +76,18 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
     enabled: !!cidadeSlug,
   });
 
+  const Separador = () => (
+    <div className="flex items-center justify-center my-2">
+      <div className="flex flex-col gap-2 w-20">
+        <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      </div>
+    </div>
+  );
+
   return (
     <div className="pb-4">
-      {/* Carrossel de Anúncios */}
+      {/* 1. Carrossel */}
       {isLoading ? (
         <div className="aspect-[16/9] w-full bg-muted animate-pulse m-5 rounded-[20px]" />
       ) : banners.length > 0 ? (
@@ -86,75 +98,50 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
         </div>
       )}
 
-      {/* Jornal da Cidade */}
+      {/* 2. Jornal da cidade */}
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
 
-      {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-2">
-        <div className="flex flex-col gap-2 w-20">
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        </div>
-      </div>
-
-      {/* Serviços */}
+      {/* 3. Serviços */}
       <ServicosSection cidadeSlug={cidadeSlug} />
 
-      {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-2">
-        <div className="flex flex-col gap-2 w-20">
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        </div>
-      </div>
+      <Separador />
 
-      {/* Alô Prefeitura */}
+      {/* 4. Mural da cidade */}
       <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
 
-      {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-2">
-        <div className="flex flex-col gap-2 w-20">
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        </div>
-      </div>
+      <Separador />
 
-      {/* Quick Access Cards */}
-      <QuickAccessCards cidadeSlug={cidadeSlug} />
-
-      {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-2">
-        <div className="flex flex-col gap-2 w-20">
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        </div>
-      </div>
-
-      {/* Cinema */}
-      <CinemaHorizontalList cidadeSlug={cidadeSlug} />
-
-      {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-2">
-        <div className="flex flex-col gap-2 w-20">
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        </div>
-      </div>
-
-      {/* Shows e Eventos */}
-      <EventosSection cidadeSlug={cidadeSlug} />
-
-      {/* Separador Linha Dupla */}
-      <div className="flex items-center justify-center my-2">
-        <div className="flex flex-col gap-2 w-20">
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        </div>
-      </div>
-
-      {/* Ofertas da Cidade */}
+      {/* 5. Mural de ofertas */}
       <OfertasSection cidadeSlug={cidadeSlug} />
 
+      <Separador />
+
+      {/* 6. Cinema */}
+      <CinemaHorizontalList cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
+      {/* 7. Shows e eventos */}
+      <EventosSection cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
+      {/* 8. Vagas - pets - horário */}
+      <QuickAccessCards cidadeSlug={cidadeSlug} />
+      <OnibusHorizontalList cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
+      {/* 9. Check-in diário */}
+      <CheckinSection cidadeSlug={cidadeSlug} />
+
+      {/* 10. Cupons de desconto */}
+      <CuponsSection cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
+      {/* 11. Orçamentos */}
+      <SolicitarOrcamentoSection cidadeSlug={cidadeSlug} />
     </div>
   );
 };

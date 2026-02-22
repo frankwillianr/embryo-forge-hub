@@ -138,6 +138,71 @@ All colors MUST be HSL.
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Cupom em estilo ticket (inspiração: ticket marrom com talão) */
+.cupom-ticket {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  min-height: 100px;
+  overflow: hidden;
+  border: 2px solid hsl(25 35% 35%);
+  background: hsl(35 25% 94%);
+  box-shadow:
+    inset 0 0 0 1px hsl(25 35% 35%),
+    0 2px 6px hsl(0 0% 0% / 0.08);
+  clip-path: polygon(
+    0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px,
+    100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px)
+  );
+}
+
+.dark .cupom-ticket {
+  border-color: hsl(25 25% 45%);
+  background: hsl(35 15% 18%);
+  box-shadow:
+    inset 0 0 0 1px hsl(25 25% 45%),
+    0 2px 8px hsl(0 0% 0% / 0.3);
+}
+
+.cupom-ticket-main {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+}
+
+.cupom-ticket-stub {
+  width: 44px;
+  flex-shrink: 0;
+  background: hsl(25 35% 28%);
+  border-left: 2px dashed hsl(35 25% 94%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.dark .cupom-ticket-stub {
+  background: hsl(25 30% 22%);
+  border-left-color: hsl(35 20% 35%);
+}
+
+.cupom-ticket-stub-text {
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: hsl(35 25% 94%);
+}
+
+.dark .cupom-ticket-stub-text {
+  color: hsl(35 20% 75%);
+}
+
 /* Animação de like no estilo Instagram */
 @keyframes likeHeart {
   0% {

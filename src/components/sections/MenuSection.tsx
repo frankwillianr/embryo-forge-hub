@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, MessageCircle, Trash2 } from "lucide-react";
+import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, MessageCircle, Trash2, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -73,6 +73,14 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
       bgColor: "bg-purple-500/10",
     },
     {
+      icon: Building2,
+      label: "Adicionar empresa",
+      description: "Cadastrar no guia de serviços",
+      path: `/cidade/${cidadeSlug}/empresa/novo`,
+      color: "text-purple-600",
+      bgColor: "bg-purple-500/10",
+    },
+    {
       icon: Car,
       label: "Veículos",
       description: "Carros e motos à venda",
@@ -95,6 +103,14 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
       path: `/cidade/${cidadeSlug}/minhas-vagas`,
       color: "text-green-600",
       bgColor: "bg-green-500/10",
+    },
+    {
+      icon: FileText,
+      label: "Orçamentos",
+      description: "Minhas solicitações de orçamento",
+      path: `/cidade/${cidadeSlug}/minhas-solicitacoes-orcamento`,
+      color: "text-amber-600",
+      bgColor: "bg-amber-500/10",
     },
   ];
 

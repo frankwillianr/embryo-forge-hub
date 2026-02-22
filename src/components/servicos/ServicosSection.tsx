@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Car, ShoppingBag, Users, ChevronRight } from "lucide-react";
+import { Search, Car, ShoppingBag, ChevronRight, Briefcase } from "lucide-react";
 
 // Import icons para grid
 import veiculosIcon from "@/assets/icons/veiculos.png";
@@ -316,9 +316,13 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
     <div className="py-6">
       {/* Header com busca integrada */}
       <div className="px-5 mb-5">
-        <h2 className="text-lg font-bold text-foreground tracking-tight mb-3">
+        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5 mb-0.5">
+          <Briefcase className="h-4 w-4 text-primary" />
           Serviços
         </h2>
+        <p className="text-[12px] text-muted-foreground/70 mb-3">
+          Profissionais e empresas para o que você precisar.
+        </p>
 
         {/* Campo de Busca */}
         <div className="relative">
@@ -357,7 +361,7 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
 
       {/* Destaques */}
       <div className="px-5 mb-6">
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5">
           <button
             onClick={() => handleClick("veiculos")}
             className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-600 p-3 flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
@@ -378,17 +382,6 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
             </div>
             <ShoppingBag className="w-5 h-5 text-white/80" />
             <span className="text-[11px] font-semibold relative z-10">Desapega</span>
-          </button>
-
-          <button
-            onClick={() => handleClick("influenciadores")}
-            className="rounded-2xl bg-gradient-to-br from-purple-600 to-violet-400 p-3 flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
-          >
-            <div className="absolute -right-2 -bottom-2 opacity-15">
-              <Users className="w-12 h-12" strokeWidth={1} />
-            </div>
-            <Users className="w-5 h-5 text-white/80" />
-            <span className="text-[11px] font-semibold relative z-10">Influencers</span>
           </button>
         </div>
       </div>

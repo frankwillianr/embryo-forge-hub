@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { CATEGORIAS_SERVICO } from "@/lib/categoriasServico";
 
 type EmpresaStatus = "aguardando_pagamento" | "pendente" | "ativo" | "recusado" | "expirado";
 
@@ -57,6 +58,7 @@ const MinhasEmpresasPage = () => {
           id,
           nome,
           categoria,
+          categorias_adicionais,
           status,
           created_at,
           data_inicio,
@@ -108,9 +110,17 @@ const MinhasEmpresasPage = () => {
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-semibold text-foreground">
+        <h1 className="flex-1 text-lg font-semibold text-foreground">
           Minhas Empresas
         </h1>
+        <Button
+          size="sm"
+          onClick={() => navigate(`/cidade/${slug}/empresa/novo`)}
+          className="bg-[#331D4A] hover:bg-[#331D4A]/90"
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Adicionar
+        </Button>
       </header>
 
       <main className="flex-1 p-4 space-y-4">
@@ -130,7 +140,7 @@ const MinhasEmpresasPage = () => {
               Cadastre sua empresa no guia de serviços e seja encontrado por milhares de pessoas
             </p>
             <Button
-              onClick={() => navigate(`/cidade/${slug}/servicos`)}
+              onClick={() => navigate(`/cidade/${slug}/empresa/novo`)}
               className="bg-[#331D4A] hover:bg-[#331D4A]/90"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -151,8 +161,14 @@ const MinhasEmpresasPage = () => {
                         <h3 className="font-semibold text-foreground truncate">
                           {empresa.nome}
                         </h3>
-                        <p className="text-sm text-muted-foreground capitalize mt-1">
-                          {empresa.categoria?.replace(/_/g, " ")}
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {[
+                            empresa.categoria,
+                            ...(Array.isArray(empresa.categorias_adicionais) ? empresa.categorias_adicionais : []),
+                          ]
+                            .filter(Boolean)
+                            .map((id) => CATEGORIAS_SERVICO[id] || String(id || "").replace(/_/g, " "))
+                            .join(" · ") || "—"}
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge
