@@ -483,7 +483,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
                   <img
                     src={url}
                     alt={`${jornal.titulo} - ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover kenburns-img"
                   />
                 </div>
               ))}
