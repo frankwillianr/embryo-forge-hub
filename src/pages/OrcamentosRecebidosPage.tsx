@@ -36,7 +36,7 @@ const OrcamentosRecebidosPage = () => {
         .select("id, solicitacao_id, user_id, updated_at, solicitacao_orcamento(categoria, descricao, created_at, user_id)")
         .order("updated_at", { ascending: false });
       if (error) throw error;
-      const list = (data || []) as ConversaComSolicitacao[];
+      const list = (data || []) as unknown as ConversaComSolicitacao[];
       return list.filter((c) => (c.solicitacao_orcamento as SolicitacaoRow)?.user_id === user.id);
     },
     enabled: !!user?.id,
