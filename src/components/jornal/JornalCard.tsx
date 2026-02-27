@@ -40,7 +40,7 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
           <img
             src={primeiraImagem}
             alt={jornal.titulo}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-cover kenburns-img"
           />
         ) : jornal.video_url ? (
           <div className="w-full h-full flex items-center justify-center bg-muted/30">
