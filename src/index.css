@@ -206,30 +206,45 @@ All colors MUST be HSL.
 /* Ken Burns effect — zoom + pan suave */
 @keyframes kenburns-1 {
   0%   { transform: scale(1.0) translate(0, 0); }
-  50%  { transform: scale(1.12) translate(-2%, -1%); }
+  33%  { transform: scale(1.12) translate(-2%, -1%); }
+  66%  { transform: scale(1.06) translate(2%, 0.5%); }
   100% { transform: scale(1.0) translate(0, 0); }
 }
 @keyframes kenburns-2 {
-  0%   { transform: scale(1.05) translate(1%, 0); }
-  50%  { transform: scale(1.15) translate(-1%, -2%); }
-  100% { transform: scale(1.05) translate(1%, 0); }
+  0%   { transform: scale(1.05) translate(1.5%, 0); }
+  25%  { transform: scale(1.1) translate(-1%, -1.5%); }
+  50%  { transform: scale(1.14) translate(-2.5%, 0.5%); }
+  75%  { transform: scale(1.08) translate(1%, 1%); }
+  100% { transform: scale(1.05) translate(1.5%, 0); }
 }
 @keyframes kenburns-3 {
   0%   { transform: scale(1.08) translate(-1%, 1%); }
-  50%  { transform: scale(1.0) translate(2%, -1%); }
+  30%  { transform: scale(1.02) translate(2.5%, -0.5%); }
+  60%  { transform: scale(1.12) translate(-1.5%, -1.5%); }
   100% { transform: scale(1.08) translate(-1%, 1%); }
+}
+@keyframes kenburns-4 {
+  0%   { transform: scale(1.0) translate(0, 0); }
+  20%  { transform: scale(1.08) translate(2%, 1%); }
+  50%  { transform: scale(1.14) translate(-1%, -2%); }
+  80%  { transform: scale(1.06) translate(-2%, 1.5%); }
+  100% { transform: scale(1.0) translate(0, 0); }
 }
 
 .kenburns-img {
-  animation: kenburns-1 12s ease-in-out infinite;
+  animation: kenburns-1 14s ease-in-out infinite;
 }
 .kenburns-img:nth-child(2n) {
   animation-name: kenburns-2;
-  animation-duration: 14s;
+  animation-duration: 18s;
 }
 .kenburns-img:nth-child(3n) {
   animation-name: kenburns-3;
   animation-duration: 16s;
+}
+.kenburns-img:nth-child(4n+1) {
+  animation-name: kenburns-4;
+  animation-duration: 20s;
 }
 
 /* Animação de like no estilo Instagram */
