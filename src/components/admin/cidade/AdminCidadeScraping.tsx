@@ -287,25 +287,31 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
             {fontes.map((fonte) => (
               <div key={fonte.nome} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${fonte.total > 0 ? "bg-green-100" : "bg-gray-100"}`}>
+                    {fonte.total > 0
+                      ? <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      : <Globe className="h-4 w-4 text-gray-400" />
+                    }
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{fonte.nome}</p>
-                    {fonte.url && (
-                      <a href={fonte.url} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-blue-500 hover:underline flex items-center gap-1">
-                        {fonte.url}<ExternalLink className="h-3 w-3" />
-                      </a>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">{fonte.nome}</p>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-200 text-gray-500 uppercase">{fonte.tipo}</span>
+                    </div>
+                    <a href={fonte.url} target="_blank" rel="noopener noreferrer"
+                      className="text-xs text-blue-500 hover:underline flex items-center gap-1 truncate max-w-xs">
+                      {fonte.url}<ExternalLink className="h-3 w-3 shrink-0" />
+                    </a>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span>{fonte.total} artigo{fonte.total !== 1 ? "s" : ""}</span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {new Date(fonte.ultima).toLocaleDateString("pt-BR")}
-                  </span>
+                  {fonte.ultima && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(fonte.ultima).toLocaleDateString("pt-BR")}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
