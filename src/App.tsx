@@ -11,6 +11,7 @@ import AdminCidadeDetail from "@/pages/admin/AdminCidadeDetail";
 import AdminJornal from "@/pages/admin/AdminJornal";
 import AdminCinema from "@/pages/admin/AdminCinema";
 import AdminAloPrefeitura from "@/pages/admin/AdminAloPrefeitura";
+import AdminScraping from "@/pages/admin/AdminScraping";
 import MobileLayout from "@/components/MobileLayout";
 
 import CidadePage from "@/pages/CidadePage";
@@ -134,6 +135,7 @@ const App = () => (
             <Route path="/admin/jornal" element={<AdminLayout><AdminJornal /></AdminLayout>} />
             <Route path="/admin/cinema" element={<AdminLayout><AdminCinema /></AdminLayout>} />
             <Route path="/admin/alo-prefeitura" element={<AdminLayout><AdminAloPrefeitura /></AdminLayout>} />
+            <Route path="/admin/scraping" element={<AdminLayout><AdminScraping /></AdminLayout>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

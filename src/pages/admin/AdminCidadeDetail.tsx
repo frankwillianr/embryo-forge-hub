@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign, MessageCircle, Users, Building2, CalendarDays } from "lucide-react";
+import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign, MessageCircle, Users, Building2, CalendarDays, Rss } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cidade } from "@/types/cidade";
@@ -14,6 +14,7 @@ import AdminCidadeComentarios from "@/components/admin/cidade/AdminCidadeComenta
 import AdminCidadeUsuarios from "@/components/admin/cidade/AdminCidadeUsuarios";
 import AdminCidadeEmpresas from "@/components/admin/cidade/AdminCidadeEmpresas";
 import AdminCidadeEventos from "@/components/admin/cidade/AdminCidadeEventos";
+import AdminCidadeScraping from "@/components/admin/cidade/AdminCidadeScraping";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -26,6 +27,7 @@ const tabs = [
   { id: "comentarios", label: "Comentários", icon: MessageCircle },
   { id: "usuarios", label: "Usuários", icon: Users },
   { id: "precificacao", label: "Precificação", icon: DollarSign },
+  { id: "scraping", label: "Scraping", icon: Rss },
 ];
 
 const AdminCidadeDetail = () => {
@@ -133,6 +135,7 @@ const AdminCidadeDetail = () => {
         {activeTab === "comentarios" && <AdminCidadeComentarios cidadeId={cidadeId!} />}
         {activeTab === "usuarios" && <AdminCidadeUsuarios cidadeId={cidadeId!} />}
         {activeTab === "precificacao" && <AdminCidadePrecificacao cidadeId={cidadeId!} />}
+        {activeTab === "scraping" && <AdminCidadeScraping cidadeId={cidadeId!} />}
       </div>
     </div>
   );

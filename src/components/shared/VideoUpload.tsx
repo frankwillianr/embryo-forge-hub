@@ -74,9 +74,14 @@ const VideoUpload = ({
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
+        const isBucketError =
+          /bucket|not found|não encontrad|inexistente/i.test(uploadError.message) ||
+          uploadError.message?.includes("404");
         toast({
           title: "Erro no upload",
-          description: uploadError.message,
+          description: isBucketError
+            ? `Bucket "${bucket}" não encontrado. Crie o bucket no Supabase (Storage) ou execute a migration do bucket jornal-videos.`
+            : uploadError.message,
           variant: "destructive",
         });
         return;
@@ -115,9 +120,12 @@ const VideoUpload = ({
     if (!videoUrl) return;
 
     try {
-      const path = videoUrl.split(`${bucket}/`)[1];
-      if (path) {
-        await supabase.storage.from(bucket).remove([path]);
+      // Só tenta remover do storage se a URL for deste bucket (evita erro com YouTube ou outro bucket)
+      if (videoUrl.includes(`/${bucket}/`)) {
+        const path = videoUrl.split(`${bucket}/`)[1]?.split("?")[0];
+        if (path) {
+          await supabase.storage.from(bucket).remove([path]);
+        }
       }
     } catch (error) {
       console.error("Error deleting video:", error);
