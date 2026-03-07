@@ -76,7 +76,7 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
 
   // Fontes reais configuradas na Edge Function
   const FONTES_CONFIGURADAS = [
-    { nome: "G1 Vales",           tipo: "rss",  url: "https://g1.globo.com/dynamo/minas-gerais/vales-mg/rss2.xml" },
+    { nome: "G1 Vales",           tipo: "html", url: "https://g1.globo.com/mg/vales-mg/" },
     { nome: "Diário do Rio Doce", tipo: "html", url: "https://drd.com.br/" },
     { nome: "Jornal da Cidade",   tipo: "html", url: "https://jornaldacidadevalesdeminas.com/" },
     { nome: "DeFato Online",      tipo: "html", url: "https://defatoonline.com.br/localidades/governador-valadares/" },

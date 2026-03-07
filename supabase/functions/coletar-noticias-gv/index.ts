@@ -13,7 +13,7 @@ const BROWSER_HEADERS = {
 
 const FONTES = [
   // localGV = true → jornal exclusivo de GV, dispensa checar "valadares" no texto
-  { nome: "G1 Vales",           tipo: "rss"  as const, url: "https://g1.globo.com/dynamo/minas-gerais/vales-mg/rss2.xml",         localGV: false },
+  { nome: "G1 Vales",           tipo: "html" as const, url: "https://g1.globo.com/mg/vales-mg/",                                   localGV: false },
   { nome: "Diário do Rio Doce",  tipo: "html" as const, url: "https://drd.com.br/",                                                 localGV: true  },
   { nome: "Jornal da Cidade",    tipo: "html" as const, url: "https://jornaldacidadevalesdeminas.com/",                             localGV: true  },
   { nome: "DeFato Online",       tipo: "html" as const, url: "https://defatoonline.com.br/localidades/governador-valadares/",       localGV: false },
