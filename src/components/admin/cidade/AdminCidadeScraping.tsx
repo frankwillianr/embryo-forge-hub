@@ -78,24 +78,34 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
     },
   });
 
-  const fontes: FonteDetectada[] = artigosScrapados
-    ? (Object.values(
-        artigosScrapados.reduce(
-          (acc: Record<string, FonteDetectada>, item: any) => {
-            if (!item.fonte) return acc;
-            if (!acc[item.fonte]) {
-              let origin: string | null = null;
-              try { origin = new URL(item.id_externo).origin; } catch {}
-              acc[item.fonte] = { nome: item.fonte, url: origin, total: 0, ultima: item.created_at };
-            }
-            acc[item.fonte].total++;
-            if (item.created_at > acc[item.fonte].ultima) acc[item.fonte].ultima = item.created_at;
-            return acc;
-          },
-          {}
-        )
-      ) as FonteDetectada[])
-    : [];
+  // Fontes reais configuradas na Edge Function
+  const FONTES_CONFIGURADAS = [
+    { nome: "G1 Vales",           tipo: "rss",  url: "https://g1.globo.com/dynamo/minas-gerais/vales-mg/rss2.xml" },
+    { nome: "Diário do Rio Doce", tipo: "html", url: "https://drd.com.br/" },
+    { nome: "Jornal da Cidade",   tipo: "html", url: "https://jornaldacidadevalesdeminas.com/" },
+    { nome: "DeFato Online",      tipo: "html", url: "https://defatoonline.com.br/localidades/governador-valadares/" },
+  ];
+
+  // Stats por fonte (vindas dos artigos já coletados)
+  const statsMap: Record<string, { total: number; ultima: string }> = {};
+  if (artigosScrapados) {
+    for (const item of artigosScrapados) {
+      if (!item.fonte) continue;
+      if (!statsMap[item.fonte]) {
+        statsMap[item.fonte] = { total: 0, ultima: item.created_at };
+      }
+      statsMap[item.fonte].total++;
+      if (item.created_at > statsMap[item.fonte].ultima) {
+        statsMap[item.fonte].ultima = item.created_at;
+      }
+    }
+  }
+
+  const fontes = FONTES_CONFIGURADAS.map((f) => ({
+    ...f,
+    total: statsMap[f.nome]?.total ?? 0,
+    ultima: statsMap[f.nome]?.ultima ?? null,
+  }));
 
   function addLog(msg: string, kind: LogLine["kind"] = "info") {
     setLogs((prev) => [...prev, { msg, kind }]);
