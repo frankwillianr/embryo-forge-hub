@@ -283,6 +283,8 @@ const BLOCKED_TITLE_RE = /\b(arquivo|arquivos|feed|rss|404|edital|expediente|anu
 const OTHER_CITIES_RE  = /\b(itabira|ipatinga|belo horizonte|caratinga|coronel fabriciano|timoteo|timóteo|manhuacu|manhuaçu|inhapim|muriae|muriaé|ubai|ubaí)\b/i;
 const GV_RE            = /\b(governador valadares|valadares)\b/i;
 const PERSON_NAME_RE   = /^[A-ZÁÉÍÓÚÃÕÂÊÎÔÛÀÈÌÒÙÇ][a-záéíóúãõâêîôûàèìòùç]+(?: [A-ZÁÉÍÓÚÃÕÂÊÎÔÛÀÈÌÒÙÇ][a-záéíóúãõâêîôûàèìòùç]+){1,2}$/;
+// Palavras-chave de notícias nacionais — rejeita em fontes localGV se não mencionar Valadares
+const NATIONAL_RE      = /\b(stf|supremo tribunal|senado federal|congresso nacional|planalto|brasilia|presidente lula|presidente da republica|selecao brasileira|copa do mundo|flamengo|corinthians|palmeiras|sao paulo fc|vasco|botafogo|fluminense|internacional|gremio|cruzeiro|atletico.mg|santos fc|ancelotti|toffoli|lula|bolsonaro|moraes|barroso|nunes marques|gilmar mendes|fachin)\b/i;
 
 function isValidUrl(url: string): boolean {
   if (!url.startsWith("http")) return false;
@@ -485,9 +487,16 @@ async function runScraping(opts: {
     if (!testMode && pubDate && pubDate < minDate) { stats.antigas_rejeitadas++; reject(url, titulo, `Data antiga: ${pubDate}`); log(`  ✗ [antiga ${pubDate}] ${short}`, "warn"); return; }
     if (ogDesc.length < 60 && body.length < 100)  { stats.sem_conteudo++;   reject(url, titulo, "Conteúdo insuficiente");        log(`  ✗ [sem conteúdo] ${short}`, "warn"); return; }
 
-    // Jornais exclusivamente de GV (DRD, Jornal da Cidade) não precisam mencionar "Valadares"
-    if (!localGV) {
-      const relevanceText = norm(`${titulo} ${ogDesc} ${body.slice(0, 200)}`);
+    // Filtro de relevância geográfica
+    const relevanceText = norm(`${titulo} ${ogDesc} ${body.slice(0, 400)}`);
+    if (localGV) {
+      // Fontes locais (DRD, Jornal da Cidade): aceita tudo EXCETO notícias claramente nacionais sem conexão local
+      if (NATIONAL_RE.test(relevanceText) && !GV_RE.test(relevanceText)) {
+        stats.urls_invalidas++; reject(url, titulo, "Notícia nacional sem conexão local");
+        log(`  ✗ [nacional] ${short}`, "warn"); return;
+      }
+    } else {
+      // Fontes externas: exige menção a Valadares
       if (!GV_RE.test(relevanceText))          { stats.urls_invalidas++;     reject(url, titulo, "Não menciona Valadares");       log(`  ✗ [irrelevante] ${short}`, "warn"); return; }
     }
 
