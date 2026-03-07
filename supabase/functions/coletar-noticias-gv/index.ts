@@ -487,9 +487,16 @@ async function runScraping(opts: {
     if (!testMode && pubDate && pubDate < minDate) { stats.antigas_rejeitadas++; reject(url, titulo, `Data antiga: ${pubDate}`); log(`  ✗ [antiga ${pubDate}] ${short}`, "warn"); return; }
     if (ogDesc.length < 60 && body.length < 100)  { stats.sem_conteudo++;   reject(url, titulo, "Conteúdo insuficiente");        log(`  ✗ [sem conteúdo] ${short}`, "warn"); return; }
 
-    // Jornais exclusivamente de GV (DRD, Jornal da Cidade) não precisam mencionar "Valadares"
-    if (!localGV) {
-      const relevanceText = norm(`${titulo} ${ogDesc} ${body.slice(0, 200)}`);
+    // Filtro de relevância geográfica
+    const relevanceText = norm(`${titulo} ${ogDesc} ${body.slice(0, 400)}`);
+    if (localGV) {
+      // Fontes locais (DRD, Jornal da Cidade): aceita tudo EXCETO notícias claramente nacionais sem conexão local
+      if (NATIONAL_RE.test(relevanceText) && !GV_RE.test(relevanceText)) {
+        stats.urls_invalidas++; reject(url, titulo, "Notícia nacional sem conexão local");
+        log(`  ✗ [nacional] ${short}`, "warn"); return;
+      }
+    } else {
+      // Fontes externas: exige menção a Valadares
       if (!GV_RE.test(relevanceText))          { stats.urls_invalidas++;     reject(url, titulo, "Não menciona Valadares");       log(`  ✗ [irrelevante] ${short}`, "warn"); return; }
     }
 
