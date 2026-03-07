@@ -17,12 +17,6 @@ interface AdminCidadeScrapingProps {
   cidadeId: string;
 }
 
-interface FonteDetectada {
-  nome: string;
-  url: string | null;
-  total: number;
-  ultima: string;
-}
 
 interface LogLine {
   msg: string;
