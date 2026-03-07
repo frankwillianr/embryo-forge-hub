@@ -338,13 +338,22 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
                     </a>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <span>{fonte.total} artigo{fonte.total !== 1 ? "s" : ""}</span>
                   {fonte.ultima && (
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {new Date(fonte.ultima).toLocaleDateString("pt-BR")}
                     </span>
+                  )}
+                  {fonte.total > 0 && (
+                    <button
+                      onClick={() => handleDeleteByFonte(fonte.nome)}
+                      className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title={`Deletar artigos de ${fonte.nome}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   )}
                 </div>
               </div>
