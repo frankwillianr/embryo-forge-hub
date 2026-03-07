@@ -283,6 +283,8 @@ const BLOCKED_TITLE_RE = /\b(arquivo|arquivos|feed|rss|404|edital|expediente|anu
 const OTHER_CITIES_RE  = /\b(itabira|ipatinga|belo horizonte|caratinga|coronel fabriciano|timoteo|timóteo|manhuacu|manhuaçu|inhapim|muriae|muriaé|ubai|ubaí)\b/i;
 const GV_RE            = /\b(governador valadares|valadares)\b/i;
 const PERSON_NAME_RE   = /^[A-ZÁÉÍÓÚÃÕÂÊÎÔÛÀÈÌÒÙÇ][a-záéíóúãõâêîôûàèìòùç]+(?: [A-ZÁÉÍÓÚÃÕÂÊÎÔÛÀÈÌÒÙÇ][a-záéíóúãõâêîôûàèìòùç]+){1,2}$/;
+// Palavras-chave de notícias nacionais — rejeita em fontes localGV se não mencionar Valadares
+const NATIONAL_RE      = /\b(stf|supremo tribunal|senado federal|congresso nacional|planalto|brasilia|presidente lula|presidente da republica|selecao brasileira|copa do mundo|flamengo|corinthians|palmeiras|sao paulo fc|vasco|botafogo|fluminense|internacional|gremio|cruzeiro|atletico.mg|santos fc|ancelotti|toffoli|lula|bolsonaro|moraes|barroso|nunes marques|gilmar mendes|fachin)\b/i;
 
 function isValidUrl(url: string): boolean {
   if (!url.startsWith("http")) return false;
