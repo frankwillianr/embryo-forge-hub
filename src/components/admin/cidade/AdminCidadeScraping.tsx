@@ -103,6 +103,37 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
     ultima: statsMap[f.nome]?.ultima ?? null,
   }));
 
+  async function handleDeleteByFonte(fonteNome: string) {
+    if (!confirm(`Deletar todos os artigos coletados de "${fonteNome}"?`)) return;
+    const { error } = await supabase
+      .from("rel_cidade_jornal")
+      .delete()
+      .eq("cidade_id", cidadeId)
+      .eq("fonte", fonteNome)
+      .not("id_externo", "is", null);
+    if (error) {
+      toast.error("Erro ao deletar: " + error.message);
+    } else {
+      toast.success(`Artigos de "${fonteNome}" deletados`);
+      queryClient.invalidateQueries({ queryKey: ["admin-cidade-scraping-artigos", cidadeId] });
+    }
+  }
+
+  async function handleDeleteAll() {
+    if (!confirm("Deletar TODOS os artigos coletados por scraping desta cidade?")) return;
+    const { error } = await supabase
+      .from("rel_cidade_jornal")
+      .delete()
+      .eq("cidade_id", cidadeId)
+      .not("id_externo", "is", null);
+    if (error) {
+      toast.error("Erro ao deletar: " + error.message);
+    } else {
+      toast.success("Todos os artigos de scraping deletados");
+      queryClient.invalidateQueries({ queryKey: ["admin-cidade-scraping-artigos", cidadeId] });
+    }
+  }
+
   function addLog(msg: string, kind: LogLine["kind"] = "info") {
     setLogs((prev) => [...prev, { msg, kind }]);
   }
