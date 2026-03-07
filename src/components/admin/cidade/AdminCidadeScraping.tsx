@@ -298,17 +298,18 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
       {/* Fontes detectadas */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-        <h4 className="font-medium text-sm text-gray-700 flex items-center gap-2">
-          <Rss className="h-4 w-4" />
-          Fontes ativas ({fontes.reduce((s, f) => s + f.total, 0)} artigos)
-        </h4>
-        {fontes.some((f) => f.total > 0) && (
-          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50 gap-1.5"
-            onClick={handleDeleteAll}>
-            <Trash2 className="h-3.5 w-3.5" />
-            Deletar todos
-          </Button>
-        )}
+          <h4 className="font-medium text-sm text-gray-700 flex items-center gap-2">
+            <Rss className="h-4 w-4" />
+            Fontes ativas ({fontes.reduce((s, f) => s + f.total, 0)} artigos)
+          </h4>
+          {fontes.some((f) => f.total > 0) && (
+            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50 gap-1.5"
+              onClick={handleDeleteAll}>
+              <Trash2 className="h-3.5 w-3.5" />
+              Deletar todos
+            </Button>
+          )}
+        </div>
 
         {isLoading ? (
           <div className="text-center py-6 text-muted-foreground text-sm">Carregando...</div>
