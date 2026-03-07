@@ -37,5 +37,8 @@ verify_jwt = false
 [functions.cinema-api]
 verify_jwt = false
 
+[functions.coletar-noticias-gv]
+verify_jwt = false
+
 [functions.edge-tts]
 verify_jwt = false
