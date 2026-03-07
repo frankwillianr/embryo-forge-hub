@@ -297,6 +297,7 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
 
       {/* Fontes detectadas */}
       <div className="space-y-3">
+        <div className="flex items-center justify-between">
         <h4 className="font-medium text-sm text-gray-700 flex items-center gap-2">
           <Rss className="h-4 w-4" />
           Fontes ativas ({fontes.reduce((s, f) => s + f.total, 0)} artigos)
