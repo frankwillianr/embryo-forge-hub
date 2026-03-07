@@ -9,9 +9,11 @@ import {
   Clock,
   Rss,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 interface AdminCidadeScrapingProps {
   cidadeId: string;
@@ -100,6 +102,37 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
     total: statsMap[f.nome]?.total ?? 0,
     ultima: statsMap[f.nome]?.ultima ?? null,
   }));
+
+  async function handleDeleteByFonte(fonteNome: string) {
+    if (!confirm(`Deletar todos os artigos coletados de "${fonteNome}"?`)) return;
+    const { error } = await supabase
+      .from("rel_cidade_jornal")
+      .delete()
+      .eq("cidade_id", cidadeId)
+      .eq("fonte", fonteNome)
+      .not("id_externo", "is", null);
+    if (error) {
+      toast.error("Erro ao deletar: " + error.message);
+    } else {
+      toast.success(`Artigos de "${fonteNome}" deletados`);
+      queryClient.invalidateQueries({ queryKey: ["admin-cidade-scraping-artigos", cidadeId] });
+    }
+  }
+
+  async function handleDeleteAll() {
+    if (!confirm("Deletar TODOS os artigos coletados por scraping desta cidade?")) return;
+    const { error } = await supabase
+      .from("rel_cidade_jornal")
+      .delete()
+      .eq("cidade_id", cidadeId)
+      .not("id_externo", "is", null);
+    if (error) {
+      toast.error("Erro ao deletar: " + error.message);
+    } else {
+      toast.success("Todos os artigos de scraping deletados");
+      queryClient.invalidateQueries({ queryKey: ["admin-cidade-scraping-artigos", cidadeId] });
+    }
+  }
 
   function addLog(msg: string, kind: LogLine["kind"] = "info") {
     setLogs((prev) => [...prev, { msg, kind }]);
@@ -264,10 +297,19 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
 
       {/* Fontes detectadas */}
       <div className="space-y-3">
-        <h4 className="font-medium text-sm text-gray-700 flex items-center gap-2">
-          <Rss className="h-4 w-4" />
-          Fontes ativas
-        </h4>
+        <div className="flex items-center justify-between">
+          <h4 className="font-medium text-sm text-gray-700 flex items-center gap-2">
+            <Rss className="h-4 w-4" />
+            Fontes ativas ({fontes.reduce((s, f) => s + f.total, 0)} artigos)
+          </h4>
+          {fontes.some((f) => f.total > 0) && (
+            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50 gap-1.5"
+              onClick={handleDeleteAll}>
+              <Trash2 className="h-3.5 w-3.5" />
+              Deletar todos
+            </Button>
+          )}
+        </div>
 
         {isLoading ? (
           <div className="text-center py-6 text-muted-foreground text-sm">Carregando...</div>
@@ -298,13 +340,22 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
                     </a>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
                   <span>{fonte.total} artigo{fonte.total !== 1 ? "s" : ""}</span>
                   {fonte.ultima && (
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {new Date(fonte.ultima).toLocaleDateString("pt-BR")}
                     </span>
+                  )}
+                  {fonte.total > 0 && (
+                    <button
+                      onClick={() => handleDeleteByFonte(fonte.nome)}
+                      className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title={`Deletar artigos de ${fonte.nome}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   )}
                 </div>
               </div>
