@@ -10,6 +10,8 @@ import {
   Rss,
   RefreshCw,
   Trash2,
+  PowerOff,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +20,6 @@ import { toast } from "sonner";
 interface AdminCidadeScrapingProps {
   cidadeId: string;
 }
-
 
 interface LogLine {
   msg: string;
@@ -38,11 +39,22 @@ interface ScrapingResult {
   erros: string[];
 }
 
+interface FonteConfig {
+  id: string;
+  nome: string;
+  tipo: "rss" | "html";
+  url: string;
+  local_gv: boolean;
+  ativo: boolean;
+  ordem?: number;
+  created_at?: string;
+}
+
 const LOG_COLORS: Record<LogLine["kind"], string> = {
   info: "text-gray-300",
-  ok:   "text-green-400",
+  ok: "text-green-400",
   warn: "text-yellow-400",
-  err:  "text-red-400",
+  err: "text-red-400",
 };
 
 const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
@@ -54,7 +66,6 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
   const [lastResult, setLastResult] = useState<ScrapingResult | null>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll when new logs arrive
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
@@ -64,9 +75,10 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rel_cidade_jornal")
-        .select("id, titulo, fonte, id_externo, created_at")
+        .select("id, titulo, fonte, id_externo, created_at, data_noticia")
         .eq("cidade_id", cidadeId)
         .not("id_externo", "is", null)
+        .order("data_noticia", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -74,34 +86,113 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
     },
   });
 
-  // Fontes reais configuradas na Edge Function
-  const FONTES_CONFIGURADAS = [
-    { nome: "G1 Vales",           tipo: "html", url: "https://g1.globo.com/mg/vales-mg/" },
-    { nome: "Diário do Rio Doce", tipo: "html", url: "https://drd.com.br/" },
-    { nome: "Jornal da Cidade",   tipo: "html", url: "https://jornaldacidadevalesdeminas.com/" },
-    { nome: "DeFato Online",      tipo: "html", url: "https://defatoonline.com.br/localidades/governador-valadares/" },
-  ];
+  const { data: fontesConfig = [], isLoading: isLoadingFontes } = useQuery({
+    queryKey: ["admin-cidade-scraping-fontes", cidadeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cidade_scraping_fonte")
+        .select("id, nome, tipo, url, local_gv, ativo, ordem, created_at")
+        .eq("cidade_id", cidadeId)
+        .eq("ativo", true)
+        .order("ordem", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as FonteConfig[];
+    },
+  });
 
-  // Stats por fonte (vindas dos artigos já coletados)
+  const { data: scrapingConfig, isLoading: isLoadingConfig } = useQuery({
+    queryKey: ["admin-cidade-scraping-config", cidadeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cidade_scraping_config")
+        .select("cidade_id, auto_ativo, intervalo_horas, lookback_dias, max_artigos, rewrite_ai, validate_ai")
+        .eq("cidade_id", cidadeId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const statsMap: Record<string, { total: number; ultima: string }> = {};
   if (artigosScrapados) {
     for (const item of artigosScrapados) {
       if (!item.fonte) continue;
+      const dataComparacao = item.data_noticia || item.created_at;
       if (!statsMap[item.fonte]) {
-        statsMap[item.fonte] = { total: 0, ultima: item.created_at };
+        statsMap[item.fonte] = { total: 0, ultima: dataComparacao };
       }
       statsMap[item.fonte].total++;
-      if (item.created_at > statsMap[item.fonte].ultima) {
-        statsMap[item.fonte].ultima = item.created_at;
+      if (new Date(dataComparacao) > new Date(statsMap[item.fonte].ultima)) {
+        statsMap[item.fonte].ultima = dataComparacao;
       }
     }
   }
 
-  const fontes = FONTES_CONFIGURADAS.map((f) => ({
+  const fontes = fontesConfig.map((f) => ({
     ...f,
     total: statsMap[f.nome]?.total ?? 0,
     ultima: statsMap[f.nome]?.ultima ?? null,
   }));
+
+  async function handleAddFonte() {
+    const nome = novaFonte.trim();
+    const url = novaUrl.trim();
+
+    if (!nome || !url) {
+      toast.error("Preencha nome e URL da fonte.");
+      return;
+    }
+
+    if (!/^https?:\/\//i.test(url)) {
+      toast.error("A URL precisa começar com http:// ou https://");
+      return;
+    }
+
+    const tipo: "rss" | "html" = /rss|feed|\.xml($|\?)/i.test(url) ? "rss" : "html";
+
+    const ordemBase = fontesConfig.length > 0
+      ? Math.max(...fontesConfig.map((f) => f.ordem ?? 0)) + 1
+      : 1;
+
+    const { error } = await supabase.from("cidade_scraping_fonte").insert({
+      cidade_id: cidadeId,
+      nome,
+      tipo,
+      url,
+      local_gv: true,
+      ativo: true,
+      ordem: ordemBase,
+    });
+
+    if (error) {
+      toast.error(`Erro ao adicionar fonte: ${error.message}`);
+      return;
+    }
+
+    toast.success("Fonte adicionada com sucesso.");
+    setNovaFonte("");
+    setNovaUrl("");
+    queryClient.invalidateQueries({ queryKey: ["admin-cidade-scraping-fontes", cidadeId] });
+  }
+
+  async function handleDisableFonte(fonteId: string, fonteNome: string) {
+    if (!confirm(`Desativar a fonte "${fonteNome}"?`)) return;
+
+    const { error } = await supabase
+      .from("cidade_scraping_fonte")
+      .update({ ativo: false })
+      .eq("id", fonteId)
+      .eq("cidade_id", cidadeId);
+
+    if (error) {
+      toast.error(`Erro ao desativar fonte: ${error.message}`);
+      return;
+    }
+
+    toast.success(`Fonte "${fonteNome}" desativada.`);
+    queryClient.invalidateQueries({ queryKey: ["admin-cidade-scraping-fontes", cidadeId] });
+  }
 
   async function handleDeleteByFonte(fonteNome: string) {
     if (!confirm(`Deletar todos os artigos coletados de "${fonteNome}"?`)) return;
@@ -134,6 +225,31 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
     }
   }
 
+  async function handleToggleAutoBusca() {
+    const novoValor = !(scrapingConfig?.auto_ativo === true);
+    const payload = {
+      cidade_id: cidadeId,
+      auto_ativo: novoValor,
+      intervalo_horas: 3,
+      lookback_dias: 2,
+      max_artigos: 60,
+      rewrite_ai: true,
+      validate_ai: true,
+    };
+
+    const { error } = await supabase
+      .from("cidade_scraping_config")
+      .upsert(payload, { onConflict: "cidade_id" });
+
+    if (error) {
+      toast.error(`Erro ao atualizar busca automática: ${error.message}`);
+      return;
+    }
+
+    toast.success(novoValor ? "Busca automática ativada." : "Busca automática desativada.");
+    queryClient.invalidateQueries({ queryKey: ["admin-cidade-scraping-config", cidadeId] });
+  }
+
   function addLog(msg: string, kind: LogLine["kind"] = "info") {
     setLogs((prev) => [...prev, { msg, kind }]);
   }
@@ -145,43 +261,60 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
 
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-    const endpoint    = `${supabaseUrl}/functions/v1/coletar-noticias-gv`;
+    const endpoint = `${supabaseUrl}/functions/v1/coletar-noticias-gv`;
 
-    addLog(`📡 Endpoint: ${endpoint}`);
-    addLog(`🔑 Key: ${supabaseKey ? supabaseKey.slice(0, 20) + "..." : "NÃO ENCONTRADA"}`, supabaseKey ? "info" : "err");
+    addLog(`Endpoint: ${endpoint}`);
+    addLog(
+      `Key: ${supabaseKey ? `${supabaseKey.slice(0, 20)}...` : "NAO ENCONTRADA"}`,
+      supabaseKey ? "info" : "err",
+    );
 
     try {
-      addLog("⏳ Enviando requisição...");
+      addLog("Enviando requisicao...");
 
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${supabaseKey}`,
+          Authorization: `Bearer ${supabaseKey}`,
         },
-        body: JSON.stringify({ stream: true, test_mode: false }),
+        body: JSON.stringify({
+          stream: true,
+          test_mode: false,
+          cidade_id: cidadeId,
+          lookback_days: 2,
+          validate_ai: true,
+          rewrite_ai: true,
+        }),
       });
 
-      addLog(`📥 Resposta recebida: HTTP ${response.status} ${response.statusText}`, response.ok ? "ok" : "err");
-      addLog(`   Content-Type: ${response.headers.get("content-type") ?? "(vazio)"}`);
+      addLog(
+        `Resposta recebida: HTTP ${response.status} ${response.statusText}`,
+        response.ok ? "ok" : "err",
+      );
+      addLog(`Content-Type: ${response.headers.get("content-type") ?? "(vazio)"}`);
 
       if (!response.ok) {
         let body = "";
-        try { body = await response.text(); } catch { /* ignore */ }
-        addLog(`   Corpo do erro: ${body.slice(0, 300)}`, "err");
+        try {
+          body = await response.text();
+        } catch {
+          // ignore
+        }
+        addLog(`Corpo do erro: ${body.slice(0, 300)}`, "err");
         return;
       }
 
       if (!response.body) {
-        addLog("❌ Resposta sem body (streaming não suportado?)", "err");
+        addLog("Resposta sem body (streaming nao suportado?)", "err");
         return;
       }
 
-      addLog("✅ Streaming iniciado, aguardando eventos...", "ok");
+      addLog("Streaming iniciado, aguardando eventos...", "ok");
 
-      const reader  = response.body.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let buffer    = "";
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -204,23 +337,16 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
             } else if (data.type === "error") {
               setLogs((prev) => [...prev, { msg: `Erro interno: ${data.msg}`, kind: "err" }]);
             }
-          } catch { /* ignore malformed */ }
+          } catch {
+            // ignore malformed
+          }
         }
       }
 
-      addLog("🏁 Stream encerrado.", "info");
-
-    } catch (err: any) {
-      const msg = err?.message ?? String(err);
-      addLog(`❌ Erro de conexão: ${msg}`, "err");
-
-      if (msg.includes("Failed to fetch")) {
-        addLog("   Possíveis causas:", "warn");
-        addLog("   1. A Edge Function não foi publicada no Supabase", "warn");
-        addLog("   2. O URL do Supabase está errado", "warn");
-        addLog("   3. Bloqueio de CORS ou rede", "warn");
-        addLog(`   → Acesse: ${supabaseUrl.replace("https://", "https://supabase.com/dashboard/project/").replace(".supabase.co", "")}/functions`, "warn");
-      }
+      addLog("Stream encerrado.", "info");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      addLog(`Erro de conexao: ${msg}`, "err");
     } finally {
       setIsRunning(false);
     }
@@ -228,21 +354,34 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="font-semibold text-lg">Scraping de Notícias</h3>
+          <h3 className="font-semibold text-lg">Scraping de Noticias</h3>
           <p className="text-sm text-muted-foreground">
-            Fontes configuradas para coleta automática de notícias desta cidade
+            Fontes configuradas para coleta automatica de noticias desta cidade
           </p>
         </div>
-        <Button onClick={handleBuscarAgora} disabled={isRunning} className="shrink-0 gap-2">
-          <RefreshCw className={`h-4 w-4 ${isRunning ? "animate-spin" : ""}`} />
-          {isRunning ? "Buscando..." : "Buscar Notícias Agora"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant={scrapingConfig?.auto_ativo ? "default" : "outline"}
+            onClick={handleToggleAutoBusca}
+            disabled={isLoadingConfig}
+            className="shrink-0 gap-2"
+          >
+            <Bot className="h-4 w-4" />
+            {scrapingConfig?.auto_ativo ? "Busca automática: ATIVA" : "Busca automática: INATIVA"}
+          </Button>
+          <Button onClick={handleBuscarAgora} disabled={isRunning} className="shrink-0 gap-2">
+            <RefreshCw className={`h-4 w-4 ${isRunning ? "animate-spin" : ""}`} />
+            {isRunning ? "Buscando..." : "Buscar Noticias Agora"}
+          </Button>
+        </div>
       </div>
+      <p className="text-xs text-muted-foreground">
+        Quando ativa, executa scraping no servidor a cada 3 horas, mesmo com o PC desligado.
+      </p>
 
-      {/* Terminal de logs */}
       {(isRunning || logs.length > 0) && (
         <div className="rounded-lg border border-gray-700 bg-gray-950 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 border-b border-gray-700">
@@ -266,12 +405,11 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
               </div>
             ))}
             {isRunning && logs.length === 0 && (
-              <div className="text-gray-500 animate-pulse">Aguardando resposta da função...</div>
+              <div className="text-gray-500 animate-pulse">Aguardando resposta da funcao...</div>
             )}
             <div ref={logEndRef} />
           </div>
 
-          {/* Resumo final */}
           {lastResult && (
             <div className="border-t border-gray-700 bg-gray-900 px-4 py-3 grid grid-cols-4 gap-3">
               <div className="text-center">
@@ -279,7 +417,9 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
                 <p className="text-xs text-gray-500">Inseridas</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-gray-400">{lastResult.duplicadas_url + lastResult.duplicadas_titulo}</p>
+                <p className="text-lg font-bold text-gray-400">
+                  {lastResult.duplicadas_url + lastResult.duplicadas_titulo}
+                </p>
                 <p className="text-xs text-gray-500">Duplicadas</p>
               </div>
               <div className="text-center">
@@ -287,7 +427,9 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
                 <p className="text-xs text-gray-500">Antigas</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-bold text-yellow-400">{lastResult.urls_invalidas + lastResult.sem_conteudo + lastResult.sem_imagens_validas}</p>
+                <p className="text-lg font-bold text-yellow-400">
+                  {lastResult.urls_invalidas + lastResult.sem_conteudo + lastResult.sem_imagens_validas}
+                </p>
                 <p className="text-xs text-gray-500">Rejeitadas</p>
               </div>
             </div>
@@ -295,7 +437,6 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
         </div>
       )}
 
-      {/* Fontes detectadas */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="font-medium text-sm text-gray-700 flex items-center gap-2">
@@ -303,40 +444,56 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
             Fontes ativas ({fontes.reduce((s, f) => s + f.total, 0)} artigos)
           </h4>
           {fontes.some((f) => f.total > 0) && (
-            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50 gap-1.5"
-              onClick={handleDeleteAll}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-red-500 hover:text-red-700 hover:bg-red-50 gap-1.5"
+              onClick={handleDeleteAll}
+            >
               <Trash2 className="h-3.5 w-3.5" />
               Deletar todos
             </Button>
           )}
         </div>
 
-        {isLoading ? (
+        {isLoading || isLoadingFontes ? (
           <div className="text-center py-6 text-muted-foreground text-sm">Carregando...</div>
         ) : fontes.length === 0 ? (
           <div className="text-center py-8 border rounded-lg bg-muted/30">
             <Globe className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">Nenhuma fonte detectada ainda</p>
+            <p className="text-sm text-muted-foreground">Nenhuma fonte ativa configurada</p>
           </div>
         ) : (
           <div className="grid gap-3">
             {fontes.map((fonte) => (
-              <div key={fonte.nome} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
+              <div key={fonte.id} className="flex items-center justify-between p-4 border rounded-lg bg-gray-50">
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${fonte.total > 0 ? "bg-green-100" : "bg-gray-100"}`}>
-                    {fonte.total > 0
-                      ? <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      : <Globe className="h-4 w-4 text-gray-400" />
-                    }
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                      fonte.total > 0 ? "bg-green-100" : "bg-gray-100"
+                    }`}
+                  >
+                    {fonte.total > 0 ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Globe className="h-4 w-4 text-gray-400" />
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm">{fonte.nome}</p>
-                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-200 text-gray-500 uppercase">{fonte.tipo}</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-200 text-gray-500 uppercase">
+                        {fonte.tipo}
+                      </span>
                     </div>
-                    <a href={fonte.url} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-blue-500 hover:underline flex items-center gap-1 truncate max-w-xs">
-                      {fonte.url}<ExternalLink className="h-3 w-3 shrink-0" />
+                    <a
+                      href={fonte.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-500 hover:underline flex items-center gap-1 truncate max-w-xs"
+                    >
+                      {fonte.url}
+                      <ExternalLink className="h-3 w-3 shrink-0" />
                     </a>
                   </div>
                 </div>
@@ -348,6 +505,13 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
                       {new Date(fonte.ultima).toLocaleDateString("pt-BR")}
                     </span>
                   )}
+                  <button
+                    onClick={() => handleDisableFonte(fonte.id, fonte.nome)}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-orange-500 hover:bg-orange-50 transition-colors"
+                    title={`Desativar fonte ${fonte.nome}`}
+                  >
+                    <PowerOff className="h-3.5 w-3.5" />
+                  </button>
                   {fonte.total > 0 && (
                     <button
                       onClick={() => handleDeleteByFonte(fonte.nome)}
@@ -364,28 +528,37 @@ const AdminCidadeScraping = ({ cidadeId }: AdminCidadeScrapingProps) => {
         )}
       </div>
 
-      {/* Adicionar nova fonte */}
       <div className="border rounded-lg p-4 space-y-3">
         <h4 className="font-medium text-sm text-gray-700 flex items-center gap-2">
           <Plus className="h-4 w-4" />
           Adicionar nova fonte
         </h4>
         <div className="flex gap-2">
-          <Input placeholder="Nome da fonte (ex: Diário do Rio Doce)" value={novaFonte}
-            onChange={(e) => setNovaFonte(e.target.value)} className="flex-1" />
-          <Input placeholder="URL do site (ex: https://drd.com.br)" value={novaUrl}
-            onChange={(e) => setNovaUrl(e.target.value)} className="flex-1" />
-          <Button variant="default" className="shrink-0">
-            <Plus className="h-4 w-4 mr-1" />Adicionar
+          <Input
+            placeholder="Nome da fonte (ex: Diario do Rio Doce)"
+            value={novaFonte}
+            onChange={(e) => setNovaFonte(e.target.value)}
+            className="flex-1"
+          />
+          <Input
+            placeholder="URL da fonte (ex: https://drd.com.br)"
+            value={novaUrl}
+            onChange={(e) => setNovaUrl(e.target.value)}
+            className="flex-1"
+          />
+          <Button variant="default" className="shrink-0" onClick={handleAddFonte}>
+            <Plus className="h-4 w-4 mr-1" />
+            Adicionar
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Configure aqui as fontes e o sistema irá buscar automaticamente as notícias para esta cidade.
+          As fontes ativas sao lidas dinamicamente do banco e usadas no scraping desta cidade.
         </p>
       </div>
-
     </div>
   );
 };
 
 export default AdminCidadeScraping;
+
+

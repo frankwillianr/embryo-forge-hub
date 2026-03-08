@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
       let query = supabase
         .from('rel_cidade_jornal')
         .select('*')
+        .order('data_noticia', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -103,6 +104,7 @@ Deno.serve(async (req) => {
         cidade, // aceita slug
         titulo, 
         descricao, 
+        data_noticia,
         fonte, 
         video_url, 
         id_externo,
@@ -149,6 +151,7 @@ Deno.serve(async (req) => {
           cidade_id: resolvedCidadeId,
           titulo,
           descricao,
+          data_noticia: data_noticia || null,
           fonte: fonte || null,
           video_url: video_url || null,
           id_externo: id_externo || null,

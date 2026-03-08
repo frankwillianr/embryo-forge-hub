@@ -86,22 +86,20 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
   return (
     <div className="pb-4">
-      {/* 1. Carrossel */}
+      {/* 1. Jornal da cidade */}
+      <JornalHorizontalList cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
+      {/* 2. Carrossel de propaganda */}
       {isLoading ? (
         <div className="aspect-[16/9] w-full bg-muted animate-pulse m-5 rounded-[20px]" />
       ) : banners.length > 0 ? (
         <BannerCarousel banners={banners} cidadeSlug={cidadeSlug} />
-      ) : (
-        <div className="aspect-[16/9] w-full bg-muted flex items-center justify-center mx-5 rounded-[20px]">
-          <p className="text-muted-foreground text-sm">Nenhum anúncio hoje</p>
-        </div>
-      )}
+      ) : null}
 
-      {/* 2. Jornal da cidade */}
-      <JornalHorizontalList cidadeSlug={cidadeSlug} />
-
-      {/* 3. Serviços */}
-      <ServicosSection cidadeSlug={cidadeSlug} />
+      {/* 3. Eventos */}
+      <EventosSection cidadeSlug={cidadeSlug} />
 
       <Separador />
 
@@ -110,34 +108,34 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       <Separador />
 
-      {/* 5. Mural de ofertas */}
-      <OfertasSection cidadeSlug={cidadeSlug} />
-
-      <Separador />
-
-      {/* 6. Cinema */}
+      {/* 5. Cinema */}
       <CinemaHorizontalList cidadeSlug={cidadeSlug} />
 
       <Separador />
 
-      {/* 7. Shows e eventos */}
-      <EventosSection cidadeSlug={cidadeSlug} />
+      {/* 6. Ofertas */}
+      <OfertasSection cidadeSlug={cidadeSlug} />
 
       <Separador />
 
-      {/* 8. Vagas - pets - horário */}
+      {/* 7. Serviços */}
+      <ServicosSection cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
+      {/* 8. Orçamentos abertos */}
+      <SolicitarOrcamentoSection cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
+      {/* 9. Utilidades */}
       <QuickAccessCards cidadeSlug={cidadeSlug} />
       <OnibusHorizontalList cidadeSlug={cidadeSlug} />
 
       <Separador />
 
-      {/* 9. Cupons de desconto */}
+      {/* 10. Cupons */}
       <CuponsSection cidadeSlug={cidadeSlug} />
-
-      <Separador />
-
-      {/* 10. Orçamentos */}
-      <SolicitarOrcamentoSection cidadeSlug={cidadeSlug} />
     </div>
   );
 };

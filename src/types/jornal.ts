@@ -11,6 +11,7 @@ export interface Jornal {
   cidade_id: string;
   titulo: string;
   descricao: string;
+  data_noticia?: string | null;
   descricao_curta?: string | null;
   fonte?: string | null;
   categoria?: string | null;
@@ -27,15 +28,29 @@ export interface JornalInsert {
   cidade_id: string;
   titulo: string;
   descricao: string;
+  data_noticia?: string;
   fonte?: string;
   video_url?: string;
   imagens?: string[];
 }
 
-/** Normaliza o campo imagens que pode vir como string, array ou null */
+/** Normaliza o campo imagens que pode vir como string JSON, array ou null */
 export function parseImagens(imagens: string[] | string | null | undefined): string[] {
   if (!imagens) return [];
   if (Array.isArray(imagens)) return imagens.filter(Boolean);
-  if (typeof imagens === 'string') return [imagens];
+  if (typeof imagens === 'string') {
+    const trimmed = imagens.trim();
+    // Tenta parsear como JSON array (ex: '["https://...","https://..."]')
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+        if (typeof parsed === 'string') return [parsed];
+      } catch {
+        // não é JSON válido, trata como URL direta
+      }
+    }
+    return trimmed ? [trimmed] : [];
+  }
   return [];
 }

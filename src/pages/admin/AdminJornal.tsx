@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -27,21 +29,26 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, X, Image, Video, Youtube, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Image, Video, Youtube, Upload, AlertTriangle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Jornal, JornalInsert } from "@/types/jornal";
+import { parseImagens } from "@/types/jornal";
 import type { Cidade } from "@/types/cidade";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, startOfDay, subDays, isAfter } from "date-fns";
 import VideoUpload from "@/components/shared/VideoUpload";
 
 const AdminJornal = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingJornal, setEditingJornal] = useState<Jornal | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "7days">("all");
   const [cidadeId, setCidadeId] = useState("");
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [dataNoticia, setDataNoticia] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [fonte, setFonte] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [uploadedVideoUrl, setUploadedVideoUrl] = useState<string | null>(null);
@@ -73,13 +80,14 @@ const AdminJornal = () => {
       const { data, error } = await supabase
         .from("rel_cidade_jornal")
         .select("*")
+        .order("data_noticia", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       return data.map((j) => ({
         ...j,
-        imagens: Array.isArray(j.imagens) ? j.imagens : [],
+        imagens: parseImagens(j.imagens),
       })) as Jornal[];
     },
   });
@@ -163,6 +171,7 @@ const AdminJornal = () => {
             cidade_id: jornal.cidade_id,
             titulo: jornal.titulo,
             descricao: jornal.descricao,
+            data_noticia: jornal.data_noticia || null,
             fonte: jornal.fonte,
             video_url: jornal.video_url,
             imagens: allImages,
@@ -205,12 +214,68 @@ const AdminJornal = () => {
     },
   });
 
+  // Bulk delete
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from("rel_cidade_jornal")
+        .delete()
+        .in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-jornais"] });
+      toast.success(`${selectedIds.size} notícia(s) excluída(s)!`);
+      setSelectedIds(new Set());
+      setConfirmBulkDelete(false);
+    },
+    onError: (error) => {
+      toast.error("Erro ao excluir notícias: " + error.message);
+    },
+  });
+
+  const filteredJornais = jornais.filter((j) => {
+    if (dateFilter === "all") return true;
+    const created = new Date(j.created_at);
+    if (dateFilter === "today") return isAfter(created, startOfDay(new Date()));
+    if (dateFilter === "7days") return isAfter(created, subDays(new Date(), 7));
+    return true;
+  });
+
+  const allSelected = filteredJornais.length > 0 && filteredJornais.every((j) => selectedIds.has(j.id));
+  const someSelected = filteredJornais.some((j) => selectedIds.has(j.id)) && !allSelected;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        filteredJornais.forEach((j) => next.delete(j.id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        filteredJornais.forEach((j) => next.add(j.id));
+        return next;
+      });
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
   // (imagens agora são gerenciadas na coluna JSON da tabela principal)
 
   const resetForm = () => {
     setCidadeId("");
     setTitulo("");
     setDescricao("");
+    setDataNoticia(format(new Date(), "yyyy-MM-dd"));
     setFonte("");
     setVideoUrl("");
     setUploadedVideoUrl(null);
@@ -234,6 +299,7 @@ const AdminJornal = () => {
         cidade_id: cidadeId,
         titulo,
         descricao,
+        data_noticia: dataNoticia,
         fonte: fonte || null,
         video_url: finalVideoUrl,
       });
@@ -242,6 +308,7 @@ const AdminJornal = () => {
         cidade_id: cidadeId,
         titulo,
         descricao,
+        data_noticia: dataNoticia,
         fonte: fonte || undefined,
         video_url: finalVideoUrl || undefined,
       });
@@ -253,6 +320,11 @@ const AdminJornal = () => {
     setCidadeId(jornal.cidade_id);
     setTitulo(jornal.titulo);
     setDescricao(jornal.descricao);
+    setDataNoticia(
+      jornal.data_noticia
+        ? jornal.data_noticia.slice(0, 10)
+        : format(new Date(jornal.created_at), "yyyy-MM-dd"),
+    );
     setFonte(jornal.fonte || "");
     
     // Detecta se é URL do YouTube ou upload direto
@@ -271,7 +343,7 @@ const AdminJornal = () => {
       setUploadedVideoUrl(null);
     }
     
-    setExistingImages(Array.isArray(jornal.imagens) ? jornal.imagens : jornal.imagens ? [jornal.imagens] : []);
+    setExistingImages(parseImagens(jornal.imagens));
     setImageFiles([]);
     setImagePreviews([]);
     setIsDialogOpen(true);
@@ -363,6 +435,17 @@ const AdminJornal = () => {
                   onChange={(e) => setDescricao(e.target.value)}
                   placeholder="Descrição completa da notícia"
                   rows={5}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="data-noticia">Data da notícia</Label>
+                <Input
+                  id="data-noticia"
+                  type="date"
+                  value={dataNoticia}
+                  onChange={(e) => setDataNoticia(e.target.value)}
                   required
                 />
               </div>
@@ -490,13 +573,100 @@ const AdminJornal = () => {
         </Dialog>
       </div>
 
+      {/* Filtros de data */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-muted-foreground font-medium">Filtrar:</span>
+        <div className="flex rounded-lg border overflow-hidden">
+          {(["all", "today", "7days"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setDateFilter(f)}
+              className={`px-4 py-1.5 text-sm transition-colors ${
+                dateFilter === f
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {f === "all" ? "Todas" : f === "today" ? "Hoje" : "Últimos 7 dias"}
+            </button>
+          ))}
+        </div>
+        <span className="text-sm text-muted-foreground ml-1">
+          {filteredJornais.length} notícia{filteredJornais.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* Barra de ações em massa */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
+          <span className="text-sm font-medium text-destructive">
+            {selectedIds.size} notícia{selectedIds.size !== 1 ? "s" : ""} selecionada{selectedIds.size !== 1 ? "s" : ""}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Cancelar seleção
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setConfirmBulkDelete(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Deletar selecionadas
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog de confirmação de delete em massa */}
+      <Dialog open={confirmBulkDelete} onOpenChange={setConfirmBulkDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Confirmar exclusão em massa
+            </DialogTitle>
+            <DialogDescription>
+              Você está prestes a excluir permanentemente{" "}
+              <strong>{selectedIds.size} notícia{selectedIds.size !== 1 ? "s" : ""}</strong>.
+              Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmBulkDelete(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={bulkDeleteMutation.isPending}
+              onClick={() => bulkDeleteMutation.mutate(Array.from(selectedIds))}
+            >
+              {bulkDeleteMutation.isPending ? "Excluindo..." : `Excluir ${selectedIds.size} notícia${selectedIds.size !== 1 ? "s" : ""}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[44px]">
+                <Checkbox
+                  checked={allSelected}
+                  ref={(el) => { if (el) (el as any).indeterminate = someSelected; }}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Selecionar todos"
+                />
+              </TableHead>
               <TableHead className="w-[60px]">Img</TableHead>
               <TableHead>Título</TableHead>
               <TableHead>Cidade</TableHead>
+              <TableHead>Data da notícia</TableHead>
               <TableHead>Criado em</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
@@ -504,23 +674,34 @@ const AdminJornal = () => {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Carregando...
                 </TableCell>
               </TableRow>
-            ) : jornais.length === 0 ? (
+            ) : filteredJornais.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                  Nenhuma notícia cadastrada
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  {jornais.length === 0 ? "Nenhuma notícia cadastrada" : "Nenhuma notícia encontrada para este filtro"}
                 </TableCell>
               </TableRow>
             ) : (
-              jornais.map((jornal) => (
-                <TableRow key={jornal.id}>
+              filteredJornais.map((jornal) => (
+                <TableRow
+                  key={jornal.id}
+                  data-selected={selectedIds.has(jornal.id)}
+                  className={selectedIds.has(jornal.id) ? "bg-destructive/5" : ""}
+                >
                   <TableCell>
-                    {jornal.imagens?.[0] ? (
+                    <Checkbox
+                      checked={selectedIds.has(jornal.id)}
+                      onCheckedChange={() => toggleSelect(jornal.id)}
+                      aria-label={`Selecionar ${jornal.titulo}`}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {parseImagens(jornal.imagens)[0] ? (
                       <img
-                        src={jornal.imagens[0]}
+                        src={parseImagens(jornal.imagens)[0]}
                         alt={jornal.titulo}
                         className="w-12 h-8 object-cover rounded"
                       />
@@ -539,6 +720,11 @@ const AdminJornal = () => {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {getCidadeNome(jornal.cidade_id)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {jornal.data_noticia
+                      ? format(new Date(`${jornal.data_noticia}T00:00:00`), "dd/MM/yyyy")
+                      : "—"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {format(new Date(jornal.created_at), "dd/MM/yyyy HH:mm")}

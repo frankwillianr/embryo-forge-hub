@@ -29,6 +29,10 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
     navigate(`/cidade/${cidadeSlug}/jornal#${jornal.id}`);
   };
 
+  const dataExibicao = jornal.data_noticia
+    ? new Date(`${jornal.data_noticia}T00:00:00`)
+    : new Date(jornal.created_at);
+
   return (
     <div 
       onClick={handleClick}
@@ -57,7 +61,7 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
       <div className="pt-2.5 space-y-0.5">
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
-            {format(new Date(jornal.created_at), "dd MMM", { locale: ptBR })}
+            {format(dataExibicao, "dd MMM", { locale: ptBR })}
           </span>
           <div className="flex items-center gap-1 ml-auto">
             {jornal.categoria && (

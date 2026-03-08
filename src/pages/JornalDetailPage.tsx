@@ -414,7 +414,9 @@ const JornalDetailPage = () => {
       <div className="p-4 space-y-4">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
-            {format(new Date(jornal.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+            {jornal.data_noticia
+              ? format(new Date(`${jornal.data_noticia}T00:00:00`), "dd 'de' MMMM", { locale: ptBR })
+              : format(new Date(jornal.created_at), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
           </span>
         </div>
 

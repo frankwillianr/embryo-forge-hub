@@ -54,8 +54,9 @@ const AdminScraping = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rel_cidade_jornal")
-        .select("id, titulo, fonte, id_externo, created_at, cidade_id, cidade(nome)")
+        .select("id, titulo, fonte, id_externo, created_at, data_noticia, cidade_id, cidade(nome)")
         .not("id_externo", "is", null)
+        .order("data_noticia", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -78,13 +79,14 @@ const AdminScraping = () => {
                 nome: item.fonte,
                 url: origin,
                 total: 0,
-                ultima: item.created_at,
+                ultima: item.data_noticia || item.created_at,
                 cidade: item.cidade?.nome ?? "",
               };
             }
             acc[item.fonte].total++;
-            if (item.created_at > acc[item.fonte].ultima) {
-              acc[item.fonte].ultima = item.created_at;
+            const dataComparacao = item.data_noticia || item.created_at;
+            if (new Date(dataComparacao) > new Date(acc[item.fonte].ultima)) {
+              acc[item.fonte].ultima = dataComparacao;
             }
             return acc;
           },

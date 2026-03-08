@@ -24,6 +24,7 @@ const AdminCidadeJornal = ({ cidadeId }: AdminCidadeJornalProps) => {
         .from("rel_cidade_jornal")
         .select("*")
         .eq("cidade_id", cidadeId)
+        .order("data_noticia", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -71,7 +72,7 @@ const AdminCidadeJornal = ({ cidadeId }: AdminCidadeJornalProps) => {
             <TableRow>
               <TableHead>Título</TableHead>
               <TableHead>Categoria</TableHead>
-              <TableHead>Data</TableHead>
+              <TableHead>Data notícia</TableHead>
               <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -85,7 +86,7 @@ const AdminCidadeJornal = ({ cidadeId }: AdminCidadeJornalProps) => {
                   <Badge variant="secondary">{item.categoria || "Geral"}</Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                  {new Date(item.data_noticia || item.created_at).toLocaleDateString("pt-BR")}
                 </TableCell>
                 <TableCell>
                   <Badge variant={item.publicado !== false ? "default" : "outline"}>

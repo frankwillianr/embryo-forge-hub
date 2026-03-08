@@ -409,6 +409,9 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
 
   const descricao = (jornal.descricao || "").replace(/\\n/g, '\n');
   const shouldTruncate = descricao.length > 100;
+  const dataExibicao = jornal.data_noticia
+    ? new Date(`${jornal.data_noticia}T00:00:00`)
+    : new Date(jornal.created_at);
 
   return (
     <article id={`jornal-${jornal.id}`} className="border-b border-border/50 relative mb-6 scroll-mt-16">
@@ -427,7 +430,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
               Jornal da Cidade
             </span>
             <span className="text-[11px] text-muted-foreground">
-              {formatDistanceToNow(new Date(jornal.created_at), { addSuffix: true, locale: ptBR })}
+              {formatDistanceToNow(dataExibicao, { addSuffix: true, locale: ptBR })}
             </span>
           </div>
         </div>

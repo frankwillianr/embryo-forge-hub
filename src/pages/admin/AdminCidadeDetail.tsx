@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign, MessageCircle, Users, Building2, CalendarDays, Rss } from "lucide-react";
@@ -15,19 +15,21 @@ import AdminCidadeUsuarios from "@/components/admin/cidade/AdminCidadeUsuarios";
 import AdminCidadeEmpresas from "@/components/admin/cidade/AdminCidadeEmpresas";
 import AdminCidadeEventos from "@/components/admin/cidade/AdminCidadeEventos";
 import AdminCidadeScraping from "@/components/admin/cidade/AdminCidadeScraping";
+import AdminCidadeScrapingEventos from "@/components/admin/cidade/AdminCidadeScrapingEventos";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { id: "jornal", label: "Jornal", icon: Newspaper },
   { id: "cinema", label: "Cinema", icon: Film },
-  { id: "alo-prefeitura", label: "Alô Prefeitura", icon: Phone },
+  { id: "alo-prefeitura", label: "Alo Prefeitura", icon: Phone },
   { id: "banners", label: "Banners", icon: Megaphone },
   { id: "eventos", label: "Eventos", icon: CalendarDays },
   { id: "empresas", label: "Empresas", icon: Building2 },
-  { id: "comentarios", label: "Comentários", icon: MessageCircle },
-  { id: "usuarios", label: "Usuários", icon: Users },
-  { id: "precificacao", label: "Precificação", icon: DollarSign },
-  { id: "scraping", label: "Scraping", icon: Rss },
+  { id: "comentarios", label: "Comentarios", icon: MessageCircle },
+  { id: "usuarios", label: "Usuarios", icon: Users },
+  { id: "precificacao", label: "Precificacao", icon: DollarSign },
+  { id: "scraping", label: "scarpping de noticas", icon: Rss },
+  { id: "scraping-eventos", label: "scraping de eventos", icon: Rss },
 ];
 
 const AdminCidadeDetail = () => {
@@ -35,7 +37,6 @@ const AdminCidadeDetail = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("jornal");
 
-  // Fetch cidade details
   const { data: cidade, isLoading } = useQuery({
     queryKey: ["cidade", cidadeId],
     queryFn: async () => {
@@ -62,9 +63,9 @@ const AdminCidadeDetail = () => {
   if (!cidade) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <div className="text-gray-400">Cidade não encontrada</div>
-        <Button 
-          variant="ghost" 
+        <div className="text-gray-400">Cidade nao encontrada</div>
+        <Button
+          variant="ghost"
           onClick={() => navigate("/admin/cidades")}
           className="text-gray-600"
         >
@@ -77,11 +78,10 @@ const AdminCidadeDetail = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => navigate("/admin/cidades")}
           className="text-gray-600 hover:text-gray-900"
         >
@@ -102,7 +102,6 @@ const AdminCidadeDetail = () => {
         </div>
       </div>
 
-      {/* Tab Buttons */}
       <div className="flex gap-2 flex-wrap">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -114,7 +113,7 @@ const AdminCidadeDetail = () => {
                 "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                 activeTab === tab.id
                   ? "bg-black text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-100"
+                  : "bg-white text-gray-600 hover:bg-gray-100",
               )}
             >
               <Icon className="h-4 w-4" />
@@ -124,7 +123,6 @@ const AdminCidadeDetail = () => {
         })}
       </div>
 
-      {/* Tab Content */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         {activeTab === "jornal" && <AdminCidadeJornal cidadeId={cidadeId!} />}
         {activeTab === "cinema" && <AdminCidadeCinema cidadeId={cidadeId!} />}
@@ -136,6 +134,7 @@ const AdminCidadeDetail = () => {
         {activeTab === "usuarios" && <AdminCidadeUsuarios cidadeId={cidadeId!} />}
         {activeTab === "precificacao" && <AdminCidadePrecificacao cidadeId={cidadeId!} />}
         {activeTab === "scraping" && <AdminCidadeScraping cidadeId={cidadeId!} />}
+        {activeTab === "scraping-eventos" && <AdminCidadeScrapingEventos cidadeId={cidadeId!} />}
       </div>
     </div>
   );
