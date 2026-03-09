@@ -148,7 +148,7 @@ export default function MapaEmpresasView({
         .select(`
           id, nome, categoria, latitude, longitude, descricao, whatsapp, instagram,
           endereco_rua, endereco_numero, endereco_bairro, endereco_complemento, endereco_cep,
-          horario_funcionamento, banner_oferta_url, video_url,
+          horario_funcionamento, banner_oferta_url, video_url, logomarca_url,
           fotos:rel_cidade_servico_empresa_foto(id, url, ordem)
         `)
         .eq("id", selectedEmpresaId)
