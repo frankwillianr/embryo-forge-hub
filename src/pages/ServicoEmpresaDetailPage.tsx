@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -25,11 +25,11 @@ interface HorarioFuncionamento {
 
 const diasAbreviados: Record<string, string> = {
   "Segunda": "Seg",
-  "TerÃ§a": "Ter",
+  "Terça": "Ter",
   "Quarta": "Qua",
   "Quinta": "Qui",
   "Sexta": "Sex",
-  "SÃ¡bado": "SÃ¡b",
+  "Sábado": "Sáb",
   "Domingo": "Dom",
 };
 
@@ -64,7 +64,7 @@ const ServicoEmpresaDetailPage = () => {
   const handleWhatsApp = () => {
     if (!empresa) return;
     const message = encodeURIComponent(
-      `OlÃ¡! Vi seu perfil no app e gostaria de mais informaÃ§Ãµes.`
+      `Olá! Vi seu perfil no app e gostaria de mais informações.`
     );
     window.open(`https://wa.me/55${empresa.whatsapp}?text=${message}`, "_blank");
   };
@@ -89,9 +89,9 @@ const ServicoEmpresaDetailPage = () => {
   const images = empresa?.fotos ? [...empresa.fotos].sort((a, b) => a.ordem - b.ordem) : [];
   const horarios = (empresa?.horario_funcionamento as HorarioFuncionamento[]) || [];
 
-  // Verificar se estÃ¡ aberto agora
+  // Verificar se está aberto agora
   const getStatusHoje = () => {
-    const dias = ["Domingo", "Segunda", "TerÃ§a", "Quarta", "Quinta", "Sexta", "SÃ¡bado"];
+    const dias = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
     const hoje = dias[new Date().getDay()];
     const horarioHoje = horarios.find((h) => h.dia === hoje);
 
@@ -109,12 +109,12 @@ const ServicoEmpresaDetailPage = () => {
     if (horaAtual >= abertura && horaAtual < fechamento) {
       return {
         aberto: true,
-        texto: `Aberto - Fecha as ${horarioHoje.fechamento}`,
+        texto: `Aberto - Fecha às ${horarioHoje.fechamento}`,
       };
     } else if (horaAtual < abertura) {
       return {
         aberto: false,
-        texto: `Fechado - Abre as ${horarioHoje.abertura}`,
+        texto: `Fechado - Abre às ${horarioHoje.abertura}`,
       };
     } else {
       return { aberto: false, texto: "Fechado" };
@@ -156,12 +156,12 @@ const ServicoEmpresaDetailPage = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-semibold">NÃ£o encontrado</h1>
+          <h1 className="text-lg font-semibold">Não encontrado</h1>
         </header>
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
             <p className="text-muted-foreground mb-4">
-              Esta empresa nÃ£o existe ou foi removida.
+              Esta empresa não existe ou foi removida.
             </p>
             <Button onClick={() => navigate(`/cidade/${slug}/servicos/${categoriaId}`)}>
               Voltar
@@ -224,7 +224,7 @@ const ServicoEmpresaDetailPage = () => {
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <div className="text-center">
-              <span className="text-8xl block mb-2">ðŸ¢</span>
+              <span className="text-8xl block mb-2">🏢</span>
               <span className="text-muted-foreground text-sm">Sem fotos</span>
             </div>
           </div>
@@ -257,7 +257,7 @@ const ServicoEmpresaDetailPage = () => {
         </div>
       )}
 
-      {/* ConteÃºdo principal */}
+      {/* Conteúdo principal */}
       <main className="flex-1 relative z-0">
         <div className="bg-background rounded-t-3xl pt-6 pb-28">
           {/* Nome e status */}
@@ -281,7 +281,7 @@ const ServicoEmpresaDetailPage = () => {
               {statusHoje.texto}
             </p>
 
-            {/* DescriÃ§Ã£o */}
+            {/* Descrição */}
             {empresa.descricao && (
               <p className="text-foreground/80 leading-relaxed">
                 {empresa.descricao}
@@ -303,10 +303,10 @@ const ServicoEmpresaDetailPage = () => {
             </div>
           )}
 
-          {/* VÃ­deo da empresa */}
+          {/* Vídeo da empresa */}
           {empresa.video_url && (
             <div className="px-5 mt-5">
-              <h3 className="font-medium text-foreground mb-3">VÃ­deo da empresa</h3>
+              <h3 className="font-medium text-foreground mb-3">Vídeo da empresa</h3>
               <div className="rounded-2xl overflow-hidden shadow-lg bg-black">
                 <video
                   src={empresa.video_url}
@@ -319,7 +319,7 @@ const ServicoEmpresaDetailPage = () => {
             </div>
           )}
 
-          {/* AÃ§Ãµes rÃ¡pidas */}
+          {/* Ações rápidas */}
           <div className="px-5 mt-6">
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -342,14 +342,14 @@ const ServicoEmpresaDetailPage = () => {
             </div>
           </div>
 
-          {/* InformaÃ§Ãµes */}
+          {/* Informações */}
           <div className="px-5 mt-6 space-y-4">
-            {/* EndereÃ§o */}
+            {/* Endereço */}
             {formatEndereco() && (
               <div className="flex items-start gap-3 p-4 rounded-2xl bg-muted/50">
                 <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-foreground">EndereÃ§o</p>
+                  <p className="font-medium text-foreground">Endereço</p>
                   <p className="text-sm text-muted-foreground">
                     {formatEndereco()}
                     {empresa.endereco_complemento && (
@@ -394,7 +394,7 @@ const ServicoEmpresaDetailPage = () => {
               </button>
             )}
 
-            {/* HorÃ¡rios */}
+            {/* Horários */}
             {horarios.length > 0 && (
               <div className="p-4 rounded-2xl bg-muted/50">
                 <button
@@ -404,7 +404,7 @@ const ServicoEmpresaDetailPage = () => {
                   <Clock className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 text-left">
                     <p className="font-medium text-foreground">
-                      HorÃ¡rio de funcionamento
+                      Horário de funcionamento
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {showAllHours ? "Toque para fechar" : "Toque para ver todos"}
@@ -448,11 +448,11 @@ const ServicoEmpresaDetailPage = () => {
               <div className="mt-6">
                 <h3 className="font-medium text-foreground mb-3 flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-muted-foreground" />
-                  LocalizaÃ§Ã£o
+                  Localização
                 </h3>
                 <div className="rounded-2xl overflow-hidden border border-border">
                   <iframe
-                    title="LocalizaÃ§Ã£o"
+                    title="Localização"
                     width="100%"
                     height="200"
                     style={{ border: 0 }}
@@ -487,4 +487,3 @@ const ServicoEmpresaDetailPage = () => {
 };
 
 export default ServicoEmpresaDetailPage;
-
