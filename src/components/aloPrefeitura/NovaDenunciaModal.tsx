@@ -67,8 +67,8 @@ const NovaDenunciaModal = ({
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error("Vídeo muito grande. Máximo de 50MB.");
+    if (file.size > 80 * 1024 * 1024) {
+      toast.error("Vídeo muito grande. Máximo de 80MB.");
       return;
     }
 
@@ -179,10 +179,6 @@ const NovaDenunciaModal = ({
       toast.error("Descreva a denúncia");
       return;
     }
-    if (imagens.length === 0) {
-      toast.error("Adicione pelo menos uma foto");
-      return;
-    }
     mutation.mutate();
   };
 
@@ -237,9 +233,9 @@ const NovaDenunciaModal = ({
             </p>
           </div>
 
-          {/* Upload de imagens - OBRIGATÓRIO */}
+          {/* Upload de imagens - OPCIONAL */}
           <div className="space-y-2">
-            <Label>Fotos *</Label>
+            <Label>Fotos</Label>
             <div className="flex flex-wrap gap-2">
               {imagens.map((file, index) => (
                 <div key={index} className="relative">
@@ -257,21 +253,19 @@ const NovaDenunciaModal = ({
                   </button>
                 </div>
               ))}
-              {imagens.length < 5 && (
-                <label className="w-16 h-16 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                  <Camera className="h-5 w-5 text-muted-foreground" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                    multiple
-                  />
-                </label>
-              )}
+              <label className="w-16 h-16 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                <Camera className="h-5 w-5 text-muted-foreground" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  multiple
+                />
+              </label>
             </div>
             <p className="text-xs text-muted-foreground">
-              Adicione pelo menos 1 foto (máx. 5) para ilustrar o problema
+              Adicione fotos para ilustrar o problema (opcional, máx. 5)
             </p>
           </div>
 
@@ -302,7 +296,7 @@ const NovaDenunciaModal = ({
               >
                 <Video className="h-6 w-6" />
                 <span className="text-sm font-medium">Adicionar vídeo</span>
-                <span className="text-xs">MP4, WebM ou MOV (máx. 50MB)</span>
+                <span className="text-xs">MP4, WebM ou MOV (máx. 80MB)</span>
               </button>
             )}
             <input
