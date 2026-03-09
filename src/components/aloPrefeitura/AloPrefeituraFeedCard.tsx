@@ -407,6 +407,19 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
         )}
       </div>
 
+      {/* Vídeo (quando tem imagens E vídeo) */}
+      {imagens.length > 0 && item.video_url && (
+        <div className="px-3 pt-2">
+          <video
+            src={item.video_url}
+            className="w-full rounded-xl aspect-video object-contain bg-black"
+            controls
+            playsInline
+            preload="metadata"
+          />
+        </div>
+      )}
+
       {/* Ações */}
       <div className="px-3 pt-2.5">
         <div className="flex items-center justify-between">
