@@ -30,6 +30,7 @@ const NovaDenunciaModal = ({
   cidadeId,
   cidadeSlug,
 }: NovaDenunciaModalProps) => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
