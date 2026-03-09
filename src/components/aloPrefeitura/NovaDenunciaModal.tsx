@@ -94,6 +94,7 @@ const NovaDenunciaModal = ({
           titulo: titulo.trim(),
           descricao: descricao.trim(),
           status: "pendente",
+          user_id: user?.id || null,
         })
         .select()
         .single();
