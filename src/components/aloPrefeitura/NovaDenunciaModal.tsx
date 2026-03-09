@@ -67,8 +67,8 @@ const NovaDenunciaModal = ({
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error("Vídeo muito grande. Máximo de 50MB.");
+    if (file.size > 80 * 1024 * 1024) {
+      toast.error("Vídeo muito grande. Máximo de 80MB.");
       return;
     }
 
