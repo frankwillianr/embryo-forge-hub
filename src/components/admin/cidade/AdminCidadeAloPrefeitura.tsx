@@ -39,6 +39,7 @@ const AdminCidadeAloPrefeitura = ({ cidadeId }: AdminCidadeAloPrefeituraProps) =
   const [detailDialog, setDetailDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [editForm, setEditForm] = useState({ titulo: "", descricao: "", status: "pendente" });
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
   // Edit media state
   const [editImagens, setEditImagens] = useState<any[]>([]); // existing images from DB
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]); // new files to upload
