@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ShieldCheck, X, Camera, Video, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ const NovaDenunciaModal = ({
   cidadeId,
   cidadeSlug,
 }: NovaDenunciaModalProps) => {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -92,6 +94,7 @@ const NovaDenunciaModal = ({
           titulo: titulo.trim(),
           descricao: descricao.trim(),
           status: "pendente",
+          user_id: user?.id || null,
         })
         .select()
         .single();
