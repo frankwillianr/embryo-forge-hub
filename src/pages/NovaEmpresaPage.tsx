@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Clock, Search, X } from "lucide-react";
@@ -32,11 +32,11 @@ interface HorarioFuncionamento {
 
 const diasSemana = [
   "Segunda",
-  "TerÃ§a",
+  "Terça",
   "Quarta",
   "Quinta",
   "Sexta",
-  "SÃ¡bado",
+  "Sábado",
   "Domingo",
 ];
 
@@ -53,7 +53,7 @@ const NovaEmpresaPage = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  // Categorias: atÃ© 3; se veio da pÃ¡gina do serviÃ§o, jÃ¡ vem uma prÃ©-selecionada
+  // Categorias: até 3; se veio da página do serviço, já vem uma pré-selecionada
   const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<string[]>(() =>
     categoriaId ? [categoriaId] : []
   );
@@ -72,7 +72,7 @@ const NovaEmpresaPage = () => {
     setCategoriasSelecionadas((prev) => prev.filter((c) => c !== id));
   };
 
-  // Busca: filtrar categorias que ainda nÃ£o foram selecionadas
+  // Busca: filtrar categorias que ainda não foram selecionadas
   const buscaNorm = buscaCategoria.trim().toLowerCase();
   const categoriasParaBusca =
     buscaNorm.length >= 1
@@ -124,7 +124,7 @@ const NovaEmpresaPage = () => {
     }))
   );
 
-  // Buscar cidade com preÃ§o
+  // Buscar cidade com preço
   const { data: cidade } = useQuery({
     queryKey: ["cidade", slug],
     queryFn: async () => {
@@ -178,7 +178,7 @@ const NovaEmpresaPage = () => {
   };
 
   const handleInstagramChange = (value: string) => {
-    // Remove @ se jÃ¡ existir e espaÃ§os
+    // Remove @ se já existir e espaços
     const cleaned = value.replace(/^@/, "").replace(/\s/g, "").toLowerCase();
     setInstagram(cleaned);
   };
@@ -196,9 +196,9 @@ const NovaEmpresaPage = () => {
   // Criar empresa
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!cidade?.id) throw new Error("Cidade nÃ£o encontrada");
-      if (!user?.id) throw new Error("UsuÃ¡rio nÃ£o autenticado");
-      if (categoriasSelecionadas.length === 0) throw new Error("Selecione ao menos um tipo de serviÃ§o");
+      if (!cidade?.id) throw new Error("Cidade não encontrada");
+      if (!user?.id) throw new Error("Usuário não autenticado");
+      if (categoriasSelecionadas.length === 0) throw new Error("Selecione ao menos um tipo de serviço");
 
       const categoriaPrincipal = categoriasSelecionadas[0];
       const adicionais = categoriasSelecionadas.slice(1, MAX_CATEGORIAS);
@@ -269,10 +269,10 @@ const NovaEmpresaPage = () => {
 
         if (emailError) {
           console.error("Erro ao enviar e-mail de pagamento:", emailError);
-          // NÃ£o bloqueia o cadastro se o e-mail falhar
+          // Não bloqueia o cadastro se o e-mail falhar
         }
       } catch (emailErr) {
-        console.error("Erro ao chamar funÃ§Ã£o de e-mail:", emailErr);
+        console.error("Erro ao chamar função de e-mail:", emailErr);
       }
 
       return empresa;
@@ -282,7 +282,7 @@ const NovaEmpresaPage = () => {
       queryClient.invalidateQueries({ queryKey: ["minhas-empresas"] });
       toast({
         title: "Empresa cadastrada!",
-        description: "VocÃª receberÃ¡ o link de pagamento por e-mail em instantes.",
+        description: "Você receberá o link de pagamento por e-mail em instantes.",
       });
       const primeiraCat = categoriasSelecionadas[0];
       if (categoriaId) {
@@ -328,16 +328,16 @@ const NovaEmpresaPage = () => {
       </header>
 
       <main className="flex-1 p-4 space-y-6 pb-24">
-        {/* Tipos de serviÃ§o (atÃ© 3) */}
+        {/* Tipos de serviço (até 3) */}
         <div className="space-y-2">
-          <Label>Tipos de serviÃ§o (atÃ© 3) *</Label>
+          <Label>Tipos de serviço (até 3) *</Label>
           <p className="text-xs text-muted-foreground">
-            Busque e selecione em quais categorias sua empresa aparecerÃ¡. MÃ¡ximo 3.
+            Busque e selecione em quais categorias sua empresa aparecerá. Máximo 3.
           </p>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Digite para buscar (ex: eletricista, salÃ£o...)"
+              placeholder="Digite para buscar (ex: eletricista, salão...)"
               value={buscaCategoria}
               onChange={(e) => setBuscaCategoria(e.target.value)}
               className="pl-9"
@@ -384,9 +384,9 @@ const NovaEmpresaPage = () => {
           )}
         </div>
 
-        {/* Fotos do negÃ³cio */}
+        {/* Fotos do negócio */}
         <div className="space-y-2">
-          <Label>Fotos do negÃ³cio</Label>
+          <Label>Fotos do negócio</Label>
           <ImageUpload
             images={fotos}
             onChange={setFotos}
@@ -415,7 +415,7 @@ const NovaEmpresaPage = () => {
         <div className="space-y-2">
           <Label>Banner de oferta (opcional)</Label>
           <p className="text-xs text-muted-foreground mb-2">
-            Destaque uma promoÃ§Ã£o ou oferta especial
+            Destaque uma promoção ou oferta especial
           </p>
           <ImageUpload
             images={bannerOferta}
@@ -426,11 +426,11 @@ const NovaEmpresaPage = () => {
           />
         </div>
 
-        {/* VÃ­deo da empresa */}
+        {/* Vídeo da empresa */}
         <div className="space-y-2">
-          <Label>VÃ­deo da empresa (opcional)</Label>
+          <Label>Vídeo da empresa (opcional)</Label>
           <p className="text-xs text-muted-foreground mb-2">
-            Mostre seu trabalho em um vÃ­deo curto
+            Mostre seu trabalho em um vídeo curto
           </p>
           <VideoUpload
             videoUrl={videoUrl}
@@ -446,19 +446,19 @@ const NovaEmpresaPage = () => {
           <Label htmlFor="nome">Nome da empresa *</Label>
           <Input
             id="nome"
-            placeholder="Ex: SalÃ£o da Maria"
+            placeholder="Ex: Salão da Maria"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             maxLength={100}
           />
         </div>
 
-        {/* DescriÃ§Ã£o */}
+        {/* Descrição */}
         <div className="space-y-2">
-          <Label htmlFor="descricao">DescriÃ§Ã£o</Label>
+          <Label htmlFor="descricao">Descrição</Label>
           <Textarea
             id="descricao"
-            placeholder="Descreva seus serviÃ§os, diferenciais..."
+            placeholder="Descreva seus serviços, diferenciais..."
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
             rows={3}
@@ -534,14 +534,14 @@ const NovaEmpresaPage = () => {
           </div>
           <p className="text-xs text-muted-foreground">
             {cupomTipo === "porcentagem"
-              ? "Desconto em % sobre o valor do serviÃ§o (ex: 10 = 10%)."
+              ? "Desconto em % sobre o valor do serviço (ex: 10 = 10%)."
               : "Desconto em reais (ex: 50 = R$ 50,00)."}
           </p>
         </div>
 
-        {/* EndereÃ§o */}
+        {/* Endereço */}
         <div className="space-y-4 pt-4 border-t border-border">
-          <h3 className="font-medium text-foreground">EndereÃ§o</h3>
+          <h3 className="font-medium text-foreground">Endereço</h3>
 
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1 space-y-2">
@@ -573,7 +573,7 @@ const NovaEmpresaPage = () => {
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="numero">NÃºmero</Label>
+              <Label htmlFor="numero">Número</Label>
               <Input
                 id="numero"
                 placeholder="123"
@@ -603,16 +603,16 @@ const NovaEmpresaPage = () => {
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            O endereÃ§o Ã© usado para exibir sua empresa no mapa da cidade (localizaÃ§Ã£o obtida automaticamente).
+            O endereço é usado para exibir sua empresa no mapa da cidade (localização obtida automaticamente).
           </p>
         </div>
 
-        {/* HorÃ¡rio de funcionamento */}
+        {/* Horário de funcionamento */}
         <div className="space-y-4 pt-4 border-t border-border">
           <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-muted-foreground" />
             <h3 className="font-medium text-foreground">
-              HorÃ¡rio de Funcionamento
+              Horário de Funcionamento
             </h3>
           </div>
 
@@ -646,7 +646,7 @@ const NovaEmpresaPage = () => {
                       }
                       className="w-24 h-8 text-sm"
                     />
-                    <span className="text-muted-foreground">as</span>
+                    <span className="text-muted-foreground">às</span>
                     <Input
                       type="time"
                       value={horario.fechamento}
@@ -667,7 +667,7 @@ const NovaEmpresaPage = () => {
         {/* Pricing Info Card */}
         <EmpresaPricingInfo />
 
-        {/* BotÃ£o de cadastro */}
+        {/* Botão de cadastro */}
         <div className="pt-4 pb-8">
           <Button
             className="w-full bg-[#331D4A] hover:bg-[#331D4A]/90 text-white rounded-xl"
@@ -708,4 +708,3 @@ const NovaEmpresaPage = () => {
 };
 
 export default NovaEmpresaPage;
-
