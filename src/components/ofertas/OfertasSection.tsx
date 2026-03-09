@@ -127,32 +127,27 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
   return (
     <div className="py-6">
       {/* Header */}
-      <div className="px-5 mb-1">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
-              <BadgePercent className="h-4 w-4 text-primary" />
-              Mural de ofertas
-            </h2>
-            <p className="text-[12px] text-muted-foreground/70 mt-0.5">
-              Promoções imperdíveis
-            </p>
-          </div>
-          <div className="flex flex-col gap-1.5 shrink-0">
-            <button
-              onClick={() => navigate(`/cidade/${cidadeSlug}/empresa/novo`)}
-              className="text-[11px] font-medium px-2 py-1 rounded-full border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors whitespace-nowrap"
-            >
-              Adicionar minha empresa
-            </button>
-            <button
-              onClick={() => navigate(`/cidade/${cidadeSlug}/ofertas`)}
-              className="text-[11px] font-medium px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
-            >
-              Ver todas
-            </button>
-          </div>
-        </div>
+      <div className="flex items-center justify-between px-5 mb-1">
+        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+          <BadgePercent className="h-4 w-4 text-primary" />
+          Mural de ofertas
+        </h2>
+        <button
+          onClick={() => navigate(`/cidade/${cidadeSlug}/ofertas`)}
+          className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/15 transition-colors"
+        >
+          Ver todas
+        </button>
+      </div>
+
+      {/* Adicionar empresa */}
+      <div className="px-5 mb-3">
+        <button
+          onClick={() => navigate(`/cidade/${cidadeSlug}/empresa/novo`)}
+          className="text-xs font-medium px-3 py-1.5 rounded-full border border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+        >
+          Adicionar minha empresa
+        </button>
       </div>
 
       {/* Tabs de categoria */}
