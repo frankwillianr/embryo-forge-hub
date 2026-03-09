@@ -186,18 +186,12 @@ const ServicoEmpresaDetailPage = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header flutuante */}
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 pt-safe">
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center p-4 pt-safe">
         <button
           onClick={() => navigate(`/cidade/${slug}/servicos/${categoriaId}`)}
           className="p-2.5 bg-background/80 backdrop-blur-md rounded-full shadow-sm border border-border/50 hover:bg-background transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
-        </button>
-        <button
-          onClick={handleShare}
-          className="p-2.5 bg-background/80 backdrop-blur-md rounded-full shadow-sm border border-border/50 hover:bg-background transition-colors"
-        >
-          {copied ? <Check className="h-5 w-5" /> : <Share2 className="h-5 w-5" />}
         </button>
       </header>
 
