@@ -317,30 +317,53 @@ const AdminCidadeAloPrefeitura = ({ cidadeId }: AdminCidadeAloPrefeituraProps) =
     );
   };
 
+  const filteredDenuncias = statusFilter
+    ? denuncias.filter((d: any) => d.status === statusFilter)
+    : denuncias;
+
+  const toggleFilter = (status: string) => {
+    setStatusFilter((prev) => (prev === status ? null : status));
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-muted rounded-xl p-4 text-center">
-          <Clock className="h-5 w-5 mx-auto text-amber-500 mb-2" />
-          <p className="text-2xl font-semibold text-foreground">{pendentes.length}</p>
-          <p className="text-xs text-muted-foreground">Pendentes</p>
-        </div>
-        <div className="bg-muted rounded-xl p-4 text-center">
-          <CheckCircle className="h-5 w-5 mx-auto text-green-500 mb-2" />
-          <p className="text-2xl font-semibold text-foreground">{aprovados.length}</p>
-          <p className="text-xs text-muted-foreground">Aprovados</p>
-        </div>
-        <div className="bg-muted rounded-xl p-4 text-center">
-          <XCircle className="h-5 w-5 mx-auto text-red-500 mb-2" />
-          <p className="text-2xl font-semibold text-foreground">{rejeitados.length}</p>
-          <p className="text-xs text-muted-foreground">Rejeitados</p>
-        </div>
+    <div className="space-y-4">
+      {/* Stats - compact & clickable */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => toggleFilter("pendente")}
+          className={`flex-1 rounded-lg p-2 text-center transition-all ${statusFilter === "pendente" ? "ring-2 ring-amber-500 bg-amber-50" : "bg-muted"}`}
+        >
+          <p className="text-lg font-semibold text-foreground">{pendentes.length}</p>
+          <p className="text-[10px] text-muted-foreground">Pendentes</p>
+        </button>
+        <button
+          onClick={() => toggleFilter("aprovado")}
+          className={`flex-1 rounded-lg p-2 text-center transition-all ${statusFilter === "aprovado" ? "ring-2 ring-green-500 bg-green-50" : "bg-muted"}`}
+        >
+          <p className="text-lg font-semibold text-foreground">{aprovados.length}</p>
+          <p className="text-[10px] text-muted-foreground">Aprovados</p>
+        </button>
+        <button
+          onClick={() => toggleFilter("rejeitado")}
+          className={`flex-1 rounded-lg p-2 text-center transition-all ${statusFilter === "rejeitado" ? "ring-2 ring-red-500 bg-red-50" : "bg-muted"}`}
+        >
+          <p className="text-lg font-semibold text-foreground">{rejeitados.length}</p>
+          <p className="text-[10px] text-muted-foreground">Rejeitados</p>
+        </button>
       </div>
+
+      {statusFilter && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Filtrando: <span className="font-medium text-foreground capitalize">{statusFilter}</span> ({filteredDenuncias.length})
+          </p>
+          <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setStatusFilter(null)}>Limpar</Button>
+        </div>
+      )}
 
       {/* List */}
       <div className="space-y-3">
-        {denuncias.map((item: any) => {
+        {filteredDenuncias.map((item: any) => {
           const status = statusConfig[item.status as keyof typeof statusConfig] || statusConfig.pendente;
           return (
             <div key={item.id} className="p-4 bg-muted rounded-xl space-y-3">
