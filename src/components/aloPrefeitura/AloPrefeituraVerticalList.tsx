@@ -145,6 +145,13 @@ const AloPrefeituraVerticalList = ({ cidadeSlug }: AloPrefeituraVerticalListProp
                         alt={item.titulo}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
+                    ) : item.video_url ? (
+                      <video
+                        src={item.video_url}
+                        className="w-full h-full object-cover"
+                        muted
+                        preload="metadata"
+                      />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-muted/20 to-muted/40 flex items-center justify-center">
                         <Megaphone className="h-6 w-6 text-muted-foreground/30" />
