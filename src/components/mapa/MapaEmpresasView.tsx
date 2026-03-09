@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import {
   ArrowLeft,
   Loader2,
@@ -264,6 +267,10 @@ export default function MapaEmpresasView({
       {/* Modal da empresa */}
       <Dialog open={!!selectedEmpresaId} onOpenChange={(open) => !open && setSelectedEmpresaId(null)}>
         <DialogContent className="w-[calc(100%-20px)] max-w-lg max-h-[85vh] overflow-y-auto p-0 gap-0 rounded-[10px]">
+          <VisuallyHidden>
+            <DialogTitle>Empresa</DialogTitle>
+            <DialogDescription>Informações da empresa</DialogDescription>
+          </VisuallyHidden>
           {loadingDetalhe ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
