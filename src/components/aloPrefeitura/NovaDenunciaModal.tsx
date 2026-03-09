@@ -179,10 +179,6 @@ const NovaDenunciaModal = ({
       toast.error("Descreva a denúncia");
       return;
     }
-    if (imagens.length === 0) {
-      toast.error("Adicione pelo menos uma foto");
-      return;
-    }
     mutation.mutate();
   };
 
