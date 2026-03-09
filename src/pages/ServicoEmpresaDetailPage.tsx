@@ -301,21 +301,20 @@ const ServicoEmpresaDetailPage = () => {
 
         {/* Ações principais */}
         <div className="flex gap-3">
-          <Button
+          <button
             onClick={handleWhatsApp}
-            className="flex-1 h-12 gap-2 bg-green-600 hover:bg-green-700 text-white rounded-xl"
+            className="flex-1 h-11 flex items-center justify-center gap-2 text-sm font-medium rounded-xl border border-border hover:bg-muted/50 transition-colors"
           >
-            <MessageCircle className="h-5 w-5" />
+            <MessageCircle className="h-4 w-4" />
             WhatsApp
-          </Button>
+          </button>
           {empresa.instagram && (
-            <Button
-              variant="outline"
+            <button
               onClick={handleInstagram}
-              className="h-12 px-5 rounded-xl"
+              className="h-11 px-5 flex items-center justify-center rounded-xl border border-border hover:bg-muted/50 transition-colors"
             >
-              <Instagram className="h-5 w-5" />
-            </Button>
+              <Instagram className="h-4 w-4" />
+            </button>
           )}
         </div>
 
