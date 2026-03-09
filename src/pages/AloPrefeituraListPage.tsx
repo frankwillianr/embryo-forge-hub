@@ -30,6 +30,7 @@ const AloPrefeituraListPage = () => {
         .from("rel_cidade_alo_prefeitura")
         .select("*")
         .eq("cidade_id", cidadeData.id)
+        .eq("status", "aprovado")
         .order("created_at", { ascending: false });
 
       if (itemsError) throw itemsError;
