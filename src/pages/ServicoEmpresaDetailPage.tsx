@@ -499,14 +499,14 @@ const ServicoEmpresaDetailPage = () => {
       </div>
 
       {/* Footer fixo */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/95 to-transparent">
-        <Button
+      <div className="fixed bottom-0 left-0 right-0 p-4 pb-safe">
+        <button
           onClick={handleWhatsApp}
-          className="w-full h-14 gap-2 bg-green-600 hover:bg-green-700 text-white rounded-2xl text-base font-medium shadow-lg"
+          className="w-full flex items-center justify-center gap-2 h-12 bg-muted/80 backdrop-blur-sm text-foreground rounded-full text-sm font-medium border border-border/50 hover:bg-muted transition-colors"
         >
-          <MessageCircle className="h-5 w-5" />
-          Enviar mensagem
-        </Button>
+          <MessageCircle className="h-4 w-4" />
+          Chamar no WhatsApp
+        </button>
       </div>
     </div>
   );
