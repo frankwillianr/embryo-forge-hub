@@ -296,7 +296,7 @@ const NovaDenunciaModal = ({
               >
                 <Video className="h-6 w-6" />
                 <span className="text-sm font-medium">Adicionar vídeo</span>
-                <span className="text-xs">MP4, WebM ou MOV (máx. 50MB)</span>
+                <span className="text-xs">MP4, WebM ou MOV (máx. 80MB)</span>
               </button>
             )}
             <input
