@@ -400,6 +400,24 @@ export default function MapaEmpresasView({
                   )}
                 </div>
 
+                {/* Vídeo */}
+                {empresaDetalhe.video_url && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Vídeo
+                    </h3>
+                    <div className="rounded-xl overflow-hidden bg-black">
+                      <video
+                        src={empresaDetalhe.video_url}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Informações */}
                 <div className="space-y-1">
                   {/* Telefone */}
