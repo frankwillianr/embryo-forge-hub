@@ -86,17 +86,17 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
   return (
     <div className="pb-4">
-      {/* 1. Jornal da cidade */}
-      <JornalHorizontalList cidadeSlug={cidadeSlug} />
-
-      <Separador />
-
-      {/* 2. Carrossel de propaganda */}
+      {/* 1. Carrossel de propaganda */}
       {isLoading ? (
         <div className="aspect-[16/9] w-full bg-muted animate-pulse m-5 rounded-[20px]" />
       ) : banners.length > 0 ? (
         <BannerCarousel banners={banners} cidadeSlug={cidadeSlug} />
       ) : null}
+
+      {/* 2. Jornal da cidade */}
+      <JornalHorizontalList cidadeSlug={cidadeSlug} />
+
+      <Separador />
 
       {/* 3. Eventos */}
       <EventosSection cidadeSlug={cidadeSlug} />
@@ -132,10 +132,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       <QuickAccessCards cidadeSlug={cidadeSlug} />
       <OnibusHorizontalList cidadeSlug={cidadeSlug} />
 
-      <Separador />
-
-      {/* 10. Cupons */}
-      <CuponsSection cidadeSlug={cidadeSlug} />
     </div>
   );
 };

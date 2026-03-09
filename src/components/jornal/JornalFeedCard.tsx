@@ -55,7 +55,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const fingerprint = user?.id || getFingerprint();
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showFullText, setShowFullText] = useState(false);
+
   const [showCommentSheet, setShowCommentSheet] = useState(false);
   const [comentario, setComentario] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -408,7 +408,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   };
 
   const descricao = (jornal.descricao || "").replace(/\\n/g, '\n');
-  const shouldTruncate = descricao.length > 100;
+
   const dataExibicao = jornal.data_noticia
     ? new Date(`${jornal.data_noticia}T00:00:00`)
     : new Date(jornal.created_at);
@@ -580,24 +580,12 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
 
         {/* Título e descrição */}
         <div className="mt-1 mb-3">
-          <p className="text-[14px] text-foreground leading-relaxed font-semibold">
+          <p className="text-[16px] text-foreground leading-relaxed font-semibold">
             {jornal.titulo}
           </p>
           {descricao && (
             <div className="text-[13px] text-muted-foreground leading-relaxed mt-1">
-              {shouldTruncate && !showFullText ? (
-                <>
-                  <p className="whitespace-pre-line line-clamp-3">{descricao}</p>
-                  <button
-                    onClick={() => setShowFullText(true)}
-                    className="text-foreground font-semibold hover:text-muted-foreground transition-colors mt-0.5"
-                  >
-                    ver mais...
-                  </button>
-                </>
-              ) : (
-                <p className="whitespace-pre-line">{descricao}</p>
-              )}
+              <p className="whitespace-pre-line">{descricao}</p>
             </div>
           )}
         </div>

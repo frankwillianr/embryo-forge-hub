@@ -84,7 +84,7 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
           {jornal.titulo}
         </h3>
         {(jornal.descricao_curta || jornal.descricao) && (
-          <p className="text-[11px] text-muted-foreground/70 line-clamp-2 leading-snug mt-0.5">
+          <p className="text-[11px] text-muted-foreground/70 line-clamp-3 leading-snug mt-0.5">
             {jornal.descricao_curta || jornal.descricao}
           </p>
         )}

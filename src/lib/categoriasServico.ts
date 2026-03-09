@@ -37,6 +37,7 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
   corretor: "Corretor",
   fotografo: "Fotógrafo",
   aulas: "Aulas Particulares",
+  idiomas: "Idiomas",
   informatica: "Informática",
   eventos: "Eventos",
   // Saúde
@@ -111,6 +112,7 @@ export const CATEGORIAS_SERVICO_META: Record<string, { nome: string; icone: stri
   corretor: { nome: "Corretor", icone: "🏡" },
   fotografo: { nome: "Fotógrafo", icone: "📷" },
   aulas: { nome: "Aulas Particulares", icone: "📚" },
+  idiomas: { nome: "Idiomas", icone: "🌎" },
   informatica: { nome: "Informática", icone: "💻" },
   eventos: { nome: "Eventos", icone: "🎉" },
   clinica: { nome: "Clínica", icone: "🏥" },

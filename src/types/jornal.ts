@@ -18,6 +18,7 @@ export interface Jornal {
   video_url?: string | null;
   imagens?: string[] | string | null;
   audio_url?: string | null;
+  ativo?: boolean;
   created_at: string;
   updated_at: string;
   likes_count?: number;

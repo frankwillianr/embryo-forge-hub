@@ -113,20 +113,32 @@ const ImageUpload = ({
     }
   };
 
-  const removeImage = async (index: number) => {
-    const urlToRemove = images[index];
-    
-    // Tentar deletar do storage
+  const removeImage = (index: number) => {
     try {
-      const path = urlToRemove.split(`${bucket}/`)[1];
-      if (path) {
-        await supabase.storage.from(bucket).remove([path]);
-      }
+      const removedUrl = images[index];
+      const nextImages = images.filter((_, i) => i !== index);
+      onChange(nextImages);
+      console.info("[ImageUpload] Removido com sucesso", {
+        status: "success",
+        index,
+        url: removedUrl,
+      });
+      toast({
+        title: "Foto removida",
+        description: "Removido com sucesso.",
+      });
     } catch (error) {
-      console.error("Error deleting image:", error);
+      console.error("[ImageUpload] Erro ao remover foto", {
+        status: "error",
+        index,
+        error,
+      });
+      toast({
+        title: "Erro ao remover foto",
+        description: "NÃ£o foi possÃ­vel remover a imagem.",
+        variant: "destructive",
+      });
     }
-
-    onChange(images.filter((_, i) => i !== index));
   };
 
   return (

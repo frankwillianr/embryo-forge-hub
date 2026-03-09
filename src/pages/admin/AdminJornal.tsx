@@ -30,6 +30,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, X, Image, Video, Youtube, Upload, AlertTriangle } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Jornal, JornalInsert } from "@/types/jornal";
@@ -211,6 +212,23 @@ const AdminJornal = () => {
     },
     onError: (error) => {
       toast.error("Erro ao excluir notícia: " + error.message);
+    },
+  });
+
+  // Toggle ativo
+  const toggleAtivoMutation = useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { error } = await supabase
+        .from("rel_cidade_jornal")
+        .update({ ativo })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-jornais"] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao alterar status: " + error.message);
     },
   });
 
@@ -668,6 +686,7 @@ const AdminJornal = () => {
               <TableHead>Cidade</TableHead>
               <TableHead>Data da notícia</TableHead>
               <TableHead>Criado em</TableHead>
+              <TableHead className="w-[80px]">Ativo</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -728,6 +747,14 @@ const AdminJornal = () => {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {format(new Date(jornal.created_at), "dd/MM/yyyy HH:mm")}
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={jornal.ativo !== false}
+                      onCheckedChange={(checked) =>
+                        toggleAtivoMutation.mutate({ id: jornal.id, ativo: checked })
+                      }
+                    />
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">

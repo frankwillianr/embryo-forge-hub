@@ -42,3 +42,6 @@ verify_jwt = false
 
 [functions.edge-tts]
 verify_jwt = false
+
+[functions.coletar-eventos-gv]
+verify_jwt = false

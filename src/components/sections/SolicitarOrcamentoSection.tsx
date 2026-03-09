@@ -128,7 +128,7 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
       <div className="flex items-center justify-between px-5 mb-1">
         <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
           <FileText className="h-4 w-4 text-primary" />
-          Orçamentos solicitados
+          Tô Precisando
         </h2>
         <button
           onClick={() => navigate(`/cidade/${cidadeSlug}/orcamentos`)}
@@ -138,7 +138,7 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
         </button>
       </div>
       <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
-        Solicitações da cidade — empresas podem enviar propostas
+        Peça, receba propostas. Simples assim.
       </p>
 
       {/* Carrossel horizontal */}

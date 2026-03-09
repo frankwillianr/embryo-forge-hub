@@ -95,7 +95,7 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
       <div className="flex items-center justify-between px-5 mb-1">
         <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
           <Megaphone className="h-4 w-4 text-primary" />
-          Mural da Cidade
+          Voz do Povo
         </h2>
         <div className="flex items-center gap-2">
           <button
@@ -117,7 +117,7 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
         </div>
       </div>
       <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
-        Denúncias e reclamações da comunidade
+        Fale, reclame, cobre. tudo em anônimo
       </p>
 
       {/* Scroll horizontal */}

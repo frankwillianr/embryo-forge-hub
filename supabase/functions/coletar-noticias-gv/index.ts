@@ -98,6 +98,12 @@ interface Stats {
 
 type LogFn = (msg: string, kind?: "info" | "ok" | "warn" | "err") => void;
 type InsertedNews = { titulo: string; fonte: string };
+type ExistingNewsForDedup = {
+  titulo: string;
+  descricao?: string | null;
+  created_at?: string | null;
+  fonte?: string | null;
+};
 
 // ─── Fetch ────────────────────────────────────────────────────────────────────
 
@@ -732,6 +738,14 @@ type AIReviewResult =
     }
   | { ok: false; fatal: boolean };
 
+type AIDuplicateResult =
+  | {
+      ok: true;
+      duplicada: boolean;
+      motivo: string;
+    }
+  | { ok: false; fatal: boolean };
+
 async function reviewRelevanceWithAI(
   fonte: string,
   titulo: string,
@@ -821,6 +835,113 @@ Responda SOMENTE JSON válido:
       return {
         ok: true,
         aprovada: parsed.aprovada,
+        motivo: parsed.motivo.slice(0, 180),
+      };
+    }
+  } catch {
+    /* ignore */
+  }
+  return { ok: false, fatal: false };
+}
+
+async function reviewDuplicateWithAI(
+  titulo: string,
+  ogDesc: string,
+  body: string,
+  similares: ExistingNewsForDedup[],
+  apiKey: string,
+  log: LogFn,
+): Promise<AIDuplicateResult> {
+  const blocos = similares
+    .slice(0, 4)
+    .map((item, i) => {
+      const resumo = (item.descricao ?? "").replace(/\s+/g, " ").slice(0, 420);
+      return `${i + 1}) TÍTULO: ${item.titulo}\nRESUMO: ${resumo}`;
+    })
+    .join("\n\n");
+
+  const prompt = `Você é um detector de duplicidade para um feed de notícias.
+Decida se a NOVA MATÉRIA é duplicada de alguma matéria já publicada.
+
+Regra para duplicada=true:
+- mesmo fato principal (mesmo acontecimento/contexto), ainda que com título diferente;
+- mesmas entidades centrais (pessoas/órgãos/empresa/local) e objetivo jornalístico igual;
+- texto pode estar reescrito, mas a história é essencialmente a mesma.
+
+Use duplicada=false quando:
+- só compartilha tema amplo, mas é fato/desdobramento diferente;
+- dados centrais mudam (novo anúncio, nova ação, nova decisão, outro recorte).
+
+NOVA MATÉRIA
+TÍTULO: ${titulo}
+RESUMO: ${ogDesc.slice(0, 700)}
+CORPO: ${body.slice(0, 1200)}
+
+MATÉRIAS JÁ PUBLICADAS (candidatas a duplicata)
+${blocos}
+
+Responda SOMENTE JSON válido:
+{"duplicada": true/false, "motivo": "breve"}`;
+
+  const t0 = Date.now();
+  const resp = await fetchSafe(
+    "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        max_tokens: 220,
+        temperature: 0.1,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    },
+    25_000,
+  );
+
+  const elapsed = Date.now() - t0;
+  if (!resp) {
+    log(`  ⚠️ [Dedup IA] timeout (${elapsed}ms)`, "warn");
+    return { ok: false, fatal: false };
+  }
+  if (!resp.ok) {
+    let errMsg = `HTTP ${resp.status}`;
+    let isFatal = false;
+    try {
+      const errBody = await resp.json();
+      errMsg += `: ${JSON.stringify(errBody)}`;
+      const msg: string = errBody?.error?.message ?? "";
+      if (
+        msg.includes("quota") ||
+        msg.includes("billing") ||
+        resp.status === 401 ||
+        resp.status === 403
+      ) {
+        isFatal = true;
+      }
+    } catch {
+      /* ignore */
+    }
+    log(`  ⚠️ [Dedup IA] ${errMsg}`, "warn");
+    return { ok: false, fatal: isFatal };
+  }
+
+  try {
+    const data = await resp.json();
+    const text: string = data?.choices?.[0]?.message?.content ?? "";
+    const match = text.match(/\{[\s\S]*?"duplicada"[\s\S]*?"motivo"[\s\S]*?\}/);
+    if (!match) return { ok: false, fatal: false };
+    const parsed = JSON.parse(match[0]);
+    if (
+      typeof parsed.duplicada === "boolean" &&
+      typeof parsed.motivo === "string"
+    ) {
+      return {
+        ok: true,
+        duplicada: parsed.duplicada,
         motivo: parsed.motivo.slice(0, 180),
       };
     }
@@ -1124,7 +1245,7 @@ async function runScraping(opts: {
   const sevenDaysAgo = new Date(Date.now() - lookbackDays * 86_400_000).toISOString();
   const { data: existing } = await supabase
     .from("rel_cidade_jornal")
-    .select("id_externo, titulo")
+    .select("id_externo, titulo, descricao, fonte, created_at")
     .eq("cidade_id", cidadeId)
     .gte("created_at", sevenDaysAgo);
 
@@ -1136,6 +1257,14 @@ async function runScraping(opts: {
   const existingTitles: string[] = (existing ?? [])
     .map((r: { titulo: string }) => r.titulo)
     .filter(Boolean);
+  const existingNews: ExistingNewsForDedup[] = (existing ?? [])
+    .map((r: ExistingNewsForDedup) => ({
+      titulo: r.titulo,
+      descricao: r.descricao ?? "",
+      created_at: r.created_at ?? null,
+      fonte: r.fonte ?? null,
+    }))
+    .filter((r) => Boolean(r.titulo));
 
   // ═══ Step 1: Collect candidates ═══════════════════════════════════════════
 
@@ -1340,6 +1469,41 @@ async function runScraping(opts: {
       return;
     }
 
+    // Dedup semântico por IA (somente quando houver semelhança textual prévia).
+    if (canUseAIReviewer && !aiReviewerDisabled && existingNews.length > 0) {
+      const baseNovo = `${titulo} ${ogDesc} ${body.slice(0, 500)}`;
+      const similares = existingNews
+        .map((item) => {
+          const baseExistente = `${item.titulo} ${(item.descricao ?? "").slice(0, 500)}`;
+          return { item, score: jaccard(baseNovo, baseExistente) };
+        })
+        .filter((x) => x.score >= 0.18)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4)
+        .map((x) => x.item);
+
+      if (similares.length > 0) {
+        const dup = await reviewDuplicateWithAI(
+          titulo,
+          ogDesc,
+          body,
+          similares,
+          anthropicKey,
+          log,
+        );
+        if (dup.ok && dup.duplicada) {
+          stats.duplicadas_titulo++;
+          reject(url, titulo, `Duplicada semântica (IA): ${dup.motivo}`);
+          log(`  ✗ [dup semântica] ${short} — ${dup.motivo}`, "warn");
+          return;
+        }
+        if (!dup.ok && dup.fatal) {
+          aiReviewerDisabled = true;
+          log(`  🚫 Dedup semântico IA desabilitado (erro fatal de IA)`, "err");
+        }
+      }
+    }
+
     // Agente IA: valida se a matéria é realmente pertinente a GV.
     if (canUseAIReviewer && !aiReviewerDisabled) {
       const review = await reviewRelevanceWithAI(
@@ -1474,6 +1638,12 @@ async function runScraping(opts: {
       stats.inseridas++;
       existingUrls.add(url);
       existingTitles.push(finalTitulo);
+      existingNews.push({
+        titulo: finalTitulo,
+        descricao: finalDescricao,
+        created_at: new Date().toISOString(),
+        fonte,
+      });
       insertedNews.push({ titulo: finalTitulo, fonte });
       log(`✅ notícia ${index} postada`, "ok");
       if (insertedRow?.id) {

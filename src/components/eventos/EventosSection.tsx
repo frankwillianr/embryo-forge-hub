@@ -61,7 +61,7 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
       <div className="flex items-center justify-between px-5 mb-1">
         <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
           <CalendarDays className="h-4 w-4 text-primary" />
-          Shows e Eventos
+          Próximos Eventos
         </h2>
         <button
           onClick={() => {
@@ -73,7 +73,7 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
         </button>
       </div>
       <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
-        Descubra shows e eventos na sua cidade
+        Descubra os próximos eventos na sua cidade
       </p>
 
       {/* Horizontal scroll - same structure as JornalHorizontalList */}

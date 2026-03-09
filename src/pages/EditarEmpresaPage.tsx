@@ -68,6 +68,8 @@ const EditarEmpresaPage = () => {
   const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<string[]>([]);
   const [buscaCategoria, setBuscaCategoria] = useState("");
   const categoriasInicializadasRef = useRef(false);
+  const fotosInicializadasRef = useRef(false);
+  const [fotosAlteradas, setFotosAlteradas] = useState(false);
   const [cupomNome, setCupomNome] = useState("");
   const [cupomValor, setCupomValor] = useState("");
   const [cupomTipo, setCupomTipo] = useState<"real" | "porcentagem">("porcentagem");
@@ -155,9 +157,11 @@ const EditarEmpresaPage = () => {
     setCupomTipo((empresa.cupom_tipo === "real" ? "real" : "porcentagem") as "real" | "porcentagem");
   }, [empresa, empresaId]);
 
-  // Reset flag ao trocar de empresa
+  // Reset flags ao trocar de empresa
   useEffect(() => {
     categoriasInicializadasRef.current = false;
+    fotosInicializadasRef.current = false;
+    setFotosAlteradas(false);
   }, [empresaId]);
 
   const toggleCategoria = (id: string) => {
@@ -188,10 +192,11 @@ const EditarEmpresaPage = () => {
     categoriasSelecionadas.length < MAX_CATEGORIAS;
 
   useEffect(() => {
-    if (empresaFotos) {
+    if (empresaFotos && !fotosInicializadasRef.current && !fotosAlteradas) {
+      fotosInicializadasRef.current = true;
       setFotos(empresaFotos);
     }
-  }, [empresaFotos]);
+  }, [empresaFotos, fotosAlteradas]);
 
   const formatWhatsapp = (phone: string) => {
     const numbers = phone.replace(/\D/g, "");
@@ -304,10 +309,12 @@ const EditarEmpresaPage = () => {
       }
 
       // Update fotos - delete old and insert new
-      await supabase
+      const { error: deleteFotosError } = await supabase
         .from("rel_cidade_servico_empresa_foto")
         .delete()
         .eq("empresa_id", empresaId);
+
+      if (deleteFotosError) throw deleteFotosError;
 
       if (fotos.length > 0) {
         const fotosData = fotos.map((url, index) => ({
@@ -327,6 +334,7 @@ const EditarEmpresaPage = () => {
       queryClient.invalidateQueries({ queryKey: ["minhas-empresas"] });
       queryClient.invalidateQueries({ queryKey: ["servico-empresas"] });
       queryClient.invalidateQueries({ queryKey: ["empresa-editar", empresaId] });
+      queryClient.invalidateQueries({ queryKey: ["empresa-fotos", empresaId] });
       queryClient.invalidateQueries({ queryKey: ["mapa-empresas"] });
       toast({
         title: "Empresa atualizada!",
@@ -434,7 +442,10 @@ const EditarEmpresaPage = () => {
           <Label>Fotos do negócio</Label>
           <ImageUpload
             images={fotos}
-            onChange={setFotos}
+            onChange={(next) => {
+              setFotos(next);
+              setFotosAlteradas(true);
+            }}
             maxImages={6}
             bucket="servicos"
             folder="empresas"

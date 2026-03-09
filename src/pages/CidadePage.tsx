@@ -19,7 +19,7 @@ type TabType = "home" | "cinema" | "prefeitura" | "maps" | "menu";
 const sectionTitles: Record<TabType, string> = {
   home: "Home",
   cinema: "Cinema",
-  prefeitura: "Mural da Cidade",
+  prefeitura: "Voz do Povo",
   maps: "Mapa",
   menu: "Menu",
 };
@@ -256,7 +256,7 @@ const CidadePage = () => {
             </button>
 
             <button
-              onClick={() => switchTab("prefeitura")}
+              onClick={() => navigate(`/cidade/${slug}/alo-prefeitura`)}
               className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 ${
                 activeTab === "prefeitura"
                   ? "text-primary"
@@ -264,7 +264,7 @@ const CidadePage = () => {
               }`}
             >
               <Megaphone className="h-5 w-5" />
-              <span className="text-[9px] font-medium">Alô</span>
+              <span className="text-[9px] font-medium">Voz</span>
             </button>
 
             <button

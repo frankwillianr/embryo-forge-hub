@@ -331,7 +331,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
           </div>
           <div className="flex flex-col flex-1 min-w-0">
             <span className="text-[13px] font-semibold text-foreground leading-tight">
-              Mural da Cidade
+              Voz do Povo
             </span>
             <span className="text-[11px] text-muted-foreground">
               {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR })}

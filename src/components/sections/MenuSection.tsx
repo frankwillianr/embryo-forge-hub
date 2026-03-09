@@ -91,7 +91,7 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
     {
       icon: Phone,
       label: "Denúncias",
-      description: "Mural da Cidade",
+      description: "Voz do Povo",
       path: `/cidade/${cidadeSlug}/minhas-denuncias`,
       color: "text-red-600",
       bgColor: "bg-red-500/10",

@@ -1,7 +1,7 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { ArrowLeft, Home, Newspaper, Film, Megaphone, Menu } from "lucide-react";
+import { ArrowLeft, Home, Newspaper, Film, Megaphone, Menu, Map } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { type Jornal, parseImagens } from "@/types/jornal";
@@ -28,6 +28,7 @@ const JornalListPage = () => {
         .from("rel_cidade_jornal")
         .select("*")
         .eq("cidade_id", cidadeData.id)
+        .eq("ativo", true)
         .not("titulo", "like", "%{{%")
         .order("data_noticia", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
@@ -130,11 +131,18 @@ const JornalListPage = () => {
               <span className="text-[9px] font-medium">Cinema</span>
             </button>
             <button
-              onClick={() => navigate(`/cidade/${slug}`, { state: { tab: "prefeitura" } })}
+              onClick={() => navigate(`/cidade/${slug}/alo-prefeitura`)}
               className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-gray-400 hover:text-white"
             >
               <Megaphone className="h-5 w-5" />
-              <span className="text-[9px] font-medium">Alô</span>
+              <span className="text-[9px] font-medium">Voz</span>
+            </button>
+            <button
+              onClick={() => navigate(`/cidade/${slug}`, { state: { tab: "maps" } })}
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-gray-400 hover:text-white"
+            >
+              <Map className="h-5 w-5" />
+              <span className="text-[9px] font-medium">Maps</span>
             </button>
             <button
               onClick={() => navigate(`/cidade/${slug}`, { state: { tab: "menu" } })}

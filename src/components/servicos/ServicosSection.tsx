@@ -24,7 +24,7 @@ type Servico = { id: string; nome: string; icon?: string; emoji?: string };
 const categoriaBancoMap: Record<string, string[]> = {
   beleza: ["salao", "barbeiro", "manicure", "estetica", "maquiagem", "sobrancelha", "depilacao"],
   servicos: ["reparos", "eletricista", "encanador", "obras", "limpeza", "dedetizacao", "chaveiro", "pintor", "marceneiro", "serralheria", "vidraceiro", "ar-condicionado", "jardinagem", "mudancas", "diarista", "costura"],
-  profissionais: ["advogado", "contador", "despachante", "engenheiro", "arquiteto", "corretor", "fotografo", "aulas", "informatica", "eventos"],
+  profissionais: ["advogado", "contador", "despachante", "engenheiro", "arquiteto", "corretor", "fotografo", "aulas", "idiomas", "informatica", "eventos"],
   saude: ["clinica", "dentista", "psicologo", "fisioterapeuta", "nutricionista", "personal", "academia", "massagista", "farmacia"],
   comercio: ["desapega", "lojas", "promocoes", "restaurantes", "entregador", "moda", "eletronicos"],
   veiculos: ["mecanico", "lava-jato", "auto-pecas", "guincho", "funilaria", "borracharia", "vistoria", "motorista"],
@@ -83,6 +83,7 @@ const categorias: Array<{ id: string; titulo: string; emoji: string; servicos: S
       { id: "corretor", nome: "Corretor", emoji: "🏡" },
       { id: "fotografo", nome: "Fotógrafo", emoji: "📷" },
       { id: "aulas", nome: "Aulas", emoji: "📚" },
+      { id: "idiomas", nome: "Idiomas", emoji: "🌎" },
       { id: "informatica", nome: "Informática", emoji: "💻" },
       { id: "eventos", nome: "Eventos", emoji: "🎉" },
     ],
@@ -165,6 +166,7 @@ const todosServicosAutocomplete = [
   { id: "jardinagem", nome: "Jardineiro / Jardinagem" },
   { id: "personal", nome: "Personal Trainer" },
   { id: "fotografo", nome: "Fotógrafo" },
+  { id: "idiomas", nome: "Idiomas" },
   { id: "dentista", nome: "Dentista" },
   { id: "psicologo", nome: "Psicólogo" },
   { id: "barbeiro", nome: "Barbeiro" },
@@ -245,8 +247,11 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("beleza");
   const gridScrollRef = useRef<HTMLDivElement>(null);
+  const tabsScrollRef = useRef<HTMLDivElement>(null);
   const tabRefsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const isScrollingByUserRef = useRef(false);
+  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const userInteractedRef = useRef(false);
 
   const categoriaAtual = categorias.find((c) => c.id === categoriaSelecionada) || categorias[0];
 
@@ -336,6 +341,9 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
       el.scrollTo({ left: index * el.offsetWidth, behavior: "smooth" });
       setTimeout(() => { isScrollingByUserRef.current = false; }, 400);
     }
+    // Pausa autoplay por 10s após interação manual
+    userInteractedRef.current = true;
+    setTimeout(() => { userInteractedRef.current = false; }, 10_000);
   }, []);
 
   useEffect(() => {
@@ -345,14 +353,42 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
     return () => el.removeEventListener("scroll", handleGridScroll);
   }, [handleGridScroll]);
 
-  // Ao mudar a categoria (rolagem do grid ou clique na tab), a barra de títulos acompanha
+  // Ao mudar a categoria, centraliza a aba no container SEM rolar a página
   useEffect(() => {
     const index = categorias.findIndex((c) => c.id === categoriaSelecionada);
     const tabEl = tabRefsRef.current[index];
-    if (tabEl) {
-      tabEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-    }
+    const container = tabsScrollRef.current;
+    if (!tabEl || !container) return;
+    const tabLeft = tabEl.offsetLeft;
+    const tabWidth = tabEl.offsetWidth;
+    const containerWidth = container.offsetWidth;
+    const targetScroll = tabLeft - containerWidth / 2 + tabWidth / 2;
+    container.scrollTo({ left: targetScroll, behavior: "smooth" });
   }, [categoriaSelecionada]);
+
+  // Auto-avança categoria a cada 5s infinitamente; pausa 10s após interação do usuário
+  useEffect(() => {
+    const start = () => {
+      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+      autoPlayRef.current = setInterval(() => {
+        if (userInteractedRef.current) return;
+        setCategoriaSelecionada((prev) => {
+          const idx = categorias.findIndex((c) => c.id === prev);
+          const next = (idx + 1) % categorias.length;
+          const nextId = categorias[next].id;
+          const el = gridScrollRef.current;
+          if (el) {
+            isScrollingByUserRef.current = true;
+            el.scrollTo({ left: next * el.offsetWidth, behavior: "smooth" });
+            setTimeout(() => { isScrollingByUserRef.current = false; }, 600);
+          }
+          return nextId;
+        });
+      }, 5000);
+    };
+    start();
+    return () => { if (autoPlayRef.current) clearInterval(autoPlayRef.current); };
+  }, []);
 
   return (
     <div className="pt-6 pb-2">
@@ -429,7 +465,7 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
       </div>
 
       {/* Categorias - Tabs + banner + grid (sempre visíveis) */}
-      <div className="overflow-x-auto scrollbar-hide mb-3 scroll-smooth">
+      <div ref={tabsScrollRef} className="overflow-x-auto scrollbar-hide mb-3 scroll-smooth">
         <div className="flex gap-0 px-5 border-b border-border/30">
           {categorias.map((cat, index) => (
             <button
