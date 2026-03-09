@@ -384,11 +384,13 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
             )}
           </>
         ) : item.video_url ? (
-          <div className="w-full h-full flex items-center justify-center bg-muted/50">
-            <div className="w-16 h-16 rounded-full bg-black/30 backdrop-blur flex items-center justify-center">
-              <Play className="h-8 w-8 text-white ml-1" fill="white" />
-            </div>
-          </div>
+          <video
+            src={item.video_url}
+            className="w-full h-full object-cover"
+            controls
+            playsInline
+            preload="metadata"
+          />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/80" />
         )}
@@ -404,6 +406,19 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
           </div>
         )}
       </div>
+
+      {/* Vídeo (quando tem imagens E vídeo) */}
+      {imagens.length > 0 && item.video_url && (
+        <div className="px-3 pt-2">
+          <video
+            src={item.video_url}
+            className="w-full rounded-xl aspect-video object-contain bg-black"
+            controls
+            playsInline
+            preload="metadata"
+          />
+        </div>
+      )}
 
       {/* Ações */}
       <div className="px-3 pt-2.5">
