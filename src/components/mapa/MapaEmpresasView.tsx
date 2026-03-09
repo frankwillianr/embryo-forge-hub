@@ -8,17 +8,24 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Loader2, MapPin, Clock, MessageCircle, Instagram, ExternalLink } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  MapPin,
+  Clock,
+  MessageCircle,
+  Instagram,
+  Phone,
+  ChevronDown,
+  X,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CATEGORIAS_SERVICO } from "@/lib/categoriasServico";
 
 const BOLA_SIZE = 44;
 const BOLA_ANCHOR = BOLA_SIZE / 2;
 
-/** Ícone do marcador: bolinha com logo (ou inicial do nome se não tiver logo) */
 function createBolaLogoIcon(empresa: EmpresaMapa): L.DivIcon {
   const escapedUrl = empresa.logomarca_url
     ? empresa.logomarca_url.replace(/"/g, "&quot;").replace(/</g, "&lt;")
@@ -39,6 +46,8 @@ const GV_CENTER: [number, number] = [-18.8544, -41.9453];
 const GV_ZOOM = 13;
 const GV_MIN_ZOOM = 14;
 const GV_MAX_ZOOM = 18;
+
+const diasOrdem = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
 type EmpresaMapa = {
   id: string;
@@ -61,6 +70,7 @@ type EmpresaCompleta = EmpresaMapa & {
   endereco_cep: string | null;
   horario_funcionamento: HorarioDia[] | null;
   banner_oferta_url: string | null;
+  video_url: string | null;
   fotos?: { id: string; url: string; ordem: number }[];
 };
 
@@ -107,6 +117,8 @@ export default function MapaEmpresasView({
 }: MapaEmpresasViewProps) {
   const navigate = useNavigate();
   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showAllHours, setShowAllHours] = useState(false);
 
   const { data: empresas = [], isLoading } = useQuery({
     queryKey: ["mapa-empresas", cidadeId],
@@ -133,7 +145,7 @@ export default function MapaEmpresasView({
         .select(`
           id, nome, categoria, latitude, longitude, descricao, whatsapp, instagram,
           endereco_rua, endereco_numero, endereco_bairro, endereco_complemento, endereco_cep,
-          horario_funcionamento, banner_oferta_url,
+          horario_funcionamento, banner_oferta_url, video_url,
           fotos:rel_cidade_servico_empresa_foto(id, url, ordem)
         `)
         .eq("id", selectedEmpresaId)
@@ -144,27 +156,59 @@ export default function MapaEmpresasView({
     enabled: !!selectedEmpresaId,
   });
 
+  // Reset state when modal opens
+  useEffect(() => {
+    if (selectedEmpresaId) {
+      setCurrentImageIndex(0);
+      setShowAllHours(false);
+    }
+  }, [selectedEmpresaId]);
+
   const formatEndereco = (e: EmpresaCompleta) => {
     const parts = [e.endereco_rua, e.endereco_numero, e.endereco_bairro].filter(Boolean);
     return parts.length > 0 ? parts.join(", ") : null;
   };
 
+  const formatWhatsApp = (num: string) => {
+    if (!num) return "";
+    return `(${num.slice(0, 2)}) ${num.slice(2, 7)}-${num.slice(7)}`;
+  };
+
   const getStatusHoje = (horarios: HorarioDia[] | null) => {
-    if (!horarios?.length) return { texto: "" };
+    if (!horarios?.length) return { aberto: false, texto: "", horario: null };
     const dias = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
     const hoje = dias[new Date().getDay()];
     const h = horarios.find((x) => x.dia === hoje);
-    if (!h?.aberto) return { texto: "Fechado hoje" };
+    if (!h?.aberto) return { aberto: false, texto: "Fechado hoje", horario: null };
     const agora = new Date();
     const min = agora.getHours() * 60 + agora.getMinutes();
     const [ah, am] = h.abertura.split(":").map(Number);
     const [fh, fm] = h.fechamento.split(":").map(Number);
     const a = ah * 60 + am;
     const f = fh * 60 + fm;
-    if (min >= a && min < f) return { texto: `Aberto · Fecha às ${h.fechamento}` };
-    if (min < a) return { texto: `Abre às ${h.abertura}` };
-    return { texto: "Fechado" };
+    if (min >= a && min < f) return { aberto: true, texto: "Aberto agora", horario: `Fecha às ${h.fechamento}` };
+    if (min < a) return { aberto: false, texto: "Fechado", horario: `Abre às ${h.abertura}` };
+    return { aberto: false, texto: "Fechado", horario: null };
   };
+
+  const handleWhatsApp = (whatsapp: string) => {
+    const message = encodeURIComponent("Olá! Vi seu perfil no app e gostaria de mais informações.");
+    window.open(`https://wa.me/55${whatsapp}?text=${message}`, "_blank");
+  };
+
+  const handleInstagram = (instagram: string) => {
+    window.open(`https://instagram.com/${instagram}`, "_blank");
+  };
+
+  const images = empresaDetalhe?.fotos
+    ? [...empresaDetalhe.fotos].sort((a, b) => a.ordem - b.ordem)
+    : [];
+
+  const horariosOrdenados = empresaDetalhe?.horario_funcionamento
+    ? [...empresaDetalhe.horario_funcionamento].sort(
+        (a, b) => diasOrdem.indexOf(a.dia) - diasOrdem.indexOf(b.dia)
+      )
+    : [];
 
   return (
     <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-40 flex flex-col bg-background">
@@ -211,103 +255,242 @@ export default function MapaEmpresasView({
           <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2 rounded-lg bg-background/95 backdrop-blur border border-border px-3 py-2 text-sm text-muted-foreground shadow-sm">
             <MapPin className="h-4 w-4 shrink-0" />
             <span>
-              Nenhuma empresa com localização no mapa ainda. As empresas podem
-              cadastrar endereço e coordenadas no perfil.
+              Nenhuma empresa com localização no mapa ainda.
             </span>
           </div>
         ) : null}
       </div>
 
+      {/* Modal da empresa */}
       <Dialog open={!!selectedEmpresaId} onOpenChange={(open) => !open && setSelectedEmpresaId(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100%-20px)] max-w-lg max-h-[85vh] overflow-y-auto p-0 gap-0 rounded-[10px]">
           {loadingDetalhe ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : empresaDetalhe ? (
             <>
-              <DialogHeader>
-                <DialogTitle className="pr-8">{empresaDetalhe.nome}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  {CATEGORIAS_SERVICO[empresaDetalhe.categoria] || empresaDetalhe.categoria}
-                </p>
-                {empresaDetalhe.descricao && (
-                  <p className="text-sm text-foreground/90 leading-relaxed">{empresaDetalhe.descricao}</p>
-                )}
-                {(empresaDetalhe.banner_oferta_url || (empresaDetalhe.fotos?.length && empresaDetalhe.fotos[0]?.url)) && (
-                  <div className="rounded-xl overflow-hidden bg-muted aspect-video">
+              {/* Botão fechar */}
+              <button
+                onClick={() => setSelectedEmpresaId(null)}
+                className="absolute top-3 right-3 z-10 p-2 bg-background/80 backdrop-blur-md rounded-full border border-border/50"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              {/* Imagem */}
+              <div className="relative aspect-[4/3] bg-muted">
+                {images.length > 0 ? (
+                  <>
                     <img
-                      src={empresaDetalhe.banner_oferta_url || empresaDetalhe.fotos?.[0]?.url}
+                      src={images[currentImageIndex].url}
                       alt={empresaDetalhe.nome}
                       className="w-full h-full object-cover"
                     />
+                    {images.length > 1 && (
+                      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                        {images.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`h-1.5 rounded-full transition-all ${
+                              index === currentImageIndex
+                                ? "w-5 bg-white"
+                                : "w-1.5 bg-white/50"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : empresaDetalhe.banner_oferta_url ? (
+                  <img
+                    src={empresaDetalhe.banner_oferta_url}
+                    alt={empresaDetalhe.nome}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-5xl">🏢</span>
                   </div>
                 )}
-                {getStatusHoje(empresaDetalhe.horario_funcionamento).texto ? (
-                  <p className="text-sm flex items-center gap-2 text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    {getStatusHoje(empresaDetalhe.horario_funcionamento).texto}
-                  </p>
-                ) : null}
-                {formatEndereco(empresaDetalhe) && (
-                  <div className="flex items-start gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-foreground">Endereço</p>
-                      <p className="text-muted-foreground">
-                        {formatEndereco(empresaDetalhe)}
-                        {empresaDetalhe.endereco_complemento && ` - ${empresaDetalhe.endereco_complemento}`}
+              </div>
+
+              {/* Conteúdo */}
+              <div className="p-5 space-y-5">
+                {/* Cabeçalho */}
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    {empresaDetalhe.logomarca_url && (
+                      <img
+                        src={empresaDetalhe.logomarca_url}
+                        alt=""
+                        className="w-12 h-12 rounded-xl object-cover border border-border"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-xl font-bold text-foreground leading-tight">
+                        {empresaDetalhe.nome}
+                      </h2>
+                      <p className="text-sm text-muted-foreground">
+                        {CATEGORIAS_SERVICO[empresaDetalhe.categoria] || empresaDetalhe.categoria}
                       </p>
-                      {empresaDetalhe.endereco_cep && (
-                        <p className="text-xs text-muted-foreground mt-0.5">CEP: {empresaDetalhe.endereco_cep}</p>
-                      )}
                     </div>
                   </div>
-                )}
-                {empresaDetalhe.whatsapp && (
-                  <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-muted/50">
-                    <span className="text-sm">
-                      ({empresaDetalhe.whatsapp.slice(0, 2)}) {empresaDetalhe.whatsapp.slice(2, 7)}-
-                      {empresaDetalhe.whatsapp.slice(7)}
-                    </span>
-                    <Button
-                      size="sm"
-                      className="flex items-center gap-1.5"
-                      onClick={() =>
-                        window.open(
-                          `https://wa.me/55${empresaDetalhe.whatsapp}?text=${encodeURIComponent("Olá! Vi seu perfil no app.")}`,
-                          "_blank"
-                        )
-                      }
+
+                  {/* Status */}
+                  {getStatusHoje(empresaDetalhe.horario_funcionamento).texto && (
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-sm ${
+                          getStatusHoje(empresaDetalhe.horario_funcionamento).aberto
+                            ? "text-green-600"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            getStatusHoje(empresaDetalhe.horario_funcionamento).aberto
+                              ? "bg-green-500"
+                              : "bg-muted-foreground"
+                          }`}
+                        />
+                        {getStatusHoje(empresaDetalhe.horario_funcionamento).texto}
+                      </span>
+                      {getStatusHoje(empresaDetalhe.horario_funcionamento).horario && (
+                        <span className="text-sm text-muted-foreground">
+                          · {getStatusHoje(empresaDetalhe.horario_funcionamento).horario}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {empresaDetalhe.descricao && (
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {empresaDetalhe.descricao}
+                    </p>
+                  )}
+                </div>
+
+                {/* Ações */}
+                <div className="flex gap-3">
+                  {empresaDetalhe.whatsapp && (
+                    <button
+                      onClick={() => handleWhatsApp(empresaDetalhe.whatsapp!)}
+                      className="flex-1 h-11 flex items-center justify-center gap-2 text-sm font-medium rounded-xl border border-border hover:bg-muted/50 transition-colors"
                     >
                       <MessageCircle className="h-4 w-4" />
                       WhatsApp
-                    </Button>
-                  </div>
-                )}
-                {empresaDetalhe.instagram && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-center gap-2"
-                    onClick={() => window.open(`https://instagram.com/${empresaDetalhe.instagram}`, "_blank")}
-                  >
-                    <Instagram className="h-4 w-4" />
-                    Instagram
-                  </Button>
-                )}
-                <Button
-                  className="w-full gap-2"
+                    </button>
+                  )}
+                  {empresaDetalhe.instagram && (
+                    <button
+                      onClick={() => handleInstagram(empresaDetalhe.instagram!)}
+                      className="h-11 px-5 flex items-center justify-center rounded-xl border border-border hover:bg-muted/50 transition-colors"
+                    >
+                      <Instagram className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Informações */}
+                <div className="space-y-1">
+                  {/* Telefone */}
+                  {empresaDetalhe.whatsapp && (
+                    <div className="flex items-center gap-4 p-3 rounded-xl">
+                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">Telefone</p>
+                        <p className="text-sm font-medium">{formatWhatsApp(empresaDetalhe.whatsapp)}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Endereço */}
+                  {formatEndereco(empresaDetalhe) && (
+                    <div className="flex items-start gap-4 p-3 rounded-xl">
+                      <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-muted-foreground">Endereço</p>
+                        <p className="text-sm font-medium">
+                          {formatEndereco(empresaDetalhe)}
+                          {empresaDetalhe.endereco_complemento && ` - ${empresaDetalhe.endereco_complemento}`}
+                        </p>
+                        {empresaDetalhe.endereco_cep && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            CEP {empresaDetalhe.endereco_cep}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Horários */}
+                  {horariosOrdenados.length > 0 && (
+                    <div className="rounded-xl">
+                      <button
+                        onClick={() => setShowAllHours(!showAllHours)}
+                        className="w-full flex items-center gap-4 p-3 hover:bg-muted/50 rounded-xl transition-colors"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className="text-xs text-muted-foreground">Horários</p>
+                          <p className="text-sm font-medium">Ver todos os horários</p>
+                        </div>
+                        <ChevronDown
+                          className={`h-4 w-4 text-muted-foreground transition-transform ${
+                            showAllHours ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+
+                      {showAllHours && (
+                        <div className="px-3 pb-3 pt-1 space-y-1.5">
+                          {horariosOrdenados.map((h) => {
+                            const isHoje =
+                              diasOrdem.indexOf(h.dia) ===
+                              (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+                            return (
+                              <div
+                                key={h.dia}
+                                className={`flex items-center justify-between py-1.5 px-2 rounded-lg text-sm ${
+                                  isHoje ? "bg-muted/70" : ""
+                                }`}
+                              >
+                                <span className={isHoje ? "font-medium" : "text-muted-foreground"}>
+                                  {h.dia}
+                                  {isHoje && (
+                                    <span className="ml-1.5 text-xs text-muted-foreground">(hoje)</span>
+                                  )}
+                                </span>
+                                <span className={h.aberto ? "" : "text-muted-foreground"}>
+                                  {h.aberto ? `${h.abertura} - ${h.fechamento}` : "Fechado"}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Botão ver página completa */}
+                <button
                   onClick={() => {
                     setSelectedEmpresaId(null);
                     navigate(`/cidade/${cidadeSlug}/servicos/${empresaDetalhe.categoria}/${empresaDetalhe.id}`);
                   }}
+                  className="w-full flex items-center justify-center gap-2 h-12 bg-muted/80 text-foreground rounded-full text-sm font-medium border border-border/50 hover:bg-muted transition-colors"
                 >
-                  <ExternalLink className="h-4 w-4" />
-                  Ver página completa da empresa
-                </Button>
+                  Ver página completa
+                </button>
               </div>
             </>
           ) : null}
