@@ -233,9 +233,9 @@ const NovaDenunciaModal = ({
             </p>
           </div>
 
-          {/* Upload de imagens - OBRIGATÓRIO */}
+          {/* Upload de imagens - OPCIONAL */}
           <div className="space-y-2">
-            <Label>Fotos *</Label>
+            <Label>Fotos</Label>
             <div className="flex flex-wrap gap-2">
               {imagens.map((file, index) => (
                 <div key={index} className="relative">
@@ -253,21 +253,19 @@ const NovaDenunciaModal = ({
                   </button>
                 </div>
               ))}
-              {imagens.length < 5 && (
-                <label className="w-16 h-16 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                  <Camera className="h-5 w-5 text-muted-foreground" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                    multiple
-                  />
-                </label>
-              )}
+              <label className="w-16 h-16 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
+                <Camera className="h-5 w-5 text-muted-foreground" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  multiple
+                />
+              </label>
             </div>
             <p className="text-xs text-muted-foreground">
-              Adicione pelo menos 1 foto (máx. 5) para ilustrar o problema
+              Adicione fotos para ilustrar o problema (opcional, máx. 5)
             </p>
           </div>
 
