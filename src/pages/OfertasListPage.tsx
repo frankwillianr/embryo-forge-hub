@@ -1,12 +1,32 @@
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, BadgePercent } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import ofertasBanner from "@/assets/ofertas-banner.jpg";
+
+const TODAS_CATEGORIAS = [
+  { id: "todas", nome: "Todas", icone: "🏷️" },
+  { id: "beleza", nome: "Beleza", icone: "💇" },
+  { id: "servicos", nome: "Serviços", icone: "🛠️" },
+  { id: "saude", nome: "Saúde", icone: "🏥" },
+  { id: "comercio", nome: "Comércio", icone: "🛍️" },
+  { id: "veiculos", nome: "Veículos", icone: "🚗" },
+  { id: "profissionais", nome: "Profissionais", icone: "👔" },
+  { id: "pets", nome: "Pets", icone: "🐶" },
+];
+
+const CATEGORIA_MAP: Record<string, string[]> = {
+  beleza: ["salao", "barbeiro", "manicure", "estetica", "maquiagem", "sobrancelha", "depilacao"],
+  servicos: ["reparos", "eletricista", "encanador", "obras", "limpeza", "dedetizacao", "chaveiro", "pintor", "marceneiro", "serralheria", "vidraceiro", "ar-condicionado", "jardinagem", "mudancas", "diarista", "costura"],
+  profissionais: ["advogado", "contador", "despachante", "engenheiro", "arquiteto", "corretor", "fotografo", "aulas", "idiomas", "informatica", "eventos"],
+  saude: ["clinica", "dentista", "psicologo", "fisioterapeuta", "nutricionista", "personal", "academia", "massagista", "farmacia"],
+  comercio: ["desapega", "lojas", "promocoes", "restaurantes", "entregador", "moda", "eletronicos"],
+  veiculos: ["mecanico", "lava-jato", "auto-pecas", "guincho", "funilaria", "borracharia", "vistoria", "motorista"],
+  pets: ["veterinario", "pet", "petshop", "adestrador", "hotel-pet", "passeador"],
+};
 
 const categoriasMeta: Record<string, { nome: string; icone: string }> = {
   entregador: { nome: "Entregador", icone: "🚴" },
@@ -44,9 +64,8 @@ const OfertasListPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoriaFiltro, setCategoriaFiltro] = useState<string | null>(null);
+  const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
 
-  // Buscar cidade
   const { data: cidade } = useQuery({
     queryKey: ["cidade", slug],
     queryFn: async () => {
@@ -61,7 +80,6 @@ const OfertasListPage = () => {
     enabled: !!slug,
   });
 
-  // Buscar todas as ofertas
   const { data: ofertas, isLoading } = useQuery({
     queryKey: ["todas-ofertas", cidade?.id],
     queryFn: async () => {
@@ -72,55 +90,35 @@ const OfertasListPage = () => {
         .eq("status", "ativo")
         .not("banner_oferta_url", "is", null)
         .order("nome", { ascending: true });
-
       if (error) throw error;
       return data || [];
     },
     enabled: !!cidade?.id,
   });
 
-  // Categorias disponíveis (que têm ofertas)
-  const categoriasDisponiveis = useMemo(() => {
-    if (!ofertas) return [];
-    const cats = [...new Set(ofertas.map((o) => o.categoria))];
-    return cats.sort();
-  }, [ofertas]);
-
-  // Filtrar ofertas
   const ofertasFiltradas = useMemo(() => {
     if (!ofertas) return [];
-    
     return ofertas.filter((oferta) => {
-      const matchCategoria = !categoriaFiltro || oferta.categoria === categoriaFiltro;
-      const matchSearch = !searchTerm || 
-        oferta.nome.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchCategoria && matchSearch;
+      const matchSearch = !searchTerm || oferta.nome.toLowerCase().includes(searchTerm.toLowerCase());
+      if (categoriaAtiva === "todas") return matchSearch;
+      const dbCats = CATEGORIA_MAP[categoriaAtiva] || [];
+      return dbCats.includes(oferta.categoria) && matchSearch;
     });
-  }, [ofertas, categoriaFiltro, searchTerm]);
+  }, [ofertas, categoriaAtiva, searchTerm]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(`/cidade/${slug}`)}
-        >
+        <Button variant="ghost" size="icon" onClick={() => navigate(`/cidade/${slug}`)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-semibold text-foreground">
-          Mural de ofertas
-        </h1>
+        <h1 className="text-lg font-semibold text-foreground">Mural de ofertas</h1>
       </header>
 
       {/* Banner Hero */}
       <div className="relative h-40 overflow-hidden">
-        <img
-          src={ofertasBanner}
-          alt="Ofertas"
-          className="w-full h-full object-cover"
-        />
+        <img src={ofertasBanner} alt="Ofertas" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-3 left-4 right-4">
           <p className="text-xs text-muted-foreground">Economize</p>
@@ -129,7 +127,7 @@ const OfertasListPage = () => {
       </div>
 
       {/* Search */}
-      <div className="p-4 border-b border-border bg-card/50">
+      <div className="px-4 py-3 border-b border-border bg-card/50">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -142,93 +140,56 @@ const OfertasListPage = () => {
       </div>
 
       {/* Filtro de categorias */}
-      <ScrollArea className="w-full border-b border-border">
-        <div className="flex gap-2 p-4">
-          <button
-            onClick={() => setCategoriaFiltro(null)}
-            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              categoriaFiltro === null
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
-          >
-            Todas
-          </button>
-
-          {categoriasDisponiveis.map((cat) => {
-            const meta = categoriasMeta[cat] || { nome: cat, icone: "📦" };
-            return (
+      <div className="border-b border-border bg-card/30">
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 px-4 py-3 w-max">
+            {TODAS_CATEGORIAS.map((cat) => (
               <button
-                key={cat}
-                onClick={() => setCategoriaFiltro(cat)}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  categoriaFiltro === cat
+                key={cat.id}
+                onClick={() => setCategoriaAtiva(cat.id)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                  categoriaAtiva === cat.id
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
-                <span>{meta.icone}</span>
-                <span>{meta.nome}</span>
+                <span>{cat.icone}</span>
+                <span>{cat.nome}</span>
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      </div>
 
       {/* Lista de ofertas */}
       <main className="flex-1 p-4">
         {isLoading ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
             {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="h-32 rounded-2xl bg-muted animate-pulse"
-              />
+              <div key={i} className="aspect-[3/4] rounded-2xl bg-muted animate-pulse" />
             ))}
           </div>
         ) : ofertasFiltradas.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {ofertasFiltradas.map((oferta) => {
-              const meta = categoriasMeta[oferta.categoria] || {
-                nome: oferta.categoria,
-                icone: "📦",
-              };
-
+              const meta = categoriasMeta[oferta.categoria] || { nome: oferta.categoria, icone: "📦" };
               return (
                 <button
                   key={oferta.id}
-                  onClick={() =>
-                    navigate(
-                      `/cidade/${slug}/servicos/${oferta.categoria}/${oferta.id}`
-                    )
-                  }
+                  onClick={() => navigate(`/cidade/${slug}/servicos/${oferta.categoria}/${oferta.id}`)}
                   className="flex flex-col rounded-2xl overflow-hidden bg-card border border-border/50 shadow-sm hover:shadow-lg transition-all active:scale-[0.97] text-left"
                 >
-                  {/* Imagem */}
                   <div className="relative aspect-[4/3] w-full">
-                    <img
-                      src={oferta.banner_oferta_url!}
-                      alt={oferta.nome}
-                      className="w-full h-full object-cover"
-                    />
-                    {/* Badge categoria */}
+                    <img src={oferta.banner_oferta_url!} alt={oferta.nome} className="w-full h-full object-cover" />
                     <div className="absolute top-2 left-2 flex items-center gap-1 bg-background/85 backdrop-blur-sm px-2 py-0.5 rounded-full">
                       <span className="text-xs">{meta.icone}</span>
                       <span className="text-[10px] font-medium text-foreground">{meta.nome}</span>
                     </div>
                   </div>
-
-                  {/* Info */}
                   <div className="p-2.5 flex-1">
                     <h3 className="text-[13px] font-semibold text-foreground line-clamp-2 leading-tight">
                       {oferta.nome}
                     </h3>
-                    {oferta.descricao && (
-                      <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
-                        {oferta.descricao}
-                      </p>
-                    )}
                     <span className="inline-block mt-1.5 text-[10px] font-semibold text-primary">
                       Ver oferta →
                     </span>
@@ -239,13 +200,19 @@ const OfertasListPage = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <span className="text-6xl mb-4">🔍</span>
-            <h3 className="font-medium text-foreground mb-1">
-              Nenhuma oferta encontrada
+            <BadgePercent className="h-12 w-12 text-muted-foreground/30 mb-4" />
+            <h3 className="font-semibold text-foreground mb-1">
+              Nenhuma oferta nessa categoria
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Tente buscar por outro termo ou categoria
+            <p className="text-sm text-muted-foreground mb-6">
+              Seja o primeiro a anunciar aqui!
             </p>
+            <button
+              onClick={() => navigate(`/cidade/${slug}/empresa/novo`)}
+              className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Coloque sua empresa aqui
+            </button>
           </div>
         )}
       </main>
