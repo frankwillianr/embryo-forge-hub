@@ -32,9 +32,17 @@ const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : item.video_url ? (
-          <div className="w-full h-full flex items-center justify-center bg-muted/30">
-            <div className="w-12 h-12 rounded-full bg-foreground/10 flex items-center justify-center">
-              <Play className="h-5 w-5 text-foreground/60 ml-0.5" />
+          <div className="relative w-full h-full">
+            <video
+              src={item.video_url}
+              className="w-full h-full object-cover"
+              muted
+              preload="metadata"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+              <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
+                <Play className="h-4 w-4 text-foreground ml-0.5" />
+              </div>
             </div>
           </div>
         ) : (
