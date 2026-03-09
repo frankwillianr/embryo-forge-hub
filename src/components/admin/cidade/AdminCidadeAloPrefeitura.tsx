@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Clock, CheckCircle, XCircle, Pencil, Eye } from "lucide-react";
+import { Phone, Clock, CheckCircle, XCircle, Pencil, Eye, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +50,42 @@ const AdminCidadeAloPrefeitura = ({ cidadeId }: AdminCidadeAloPrefeituraProps) =
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      if (!data || data.length === 0) return [];
+
+      // Fetch images
+      const itemIds = data.map((d: any) => d.id);
+      const { data: imagensData } = await supabase
+        .from("rel_cidade_alo_prefeitura_imagens")
+        .select("*")
+        .in("alo_prefeitura_id", itemIds)
+        .order("ordem");
+
+      const imagensPorItem = (imagensData || []).reduce((acc: any, img: any) => {
+        if (!acc[img.alo_prefeitura_id]) acc[img.alo_prefeitura_id] = [];
+        acc[img.alo_prefeitura_id].push(img);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      // Fetch user profiles if user_id exists
+      const userIds = [...new Set(data.filter((d: any) => d.user_id).map((d: any) => d.user_id))];
+      let profilesPorUser: Record<string, any> = {};
+      if (userIds.length > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, nome, email, foto_url")
+          .in("id", userIds);
+
+        profilesPorUser = (profilesData || []).reduce((acc: any, p: any) => {
+          acc[p.id] = p;
+          return acc;
+        }, {} as Record<string, any>);
+      }
+
+      return data.map((d: any) => ({
+        ...d,
+        imagens: imagensPorItem[d.id] || [],
+        profile: d.user_id ? profilesPorUser[d.user_id] || null : null,
+      }));
     },
   });
 
@@ -113,6 +148,41 @@ const AdminCidadeAloPrefeitura = ({ cidadeId }: AdminCidadeAloPrefeituraProps) =
   const aprovados = denuncias.filter((d: any) => d.status === "aprovado");
   const rejeitados = denuncias.filter((d: any) => d.status === "rejeitado");
 
+  const UserInfo = ({ profile }: { profile: any }) => {
+    if (!profile) return null;
+    return (
+      <div className="flex items-center gap-2 p-2 bg-background rounded-lg border border-border">
+        {profile.foto_url ? (
+          <img src={profile.foto_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+            <User className="h-4 w-4 text-muted-foreground" />
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{profile.nome || "Sem nome"}</p>
+          <p className="text-xs text-muted-foreground truncate">{profile.email || ""}</p>
+        </div>
+      </div>
+    );
+  };
+
+  const ImageGallery = ({ imagens }: { imagens: any[] }) => {
+    if (!imagens || imagens.length === 0) return null;
+    return (
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {imagens.map((img: any, i: number) => (
+          <img
+            key={img.id || i}
+            src={img.imagem_url}
+            alt={`Foto ${i + 1}`}
+            className="w-24 h-24 rounded-lg object-cover flex-shrink-0 border border-border"
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats */}
@@ -163,6 +233,20 @@ const AdminCidadeAloPrefeitura = ({ cidadeId }: AdminCidadeAloPrefeituraProps) =
                 </span>
               </div>
 
+              {/* Thumbnail preview */}
+              {item.imagens?.length > 0 && (
+                <div className="flex gap-1.5">
+                  {item.imagens.slice(0, 3).map((img: any, i: number) => (
+                    <img key={img.id || i} src={img.imagem_url} alt="" className="w-12 h-12 rounded-md object-cover" />
+                  ))}
+                  {item.imagens.length > 3 && (
+                    <div className="w-12 h-12 rounded-md bg-background/80 flex items-center justify-center text-xs text-muted-foreground font-medium">
+                      +{item.imagens.length - 3}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex items-center gap-2 flex-wrap">
                 <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={() => handleOpenDetail(item)}>
@@ -204,12 +288,15 @@ const AdminCidadeAloPrefeitura = ({ cidadeId }: AdminCidadeAloPrefeituraProps) =
 
       {/* Detail Dialog */}
       <Dialog open={detailDialog} onOpenChange={setDetailDialog}>
-        <DialogContent className="w-[calc(100%-20px)] max-w-lg rounded-[10px]">
+        <DialogContent className="w-[calc(100%-20px)] max-w-lg rounded-[10px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhes da Denúncia</DialogTitle>
           </DialogHeader>
           {selectedItem && (
             <div className="space-y-4">
+              {/* User info */}
+              <UserInfo profile={selectedItem.profile} />
+
               <div>
                 <Label className="text-muted-foreground text-xs">Título</Label>
                 <p className="text-foreground font-medium">{selectedItem.titulo}</p>
@@ -232,6 +319,16 @@ const AdminCidadeAloPrefeitura = ({ cidadeId }: AdminCidadeAloPrefeituraProps) =
                   <p className="text-foreground text-sm">{new Date(selectedItem.created_at).toLocaleDateString("pt-BR")}</p>
                 </div>
               </div>
+
+              {/* Images */}
+              {selectedItem.imagens?.length > 0 && (
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-2 block">Fotos ({selectedItem.imagens.length})</Label>
+                  <ImageGallery imagens={selectedItem.imagens} />
+                </div>
+              )}
+
+              {/* Video */}
               {selectedItem.video_url && (
                 <div>
                   <Label className="text-muted-foreground text-xs">Vídeo</Label>
@@ -245,40 +342,61 @@ const AdminCidadeAloPrefeitura = ({ cidadeId }: AdminCidadeAloPrefeituraProps) =
 
       {/* Edit Dialog */}
       <Dialog open={editDialog} onOpenChange={setEditDialog}>
-        <DialogContent className="w-[calc(100%-20px)] max-w-lg rounded-[10px]">
+        <DialogContent className="w-[calc(100%-20px)] max-w-lg rounded-[10px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Denúncia</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Título</Label>
-              <Input
-                value={editForm.titulo}
-                onChange={(e) => setEditForm({ ...editForm, titulo: e.target.value })}
-              />
+          {selectedItem && (
+            <div className="space-y-4">
+              {/* User info */}
+              <UserInfo profile={selectedItem.profile} />
+
+              {/* Images preview */}
+              {selectedItem.imagens?.length > 0 && (
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-2 block">Fotos ({selectedItem.imagens.length})</Label>
+                  <ImageGallery imagens={selectedItem.imagens} />
+                </div>
+              )}
+
+              {/* Video preview */}
+              {selectedItem.video_url && (
+                <div>
+                  <Label className="text-muted-foreground text-xs">Vídeo</Label>
+                  <video src={selectedItem.video_url} controls className="w-full rounded-lg mt-1" />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Título</Label>
+                <Input
+                  value={editForm.titulo}
+                  onChange={(e) => setEditForm({ ...editForm, titulo: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Descrição</Label>
+                <Textarea
+                  value={editForm.descricao}
+                  onChange={(e) => setEditForm({ ...editForm, descricao: e.target.value })}
+                  rows={4}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="aprovado">Aprovado</SelectItem>
+                    <SelectItem value="rejeitado">Rejeitado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Descrição</Label>
-              <Textarea
-                value={editForm.descricao}
-                onChange={(e) => setEditForm({ ...editForm, descricao: e.target.value })}
-                rows={4}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="aprovado">Aprovado</SelectItem>
-                  <SelectItem value="rejeitado">Rejeitado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog(false)}>Cancelar</Button>
             <Button onClick={handleSaveEdit} disabled={updateMutation.isPending}>
