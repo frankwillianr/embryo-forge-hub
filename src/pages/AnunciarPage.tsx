@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Car, ShoppingBag, Briefcase, Building2, PawPrint, Megaphone, Loader2 } from "lucide-react";
+import { ArrowLeft, Car, ShoppingBag, Briefcase, Building2, PawPrint, Megaphone, Loader2, Gift } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 
@@ -14,11 +14,19 @@ const anunciarOptions = [
   },
   {
     id: "desapega",
-    title: "Desapega",
+    title: "Marketplace local",
     description: "Venda itens usados ou seminovos",
     icon: ShoppingBag,
     path: "desapega/novo",
     color: "bg-green-500",
+  },
+  {
+    id: "doacoes",
+    title: "Doações",
+    description: "Doe itens em bom estado para quem precisa",
+    icon: Gift,
+    path: "doacoes/novo",
+    color: "bg-emerald-500",
   },
   {
     id: "vagas",

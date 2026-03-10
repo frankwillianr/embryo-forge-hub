@@ -191,7 +191,7 @@ const NovaDenunciaModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-primary" />
-            Nova Denúncia
+            Nova postage
           </DialogTitle>
           <DialogDescription>
             Preencha os dados abaixo para enviar sua denúncia de forma sigilosa.
@@ -341,7 +341,7 @@ const NovaDenunciaModal = ({
                   Enviando...
                 </>
               ) : (
-                "Enviar Denúncia"
+                "Enviar postagem"
               )}
             </Button>
           </div>

@@ -103,7 +103,7 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
             className="text-xs font-medium px-2.5 py-1 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/15 transition-colors flex items-center gap-1"
           >
             <Plus className="h-3 w-3" />
-            Denunciar
+            Postar
           </button>
           <button
             onClick={() => {

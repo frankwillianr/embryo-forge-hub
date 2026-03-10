@@ -60,6 +60,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
   const [startX, setStartX] = useState(0);
   const [translateX, setTranslateX] = useState(0);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [inlineVideoOpen, setInlineVideoOpen] = useState(false);
 
   const imagens = item.imagens || [];
   const hasMultipleImages = imagens.length > 1;
@@ -70,7 +71,15 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
     );
     return match?.[1] ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
   };
+  const getYouTubeEmbedUrl = (url?: string | null) => {
+    if (!url) return null;
+    const match = url.match(
+      /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+    );
+    return match?.[1] ? `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0` : null;
+  };
   const videoThumb = getYouTubeThumb(item.video_url);
+  const embedUrl = getYouTubeEmbedUrl(item.video_url);
 
   // iOS keyboard detection
   useEffect(() => {
@@ -291,6 +300,16 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
     setShowCommentSheet(true);
   };
 
+  const handleOpenVideo = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setInlineVideoOpen(true);
+  };
+
+  const handleCloseInlineVideo = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setInlineVideoOpen(false);
+  };
+
   const handleEnviarComentario = () => {
     if (!comentario.trim()) {
       toast.error("Digite um comentário");
@@ -393,29 +412,69 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
           </>
         ) : item.video_url ? (
           <div className="relative w-full h-full bg-muted/50">
-            {videoThumb ? (
-              <img
-                src={videoThumb}
-                alt={item.titulo}
-                className="w-full h-full object-cover"
-              />
+            {inlineVideoOpen ? (
+              embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  title={item.titulo}
+                  className="w-full h-full"
+                  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  src={item.video_url}
+                  className="w-full h-full object-cover"
+                  controls
+                  autoPlay
+                  playsInline
+                  preload="metadata"
+                />
+              )
             ) : (
-              <video
-                src={item.video_url}
-                className="w-full h-full object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="metadata"
-              />
+              <>
+                {videoThumb ? (
+                  <img
+                    src={videoThumb}
+                    alt={item.titulo}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <video
+                    src={item.video_url}
+                    className="w-full h-full object-cover"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={handleOpenVideo}
+                    className="w-16 h-16 rounded-full bg-black/30 backdrop-blur flex items-center justify-center active:scale-95 transition-transform"
+                    title="Reproduzir vídeo"
+                  >
+                    <Play className="h-8 w-8 text-white ml-1" fill="white" />
+                  </button>
+                </div>
+              </>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-black/30 backdrop-blur flex items-center justify-center">
-                <Play className="h-8 w-8 text-white ml-1" fill="white" />
+            {inlineVideoOpen && (
+              <div className="absolute top-2 right-2">
+                <button
+                  type="button"
+                  onClick={handleCloseInlineVideo}
+                  className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center"
+                  title="Fechar vídeo"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/80" />

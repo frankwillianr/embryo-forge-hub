@@ -18,13 +18,11 @@ interface HomeSectionProps {
 }
 
 const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
-  // Busca banners ativos para a data de hoje e cidade específica
   const { data: banners = [], isLoading } = useQuery({
     queryKey: ["banners-hoje", cidadeSlug],
     queryFn: async () => {
       const hoje = new Date().toISOString().split("T")[0];
 
-      // Primeiro busca a cidade pelo slug
       const { data: cidadeData, error: cidadeError } = await supabase
         .from("cidade")
         .select("id")
@@ -34,7 +32,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       if (cidadeError) throw cidadeError;
       if (!cidadeData) return [];
 
-      // Busca banners vinculados à cidade
       const { data: relData, error: relError } = await supabase
         .from("rel_cidade_banner")
         .select("banner_id")
@@ -45,7 +42,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       const bannerIdsDaCidade = relData.map((r) => r.banner_id);
 
-      // Busca IDs de banners que tem exibição agendada para hoje
       const { data: diasData, error: diasError } = await supabase
         .from("rel_banner_dias")
         .select("banner_id")
@@ -58,7 +54,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       const bannerIds = diasData.map((d) => d.banner_id);
 
-      // Busca os banners ativos
       const { data: bannersData, error: bannersError } = await supabase
         .from("banner")
         .select("*")
@@ -67,7 +62,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       if (bannersError) throw bannersError;
 
-      // Shuffle array (ordem aleatória)
       const shuffled = [...(bannersData || [])].sort(() => Math.random() - 0.5);
 
       return shuffled as Banner[];
@@ -86,52 +80,42 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
   return (
     <div className="pb-4">
-      {/* 1. Carrossel de propaganda */}
       {isLoading ? (
         <div className="aspect-[16/9] w-full bg-muted animate-pulse m-5 rounded-[20px]" />
       ) : banners.length > 0 ? (
         <BannerCarousel banners={banners} cidadeSlug={cidadeSlug} />
       ) : null}
 
-      {/* 2. Jornal da cidade */}
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
 
       <Separador />
 
-      {/* 3. Eventos */}
       <EventosSection cidadeSlug={cidadeSlug} />
 
       <Separador />
 
-      {/* 4. Mural da cidade */}
-      <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
-
-      <Separador />
-
-      {/* 5. Cinema */}
-      <CinemaHorizontalList cidadeSlug={cidadeSlug} />
-
-      <Separador />
-
-      {/* 6. Ofertas */}
       <OfertasSection cidadeSlug={cidadeSlug} />
 
       <Separador />
 
-      {/* 7. Serviços */}
       <ServicosSection cidadeSlug={cidadeSlug} />
 
       <Separador />
 
-      {/* 8. Orçamentos abertos */}
+      <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
+      <CinemaHorizontalList cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
       <SolicitarOrcamentoSection cidadeSlug={cidadeSlug} />
 
       <Separador />
 
-      {/* 9. Utilidades */}
       <QuickAccessCards cidadeSlug={cidadeSlug} />
       <OnibusHorizontalList cidadeSlug={cidadeSlug} />
-
     </div>
   );
 };

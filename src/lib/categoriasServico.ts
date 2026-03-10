@@ -51,7 +51,7 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
   massagista: "Massagista",
   farmacia: "Farmácia",
   // Comércio
-  desapega: "Desapega",
+  desapega: "Marketplace local",
   lojas: "Lojas",
   promocoes: "Promoções",
   restaurantes: "Restaurantes",
@@ -124,7 +124,7 @@ export const CATEGORIAS_SERVICO_META: Record<string, { nome: string; icone: stri
   academia: { nome: "Academia", icone: "💪" },
   massagista: { nome: "Massagista", icone: "💆" },
   farmacia: { nome: "Farmácia", icone: "💊" },
-  desapega: { nome: "Desapega", icone: "🛍️" },
+  desapega: { nome: "Marketplace local", icone: "🛍️" },
   lojas: { nome: "Lojas", icone: "🏪" },
   promocoes: { nome: "Promoções", icone: "🏷️" },
   restaurantes: { nome: "Restaurantes", icone: "🍽️" },

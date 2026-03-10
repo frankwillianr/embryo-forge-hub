@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, Trash2 } from "lucide-react";
+import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -152,6 +152,14 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
 
             {user ? (
               <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handleNavigate(`/cidade/${cidadeSlug}/editar-perfil`)}
+                  className="w-full rounded-xl"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Editar perfil
+                </Button>
                 <Button 
                   variant="dark"
                   onClick={handleLogoutClick}

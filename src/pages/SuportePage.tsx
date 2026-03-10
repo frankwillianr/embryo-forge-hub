@@ -78,7 +78,7 @@ const SuportePage = () => {
             </div>
             <div>
               <p className="font-medium text-foreground">Como publicar um anúncio?</p>
-              <p className="text-muted-foreground mt-1">Após fazer login, acesse a seção desejada (Veículos, Desapega, Pets, etc.) e clique no botão de adicionar. Preencha as informações e publique.</p>
+              <p className="text-muted-foreground mt-1">Após fazer login, acesse a seção desejada (Veículos, Marketplace local, Pets, etc.) e clique no botão de adicionar. Preencha as informações e publique.</p>
             </div>
             <div>
               <p className="font-medium text-foreground">Como excluir minha conta?</p>

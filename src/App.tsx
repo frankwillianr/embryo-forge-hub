@@ -26,6 +26,9 @@ import NovoVeiculoPage from "@/pages/NovoVeiculoPage";
 import DesapegaListPage from "@/pages/DesapegaListPage";
 import NovoDesapegaPage from "@/pages/NovoDesapegaPage";
 import DesapegaDetailPage from "@/pages/DesapegaDetailPage";
+import DoacoesListPage from "@/pages/DoacoesListPage";
+import NovaDoacaoPage from "@/pages/NovaDoacaoPage";
+import DoacaoDetailPage from "@/pages/DoacaoDetailPage";
 
 import ServicoCategoriaPage from "@/pages/ServicoCategoriaPage";
 import NovaEmpresaPage from "@/pages/NovaEmpresaPage";
@@ -51,6 +54,7 @@ import AuthPage from "@/pages/AuthPage";
 import MeusAnunciosPage from "@/pages/MeusAnunciosPage";
 import MinhasEmpresasPage from "@/pages/MinhasEmpresasPage";
 import EditarEmpresaPage from "@/pages/EditarEmpresaPage";
+import EditarPerfilPage from "@/pages/EditarPerfilPage";
 import MeusVeiculosPage from "@/pages/MeusVeiculosPage";
 import MinhasDenunciasPage from "@/pages/MinhasDenunciasPage";
 import MinhasVagasPage from "@/pages/MinhasVagasPage";
@@ -87,6 +91,9 @@ const App = () => (
               <Route path="/cidade/:slug/desapega" element={<DesapegaListPage />} />
               <Route path="/cidade/:slug/desapega/novo" element={<NovoDesapegaPage />} />
               <Route path="/cidade/:slug/desapega/:anuncioId" element={<DesapegaDetailPage />} />
+              <Route path="/cidade/:slug/doacoes" element={<DoacoesListPage />} />
+              <Route path="/cidade/:slug/doacoes/novo" element={<NovaDoacaoPage />} />
+              <Route path="/cidade/:slug/doacoes/:anuncioId" element={<DoacaoDetailPage />} />
               <Route path="/cidade/:slug/servicos/:categoriaId" element={<ServicoCategoriaPage />} />
               <Route path="/cidade/:slug/servicos/:categoriaId/novo" element={<NovaEmpresaPage />} />
               <Route path="/cidade/:slug/servicos/:categoriaId/:empresaId" element={<ServicoEmpresaDetailPage />} />
@@ -111,6 +118,7 @@ const App = () => (
               <Route path="/cidade/:slug/minhas-empresas" element={<MinhasEmpresasPage />} />
               <Route path="/cidade/:slug/empresa/novo" element={<NovaEmpresaPage />} />
               <Route path="/cidade/:slug/minhas-empresas/:empresaId/editar" element={<EditarEmpresaPage />} />
+              <Route path="/cidade/:slug/editar-perfil" element={<EditarPerfilPage />} />
               <Route path="/cidade/:slug/meus-veiculos" element={<MeusVeiculosPage />} />
               <Route path="/cidade/:slug/minhas-denuncias" element={<MinhasDenunciasPage />} />
               <Route path="/cidade/:slug/minhas-vagas" element={<MinhasVagasPage />} />

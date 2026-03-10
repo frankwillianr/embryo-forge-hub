@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, MessageCircle, Trash2, FileText, Tag } from "lucide-react";
+import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRight, Building2, MessageCircle, Trash2, FileText, Tag, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -121,7 +121,7 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
       bgColor: "bg-emerald-500/10",
     },
   ];
-
+  const menuItemsFinal = menuItems.filter((item) => item.path !== `/cidade/${cidadeSlug}/meus-cupons`);
   return (
     <div className="flex flex-col min-h-full bg-background">
       {/* Perfil Section - Minimalista */}
@@ -148,6 +148,16 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
           </div>
         </div>
 
+        {user && (
+          <button
+            onClick={() => navigate(`/cidade/${cidadeSlug}/editar-perfil`)}
+            className="w-full mb-2 flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            <Pencil className="h-4 w-4" />
+            <span>Editar perfil</span>
+          </button>
+        )}
+
         {!user && (
           <button
             onClick={handleLogin}
@@ -166,7 +176,7 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
           </p>
 
           <div className="space-y-1">
-            {menuItems.map((item) => (
+            {menuItemsFinal.map((item) => (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
@@ -182,10 +192,15 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
         </div>
       )}
 
-      {/* Contatos Section - Minimalista */}
+      {/* Contato */}
       <div className="px-5 py-6 border-t border-border">
-        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-4">
-          Precisa de ajuda? Fale com a gente
+        <p className="text-sm font-semibold text-foreground mb-2">Contato</p>
+        <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+          Tem alguma sugestão ou ideia para melhorar o app? Não encontrou o que estava procurando?
+          Ou quer adicionar sua empresa?
+        </p>
+        <p className="text-sm font-medium text-foreground mb-3">
+          Chame a gente no WhatsApp!
         </p>
 
         <div className="space-y-3">
@@ -200,11 +215,12 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
           </a>
 
           <a
-            href="mailto:contato@app.com"
-            className="flex items-center gap-3 text-sm hover:text-primary transition-colors"
+            href="https://wa.me/5533997305519"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
-            <Mail className="h-[18px] w-[18px] text-muted-foreground" />
-            <span className="text-foreground">contato@app.com</span>
+            Chamar
           </a>
         </div>
       </div>
