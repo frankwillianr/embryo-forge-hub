@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useNavigate } from "react-router-dom";
 import { Play } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { AloPrefeitura } from "@/types/aloPrefeitura";
 
 interface AloPrefeituraCardProps {
@@ -9,21 +9,25 @@ interface AloPrefeituraCardProps {
   cidadeSlug?: string;
 }
 
+const getYouTubeThumb = (url?: string | null) => {
+  if (!url) return null;
+  const match = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+  );
+  return match?.[1] ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
+};
+
 const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
   const navigate = useNavigate();
   const primeiraImagem = item.imagens?.[0]?.imagem_url;
-  
+  const videoThumb = getYouTubeThumb(item.video_url);
+
   const handleClick = () => {
-    // Navegar para o feed com hash do item para scroll automático
     navigate(`/cidade/${cidadeSlug}/alo-prefeitura#${item.id}`);
   };
 
   return (
-    <div 
-      onClick={handleClick}
-      className="flex-shrink-0 w-64 cursor-pointer group"
-    >
-      {/* Imagem com cantos arredondados suaves */}
+    <div onClick={handleClick} className="flex-shrink-0 w-64 cursor-pointer group">
       <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted/50">
         {primeiraImagem ? (
           <img
@@ -32,16 +36,26 @@ const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : item.video_url ? (
-          <div className="relative w-full h-full">
-            <video
-              src={item.video_url}
-              className="w-full h-full object-cover"
-              muted
-              preload="metadata"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-              <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
-                <Play className="h-4 w-4 text-foreground ml-0.5" />
+          <div className="relative w-full h-full bg-muted/30">
+            {videoThumb ? (
+              <img
+                src={videoThumb}
+                alt={item.titulo}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <video
+                src={item.video_url}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                muted
+                playsInline
+                preload="metadata"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-black/45 backdrop-blur-[1px] flex items-center justify-center">
+                <Play className="h-5 w-5 text-white ml-0.5" />
               </div>
             </div>
           </div>
@@ -50,7 +64,6 @@ const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
         )}
       </div>
 
-      {/* Conteúdo minimalista */}
       <div className="pt-2.5 space-y-0.5">
         <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
           {format(new Date(item.created_at), "dd MMM · HH:mm", { locale: ptBR })}

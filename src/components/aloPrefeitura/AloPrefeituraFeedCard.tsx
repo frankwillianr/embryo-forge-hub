@@ -63,6 +63,14 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
 
   const imagens = item.imagens || [];
   const hasMultipleImages = imagens.length > 1;
+  const getYouTubeThumb = (url?: string | null) => {
+    if (!url) return null;
+    const match = url.match(
+      /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+    );
+    return match?.[1] ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
+  };
+  const videoThumb = getYouTubeThumb(item.video_url);
 
   // iOS keyboard detection
   useEffect(() => {
@@ -384,13 +392,29 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
             )}
           </>
         ) : item.video_url ? (
-          <video
-            src={item.video_url}
-            className="w-full h-full object-cover"
-            controls
-            playsInline
-            preload="metadata"
-          />
+          <div className="relative w-full h-full bg-muted/50">
+            {videoThumb ? (
+              <img
+                src={videoThumb}
+                alt={item.titulo}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <video
+                src={item.video_url}
+                className="w-full h-full object-cover"
+                muted
+                playsInline
+                preload="metadata"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-black/30 backdrop-blur flex items-center justify-center">
+                <Play className="h-8 w-8 text-white ml-1" fill="white" />
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/80" />
         )}
