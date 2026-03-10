@@ -403,6 +403,8 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
               <video
                 src={item.video_url}
                 className="w-full h-full object-cover"
+                autoPlay
+                loop
                 muted
                 playsInline
                 preload="metadata"

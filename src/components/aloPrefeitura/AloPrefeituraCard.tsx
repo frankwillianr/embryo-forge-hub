@@ -47,6 +47,8 @@ const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
               <video
                 src={item.video_url}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                autoPlay
+                loop
                 muted
                 playsInline
                 preload="metadata"
