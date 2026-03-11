@@ -68,8 +68,9 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
   const normalizePhone = (value?: string | null) => (value || "").replace(/\D/g, "");
   const isOwnerByUserId = !!user?.id && anuncio.user_id === user.id;
   const isOwnerByContato =
-    !anuncio.user_id &&
+    !!user?.id &&
     normalizePhone(anuncio.whatsapp) !== "" &&
+    normalizePhone(profile?.contato) !== "" &&
     normalizePhone(anuncio.whatsapp) === normalizePhone(profile?.contato);
   const isOwner = isOwnerByUserId || isOwnerByContato;
   const isVendido = anuncio.status === "vendido";
