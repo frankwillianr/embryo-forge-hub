@@ -32,6 +32,7 @@ const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModal
   const [userSearch, setUserSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [nome, setNome] = useState("");
+  const [valor, setValor] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
@@ -64,8 +65,10 @@ const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModal
     mutationFn: async () => {
       if (!selectedUser?.id) throw new Error("Selecione um usuario por email/CPF");
       if (nome.trim().length < 3) throw new Error("Nome da empresa invalido");
+      const valorNumber = Number(valor.replace(",", "."));
+      if (!Number.isFinite(valorNumber) || valorNumber <= 0) throw new Error("Informe um valor valido");
 
-      const { error } = await supabase.from("rel_cidade_servico_empresa").insert({
+      const { data: empresa, error } = await supabase.from("rel_cidade_servico_empresa").insert({
         cidade_id: cidadeId,
         user_id: selectedUser.id,
         nome: nome.trim(),
@@ -73,17 +76,35 @@ const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModal
         status: "aguardando_pagamento",
         data_inicio: dataInicio || null,
         data_fim: dataFim || null,
-      });
+      }).select("id").single();
 
       if (error) throw error;
+
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
+        "create-asaas-empresa-payment",
+        {
+          body: {
+            empresa_id: empresa.id,
+            valor: valorNumber,
+          },
+        }
+      );
+
+      if (paymentError) throw new Error(`Falha ao gerar pagamento: ${paymentError.message}`);
+
+      const paymentUrl = paymentData?.payment_url;
+      if (typeof paymentUrl === "string" && paymentUrl.startsWith("http")) {
+        window.open(paymentUrl, "_blank", "noopener,noreferrer");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-cidade-empresas", cidadeId] });
-      toast.success("Empresa criada com sucesso");
+      toast.success("Empresa criada e cobrança gerada no Asaas");
       onOpenChange(false);
       setSelectedUser(null);
       setUserSearch("");
       setNome("");
+      setValor("");
       setDataInicio("");
       setDataFim("");
     },
@@ -92,7 +113,7 @@ const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModal
     },
   });
 
-  const isValid = !!selectedUser?.id && nome.trim().length >= 3;
+  const isValid = !!selectedUser?.id && nome.trim().length >= 3 && Number(valor.replace(",", ".")) > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -163,7 +184,15 @@ const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModal
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Valor (R$) *</Label>
+              <Input
+                value={valor}
+                onChange={(e) => setValor(e.target.value.replace(/[^\d,.\-]/g, ""))}
+                placeholder="299,90"
+              />
+            </div>
             <div className="space-y-2">
               <Label>Data inicio</Label>
               <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
