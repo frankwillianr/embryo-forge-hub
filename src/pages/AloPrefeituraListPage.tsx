@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,9 @@ const AloPrefeituraListPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [globalMuted, setGlobalMuted] = useState(true);
+  const [globalAutoplay, setGlobalAutoplay] = useState(true);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["alo-prefeitura-list", slug],
@@ -58,6 +61,8 @@ const AloPrefeituraListPage = () => {
     enabled: !!slug,
   });
 
+  const itemIds = useMemo(() => items.map((item) => item.id), [items]);
+
   // Scroll automático até a publicação quando há hash na URL
   useEffect(() => {
     if (!isLoading && location.hash) {
@@ -77,6 +82,44 @@ const AloPrefeituraListPage = () => {
       }
     }
   }, [isLoading, location.hash, location.pathname]);
+
+  useEffect(() => {
+    if (isLoading || itemIds.length === 0) return;
+
+    const visibleRatios = new Map<string, number>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = entry.target.getAttribute("data-alo-id");
+          if (!id) return;
+          visibleRatios.set(id, entry.isIntersecting ? entry.intersectionRatio : 0);
+        });
+
+        let nextActiveId: string | null = null;
+        let maxRatio = 0;
+
+        visibleRatios.forEach((ratio, id) => {
+          if (ratio > maxRatio) {
+            maxRatio = ratio;
+            nextActiveId = id;
+          }
+        });
+
+        setActiveItemId(maxRatio >= 0.45 ? nextActiveId : null);
+      },
+      {
+        threshold: [0, 0.25, 0.45, 0.65, 0.85, 1],
+      }
+    );
+
+    const elements = itemIds
+      .map((id) => document.querySelector(`[data-alo-id="${id}"]`))
+      .filter((el): el is Element => !!el);
+
+    elements.forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, [isLoading, itemIds]);
 
   return (
     <div className="min-h-screen bg-background pb-4">
@@ -115,7 +158,16 @@ const AloPrefeituraListPage = () => {
       ) : (
         <div>
           {items.map((item) => (
-            <AloPrefeituraFeedCard key={item.id} item={item} cidadeSlug={slug} />
+            <AloPrefeituraFeedCard
+              key={item.id}
+              item={item}
+              cidadeSlug={slug}
+              isVideoActive={activeItemId === item.id}
+              globalMuted={globalMuted}
+              onGlobalMutedChange={setGlobalMuted}
+              globalAutoplay={globalAutoplay}
+              onGlobalAutoplayChange={setGlobalAutoplay}
+            />
           ))}
         </div>
       )}

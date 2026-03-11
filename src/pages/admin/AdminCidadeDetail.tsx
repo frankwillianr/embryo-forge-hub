@@ -1,7 +1,7 @@
 ﻿import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign, MessageCircle, Users, Building2, CalendarDays, Rss } from "lucide-react";
+import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign, MessageCircle, Users, Building2, CalendarDays, Rss, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cidade } from "@/types/cidade";
@@ -16,6 +16,7 @@ import AdminCidadeEmpresas from "@/components/admin/cidade/AdminCidadeEmpresas";
 import AdminCidadeEventos from "@/components/admin/cidade/AdminCidadeEventos";
 import AdminCidadeScraping from "@/components/admin/cidade/AdminCidadeScraping";
 import AdminCidadeScrapingEventos from "@/components/admin/cidade/AdminCidadeScrapingEventos";
+import AdminCidadePushNotifications from "@/components/admin/cidade/AdminCidadePushNotifications";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -30,6 +31,7 @@ const tabs = [
   { id: "precificacao", label: "Precificacao", icon: DollarSign },
   { id: "scraping", label: "scarpping de noticas", icon: Rss },
   { id: "scraping-eventos", label: "scraping de eventos", icon: Rss },
+  { id: "push-notificacao", label: "Push notificação", icon: Bell },
 ];
 
 const AdminCidadeDetail = () => {
@@ -135,6 +137,7 @@ const AdminCidadeDetail = () => {
         {activeTab === "precificacao" && <AdminCidadePrecificacao cidadeId={cidadeId!} />}
         {activeTab === "scraping" && <AdminCidadeScraping cidadeId={cidadeId!} />}
         {activeTab === "scraping-eventos" && <AdminCidadeScrapingEventos cidadeId={cidadeId!} />}
+        {activeTab === "push-notificacao" && <AdminCidadePushNotifications cidadeId={cidadeId!} />}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Heart, MessageCircle, Play, Volume2, VolumeX, Trash2, X } from "lucide-react";
+import { Heart, MessageCircle, Pause, Volume2, VolumeX, Trash2, X } from "lucide-react";
 import { type AloPrefeitura } from "@/types/aloPrefeitura";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,9 +43,22 @@ const getFingerprint = () => {
 interface AloPrefeituraFeedCardProps {
   item: AloPrefeitura;
   cidadeSlug?: string;
+  isVideoActive?: boolean;
+  globalMuted: boolean;
+  onGlobalMutedChange: (muted: boolean) => void;
+  globalAutoplay: boolean;
+  onGlobalAutoplayChange: (enabled: boolean) => void;
 }
 
-const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps) => {
+const AloPrefeituraFeedCard = ({
+  item,
+  cidadeSlug,
+  isVideoActive = false,
+  globalMuted,
+  onGlobalMutedChange,
+  globalAutoplay,
+  onGlobalAutoplayChange,
+}: AloPrefeituraFeedCardProps) => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
   const fingerprint = user?.id || getFingerprint();
@@ -60,25 +73,18 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
   const [startX, setStartX] = useState(0);
   const [translateX, setTranslateX] = useState(0);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [inlineVideoOpen, setInlineVideoOpen] = useState(false);
+  const primaryVideoRef = useRef<HTMLVideoElement | null>(null);
+  const secondaryVideoRef = useRef<HTMLVideoElement | null>(null);
 
   const imagens = item.imagens || [];
   const hasMultipleImages = imagens.length > 1;
-  const getYouTubeThumb = (url?: string | null) => {
-    if (!url) return null;
-    const match = url.match(
-      /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
-    );
-    return match?.[1] ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
-  };
   const getYouTubeEmbedUrl = (url?: string | null) => {
     if (!url) return null;
     const match = url.match(
       /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
     );
-    return match?.[1] ? `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0` : null;
+    return match?.[1] ? `https://www.youtube.com/embed/${match[1]}?rel=0` : null;
   };
-  const videoThumb = getYouTubeThumb(item.video_url);
   const embedUrl = getYouTubeEmbedUrl(item.video_url);
 
   // iOS keyboard detection
@@ -103,7 +109,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
     };
   }, [showCommentSheet]);
 
-  // Busca reação do usuário
+  // Busca reaÃ§Ã£o do usuÃ¡rio
   const { data: userReaction } = useQuery({
     queryKey: ["alo-reaction-feed", item.id, fingerprint],
     queryFn: async () => {
@@ -132,7 +138,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
     },
   });
 
-  // Busca contagem de comentários
+  // Busca contagem de comentÃ¡rios
   const { data: comentariosCount = 0 } = useQuery({
     queryKey: ["alo-comentarios-count", item.id],
     queryFn: async () => {
@@ -146,7 +152,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
     },
   });
 
-  // Busca comentários
+  // Busca comentÃ¡rios
   const { data: comentarios = [] } = useQuery({
     queryKey: ["alo-comentarios-feed", item.id],
     queryFn: async () => {
@@ -236,7 +242,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
   // Mutation para comentar
   const comentarMutation = useMutation({
     mutationFn: async (texto: string) => {
-      if (!user) throw new Error("Não autenticado");
+      if (!user) throw new Error("NÃ£o autenticado");
 
       const { error } = await supabase
         .from("rel_cidade_alo_prefeitura_comentarios")
@@ -250,16 +256,16 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
     },
     onSuccess: () => {
       setComentario("");
-      toast.success("Comentário publicado!");
+      toast.success("ComentÃ¡rio publicado!");
       queryClient.invalidateQueries({ queryKey: ["alo-comentarios-feed", item.id] });
       queryClient.invalidateQueries({ queryKey: ["alo-comentarios-count", item.id] });
     },
     onError: () => {
-      toast.error("Erro ao publicar comentário");
+      toast.error("Erro ao publicar comentÃ¡rio");
     },
   });
 
-  // Mutation para deletar comentário
+  // Mutation para deletar comentÃ¡rio
   const deletarComentarioMutation = useMutation({
     mutationFn: async (comentarioId: string) => {
       const { error } = await supabase
@@ -271,12 +277,12 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
     },
     onSuccess: () => {
       setComentarioToDelete(null);
-      toast.success("Comentário excluído!");
+      toast.success("ComentÃ¡rio excluÃ­do!");
       queryClient.invalidateQueries({ queryKey: ["alo-comentarios-feed", item.id] });
       queryClient.invalidateQueries({ queryKey: ["alo-comentarios-count", item.id] });
     },
     onError: () => {
-      toast.error("Erro ao excluir comentário");
+      toast.error("Erro ao excluir comentÃ¡rio");
     },
   });
 
@@ -294,25 +300,15 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
   const handleCommentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) {
-      toast.error("Faça login para comentar");
+      toast.error("FaÃ§a login para comentar");
       return;
     }
     setShowCommentSheet(true);
   };
 
-  const handleOpenVideo = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setInlineVideoOpen(true);
-  };
-
-  const handleCloseInlineVideo = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setInlineVideoOpen(false);
-  };
-
   const handleEnviarComentario = () => {
     if (!comentario.trim()) {
-      toast.error("Digite um comentário");
+      toast.error("Digite um comentÃ¡rio");
       return;
     }
     comentarMutation.mutate(comentario.trim());
@@ -346,8 +342,30 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
   const descricao = item.descricao || "";
   const shouldTruncate = descricao.length > 100;
 
+  useEffect(() => {
+    const syncPlayback = (videoEl: HTMLVideoElement | null) => {
+      if (!videoEl) return;
+      videoEl.muted = globalMuted;
+
+      if (isVideoActive && globalAutoplay) {
+        videoEl.play().catch(() => {
+          // Falha silenciosa de autoplay em alguns navegadores.
+        });
+      } else {
+        videoEl.pause();
+      }
+    };
+
+    syncPlayback(primaryVideoRef.current);
+    syncPlayback(secondaryVideoRef.current);
+  }, [globalAutoplay, globalMuted, isVideoActive]);
+
   return (
-    <article id={`alo-${item.id}`} className="border-b border-border/50 relative mb-6 scroll-mt-16">
+    <article
+      id={`alo-${item.id}`}
+      data-alo-id={item.id}
+      className="border-b border-border/50 relative mb-6 scroll-mt-16"
+    >
       {/* Header */}
       <div className="flex items-center px-3 py-2.5">
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -412,66 +430,50 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
           </>
         ) : item.video_url ? (
           <div className="relative w-full h-full bg-muted/50">
-            {inlineVideoOpen ? (
-              embedUrl ? (
-                <iframe
-                  src={embedUrl}
-                  title={item.titulo}
-                  className="w-full h-full"
-                  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                  allowFullScreen
-                />
-              ) : (
+            {embedUrl ? (
+              <iframe
+                src={`${embedUrl}&autoplay=${isVideoActive && globalAutoplay ? "1" : "0"}&mute=${globalMuted ? "1" : "0"}&controls=1&playsinline=1`}
+                title={item.titulo}
+                className="w-full h-full"
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowFullScreen
+              />
+            ) : (
+              <>
                 <video
+                  ref={primaryVideoRef}
                   src={item.video_url}
                   className="w-full h-full object-cover"
-                  controls
-                  autoPlay
+                  loop
                   playsInline
                   preload="metadata"
                 />
-              )
-            ) : (
-              <>
-                {videoThumb ? (
-                  <img
-                    src={videoThumb}
-                    alt={item.titulo}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <video
-                    src={item.video_url}
-                    className="w-full h-full object-cover"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="metadata"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={handleOpenVideo}
-                    className="w-16 h-16 rounded-full bg-black/30 backdrop-blur flex items-center justify-center active:scale-95 transition-transform"
-                    title="Reproduzir vídeo"
-                  >
-                    <Play className="h-8 w-8 text-white ml-1" fill="white" />
-                  </button>
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
               </>
             )}
-            {inlineVideoOpen && (
-              <div className="absolute top-2 right-2">
+            {!embedUrl && (
+              <div className="absolute right-2 bottom-2 flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleCloseInlineVideo}
-                  className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center"
-                  title="Fechar vídeo"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGlobalAutoplayChange(!globalAutoplay);
+                  }}
+                  className="h-9 px-3 rounded-full bg-black/60 text-white text-xs font-medium flex items-center justify-center"
+                  title={globalAutoplay ? "Pausar vídeos" : "Reproduzir vídeos"}
                 >
-                  <X className="h-4 w-4" />
+                  {globalAutoplay ? <Pause className="h-4 w-4" /> : "Play"}
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGlobalMutedChange(!globalMuted);
+                  }}
+                  className="h-9 w-9 rounded-full bg-black/60 text-white flex items-center justify-center"
+                  title={globalMuted ? "Ativar áudio" : "Silenciar vídeos"}
+                >
+                  {globalMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                 </button>
               </div>
             )}
@@ -480,7 +482,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
           <div className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/80" />
         )}
 
-        {/* Animação de like */}
+        {/* AnimaÃ§Ã£o de like */}
         {showLikeAnimation && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <Heart
@@ -492,20 +494,37 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
         )}
       </div>
 
-      {/* Vídeo (quando tem imagens E vídeo) */}
+      {/* VÃ­deo (quando tem imagens E vÃ­deo) */}
       {imagens.length > 0 && item.video_url && (
         <div className="px-3 pt-2">
           <video
+            ref={secondaryVideoRef}
             src={item.video_url}
             className="w-full rounded-xl aspect-video object-contain bg-black"
-            controls
+            loop
             playsInline
             preload="metadata"
           />
+          <div className="mt-2 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => onGlobalAutoplayChange(!globalAutoplay)}
+              className="h-8 px-3 rounded-full bg-muted text-foreground text-xs font-medium"
+            >
+              {globalAutoplay ? "Pausar vídeos" : "Reproduzir vídeos"}
+            </button>
+            <button
+              type="button"
+              onClick={() => onGlobalMutedChange(!globalMuted)}
+              className="h-8 px-3 rounded-full bg-muted text-foreground text-xs font-medium"
+            >
+              {globalMuted ? "Ativar áudio" : "Silenciar vídeos"}
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Ações */}
+      {/* AÃ§Ãµes */}
       <div className="px-3 pt-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -539,7 +558,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
           </span>
         </div>
 
-        {/* Título e descrição */}
+        {/* TÃ­tulo e descriÃ§Ã£o */}
         <div className="mt-1 mb-3">
           <p className="text-[14px] text-foreground leading-relaxed font-semibold">
             {item.titulo}
@@ -564,7 +583,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
         </div>
       </div>
 
-      {/* Modal de Comentários */}
+      {/* Modal de ComentÃ¡rios */}
       <Sheet open={showCommentSheet} onOpenChange={setShowCommentSheet}>
         <SheetContent
           side="bottom"
@@ -579,7 +598,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
         >
           <SheetHeader className="px-4 py-3 border-b border-border/50 flex-row items-center justify-between space-y-0">
             <SheetTitle className="text-base font-semibold">
-              Comentários {comentariosCount > 0 && `(${comentariosCount})`}
+              ComentÃ¡rios {comentariosCount > 0 && `(${comentariosCount})`}
             </SheetTitle>
             <button
               onClick={() => setShowCommentSheet(false)}
@@ -590,11 +609,11 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
           </SheetHeader>
 
           <div className="flex flex-col h-[calc(100%-60px)]">
-            {/* Lista de comentários */}
+            {/* Lista de comentÃ¡rios */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
               {comentarios.length === 0 ? (
                 <div className="text-center text-muted-foreground text-sm py-8">
-                  Nenhum comentário ainda. Seja o primeiro!
+                  Nenhum comentÃ¡rio ainda. Seja o primeiro!
                 </div>
               ) : (
                 comentarios.map((c: any) => {
@@ -610,7 +629,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="text-[13px] font-semibold text-foreground">
-                            {c.profile?.nome || "Usuário"}
+                            {c.profile?.nome || "UsuÃ¡rio"}
                           </span>
                           <span className="text-[11px] text-muted-foreground">
                             {formatDistanceToNow(new Date(c.created_at), {
@@ -637,7 +656,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
               )}
             </div>
 
-            {/* Form de comentário */}
+            {/* Form de comentÃ¡rio */}
             <div className="border-t border-border/50 p-3 bg-background">
               <div className="flex items-start gap-2">
                 <Avatar className="h-8 w-8 flex-shrink-0">
@@ -648,7 +667,7 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
                 </Avatar>
                 <div className="flex-1 flex gap-2">
                   <Textarea
-                    placeholder="Adicione um comentário..."
+                    placeholder="Adicione um comentÃ¡rio..."
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
                     rows={1}
@@ -669,13 +688,13 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
         </SheetContent>
       </Sheet>
 
-      {/* Modal de confirmação de exclusão */}
+      {/* Modal de confirmaÃ§Ã£o de exclusÃ£o */}
       <AlertDialog open={!!comentarioToDelete} onOpenChange={(open) => !open && setComentarioToDelete(null)}>
         <AlertDialogContent className="w-[calc(100%-20px)] max-w-lg rounded-[10px]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir comentário?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir comentÃ¡rio?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita.
+              Esta aÃ§Ã£o nÃ£o pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -694,3 +713,4 @@ const AloPrefeituraFeedCard = ({ item, cidadeSlug }: AloPrefeituraFeedCardProps)
 };
 
 export default AloPrefeituraFeedCard;
+

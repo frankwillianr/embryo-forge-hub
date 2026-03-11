@@ -39,11 +39,20 @@ export function usePushNotifications({ cidadeId }: UsePushNotificationsProps) {
           setPermissionStatus('granted');
         }
 
-        // Registra para push notifications
-        await PushNotifications.register();
+        if (Capacitor.getPlatform() === 'android') {
+          await PushNotifications.createChannel({
+            id: 'default',
+            name: 'Notificações',
+            description: 'Canal padrão de notificações',
+            importance: 5,
+            visibility: 1,
+            vibration: true,
+            lights: true,
+          });
+        }
 
         // Listener para receber o token
-        PushNotifications.addListener('registration', async (tokenData) => {
+        const registrationListener = await PushNotifications.addListener('registration', async (tokenData) => {
           console.log('Token de push recebido:', tokenData.value);
           setToken(tokenData.value);
           
@@ -54,29 +63,43 @@ export function usePushNotifications({ cidadeId }: UsePushNotificationsProps) {
         });
 
         // Listener para erros de registro
-        PushNotifications.addListener('registrationError', (error) => {
+        const registrationErrorListener = await PushNotifications.addListener('registrationError', (error) => {
           console.error('Erro ao registrar push:', error);
         });
 
         // Listener para notificações recebidas (app em primeiro plano)
-        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        const receivedListener = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
           console.log('Notificação recebida:', notification);
         });
 
         // Listener para quando usuário toca na notificação
-        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+        const actionListener = await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
           console.log('Ação na notificação:', notification);
         });
 
+        // Registra para push notifications (depois dos listeners)
+        await PushNotifications.register();
+
+        return () => {
+          registrationListener.remove();
+          registrationErrorListener.remove();
+          receivedListener.remove();
+          actionListener.remove();
+        };
+
       } catch (error) {
         console.error('Erro ao inicializar push notifications:', error);
+        return undefined;
       }
     };
 
-    initPushNotifications();
+    let cleanupPromise: Promise<(() => void) | undefined> | null = initPushNotifications();
 
     return () => {
-      PushNotifications.removeAllListeners();
+      if (cleanupPromise) {
+        cleanupPromise.then((cleanup) => cleanup?.());
+      }
+      cleanupPromise = null;
     };
   }, [cidadeId]);
 
