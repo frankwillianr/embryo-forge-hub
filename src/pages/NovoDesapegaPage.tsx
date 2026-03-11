@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import ImageUpload from "@/components/shared/ImageUpload";
 
 const NovoDesapegaPage = () => {
@@ -22,6 +23,7 @@ const NovoDesapegaPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -31,7 +33,6 @@ const NovoDesapegaPage = () => {
   const [whatsapp, setWhatsapp] = useState("");
   const [imagens, setImagens] = useState<string[]>([]);
 
-  // Buscar cidade
   const { data: cidade } = useQuery({
     queryKey: ["cidade", slug],
     queryFn: async () => {
@@ -46,7 +47,6 @@ const NovoDesapegaPage = () => {
     enabled: !!slug,
   });
 
-  // Buscar categorias
   const { data: categorias } = useQuery({
     queryKey: ["desapega-categorias"],
     queryFn: async () => {
@@ -59,57 +59,60 @@ const NovoDesapegaPage = () => {
     },
   });
 
-  // Criar anúncio
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!cidade?.id) throw new Error("Cidade não encontrada");
+      if (!cidade?.id) throw new Error("Cidade nao encontrada");
+      if (!user?.id) throw new Error("Voce precisa estar logado para anunciar");
+      if (imagens.length === 0) throw new Error("Adicione pelo menos uma foto");
 
-      // Criar anúncio
       const { data: anuncio, error: anuncioError } = await supabase
         .from("rel_cidade_desapega")
         .insert({
           cidade_id: cidade.id,
+          user_id: user.id,
           categoria_id: categoriaId || null,
           titulo: titulo.trim(),
           descricao: descricao.trim() || null,
           preco: parseFloat(preco.replace(/\D/g, "")) / 100,
           condicao,
           whatsapp: whatsapp.replace(/\D/g, ""),
+          status: "ativo",
         })
         .select()
         .single();
 
       if (anuncioError) throw anuncioError;
 
-      // Inserir imagens
-      if (imagens.length > 0) {
-        const imagensData = imagens.map((url, index) => ({
-          anuncio_id: anuncio.id,
-          url,
-          ordem: index,
-        }));
+      const imagensData = imagens.map((url, index) => ({
+        anuncio_id: anuncio.id,
+        url,
+        ordem: index,
+      }));
 
-        const { error: imagensError } = await supabase
-          .from("rel_cidade_desapega_imagem")
-          .insert(imagensData);
+      const { error: imagensError } = await supabase
+        .from("rel_cidade_desapega_imagem")
+        .insert(imagensData);
 
-        if (imagensError) throw imagensError;
-      }
+      if (imagensError) throw imagensError;
 
       return anuncio;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["desapega"] });
       toast({
-        title: "Anúncio criado!",
-        description: "Seu anúncio foi publicado com sucesso.",
+        title: "Anuncio criado",
+        description: "Seu anuncio foi publicado com sucesso.",
       });
       navigate(`/cidade/${slug}/desapega`);
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : (error as { message?: string })?.message || "Tente novamente.";
       toast({
-        title: "Erro ao criar anúncio",
-        description: error.message,
+        title: "Erro ao criar anuncio",
+        description: message,
         variant: "destructive",
       });
     },
@@ -140,26 +143,21 @@ const NovoDesapegaPage = () => {
     titulo.trim().length >= 3 &&
     preco &&
     parseFloat(preco.replace(/\D/g, "")) > 0 &&
-    whatsapp.replace(/\D/g, "").length === 11;
+    whatsapp.replace(/\D/g, "").length === 11 &&
+    imagens.length > 0;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(`/cidade/${slug}/desapega`)}
-        >
+        <Button variant="ghost" size="icon" onClick={() => navigate(`/cidade/${slug}/desapega`)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-semibold text-foreground">Novo Anúncio</h1>
+        <h1 className="text-lg font-semibold text-foreground">Novo Anuncio</h1>
       </header>
 
       <main className="flex-1 p-4 space-y-6">
-        {/* Fotos */}
         <div className="space-y-2">
-          <Label>Fotos do produto</Label>
+          <Label>Fotos do produto *</Label>
           <ImageUpload
             images={imagens}
             onChange={setImagens}
@@ -169,9 +167,8 @@ const NovoDesapegaPage = () => {
           />
         </div>
 
-        {/* Título */}
         <div className="space-y-2">
-          <Label htmlFor="titulo">Título do anúncio *</Label>
+          <Label htmlFor="titulo">Titulo do anuncio *</Label>
           <Input
             id="titulo"
             placeholder="Ex: iPhone 12 64GB"
@@ -181,7 +178,6 @@ const NovoDesapegaPage = () => {
           />
         </div>
 
-        {/* Categoria */}
         <div className="space-y-2">
           <Label>Categoria</Label>
           <Select value={categoriaId} onValueChange={setCategoriaId}>
@@ -198,9 +194,8 @@ const NovoDesapegaPage = () => {
           </Select>
         </div>
 
-        {/* Condição */}
         <div className="space-y-2">
-          <Label>Condição</Label>
+          <Label>Condicao</Label>
           <Select value={condicao} onValueChange={setCondicao}>
             <SelectTrigger>
               <SelectValue />
@@ -213,9 +208,8 @@ const NovoDesapegaPage = () => {
           </Select>
         </div>
 
-        {/* Preço */}
         <div className="space-y-2">
-          <Label htmlFor="preco">Preço *</Label>
+          <Label htmlFor="preco">Preco *</Label>
           <Input
             id="preco"
             placeholder="R$ 0,00"
@@ -225,12 +219,11 @@ const NovoDesapegaPage = () => {
           />
         </div>
 
-        {/* Descrição */}
         <div className="space-y-2">
-          <Label htmlFor="descricao">Descrição</Label>
+          <Label htmlFor="descricao">Descricao</Label>
           <Textarea
             id="descricao"
-            placeholder="Descreva o produto, estado de conservação, etc..."
+            placeholder="Descreva o produto e estado de conservacao"
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
             rows={4}
@@ -238,7 +231,6 @@ const NovoDesapegaPage = () => {
           />
         </div>
 
-        {/* WhatsApp */}
         <div className="space-y-2">
           <Label htmlFor="whatsapp">WhatsApp para contato *</Label>
           <Input
@@ -251,7 +243,6 @@ const NovoDesapegaPage = () => {
         </div>
       </main>
 
-      {/* Footer */}
       <div className="sticky bottom-0 p-4 border-t border-border bg-card">
         <Button
           className="w-full"
@@ -265,7 +256,7 @@ const NovoDesapegaPage = () => {
               Publicando...
             </>
           ) : (
-            "Publicar anúncio"
+            "Publicar anuncio"
           )}
         </Button>
       </div>

@@ -58,8 +58,11 @@ const BannerDetailPage = () => {
     );
   }
 
-  // Combine all images for the carousel
-  const carouselImages = images.map((img) => img.imagem_url);
+  // Combine main image + gallery images for the carousel in detail page
+  const carouselImages = [
+    banner.imagem_url,
+    ...images.map((img) => img.imagem_url),
+  ].filter((url, index, arr) => !!url && arr.indexOf(url) === index);
 
   return (
     <div className="min-h-screen bg-background">

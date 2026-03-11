@@ -157,6 +157,33 @@ const BannerImageCarousel = ({ images }: BannerImageCarouselProps) => {
           ))}
         </div>
       )}
+
+      {/* Thumbnail cards */}
+      {images.length > 1 && (
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 pb-1">
+            {images.map((url, index) => (
+              <button
+                key={`thumb-${index}`}
+                onClick={() => setCurrentIndex(index)}
+                className={`relative flex-shrink-0 w-16 h-12 rounded-md overflow-hidden border transition-all ${
+                  index === currentIndex
+                    ? "border-primary ring-2 ring-primary/20"
+                    : "border-border hover:border-primary/50"
+                }`}
+                aria-label={`Ir para imagem ${index + 1}`}
+              >
+                <img
+                  src={url}
+                  alt={`Miniatura ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
