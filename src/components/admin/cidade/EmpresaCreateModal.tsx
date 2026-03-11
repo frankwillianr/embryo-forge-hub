@@ -91,7 +91,20 @@ const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModal
         }
       );
 
-      if (paymentError) throw new Error(`Falha ao gerar pagamento: ${paymentError.message}`);
+      if (paymentError) {
+        let detailedMessage = paymentError.message;
+        const context = (paymentError as { context?: Response }).context;
+        if (context) {
+          try {
+            const json = await context.json();
+            if (json?.error) detailedMessage = String(json.error);
+            else if (json?.message) detailedMessage = String(json.message);
+          } catch {
+            // segue com a mensagem padrão se não conseguir parsear o corpo
+          }
+        }
+        throw new Error(`Falha ao gerar pagamento: ${detailedMessage}`);
+      }
 
       const paymentUrl = paymentData?.payment_url;
       if (typeof paymentUrl === "string" && paymentUrl.startsWith("http")) {

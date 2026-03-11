@@ -39,6 +39,9 @@ import {
   Pencil,
   Filter,
   Plus,
+  Copy,
+  ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -61,6 +64,7 @@ interface Empresa {
   created_at: string;
   data_inicio: string | null;
   data_fim: string | null;
+  asaas_payment_url: string | null;
 }
 
 const statusConfig: Record<EmpresaStatus, { label: string; color: string; icon: React.ReactNode }> = {
@@ -91,6 +95,8 @@ const statusConfig: Record<EmpresaStatus, { label: string; color: string; icon: 
   },
 };
 
+const parseDateOnly = (value: string) => new Date(`${value}T00:00:00`);
+
 const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -100,6 +106,7 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
   const [actionType, setActionType] = useState<"aprovar" | "recusar" | null>(null);
   const [editingEmpresaId, setEditingEmpresaId] = useState<string | null>(null);
   const [creatingEmpresa, setCreatingEmpresa] = useState(false);
+  const [empresaToDelete, setEmpresaToDelete] = useState<Empresa | null>(null);
 
   // Fetch empresas for this city
   const { data: empresas, isLoading } = useQuery({
@@ -107,7 +114,7 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rel_cidade_servico_empresa")
-        .select("id, nome, whatsapp, categoria, status, created_at, data_inicio, data_fim")
+        .select("id, nome, whatsapp, categoria, status, created_at, data_inicio, data_fim, asaas_payment_url")
         .eq("cidade_id", cidadeId)
         .order("created_at", { ascending: false });
 
@@ -115,6 +122,8 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
       return data as Empresa[];
     },
     enabled: !!cidadeId,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 
   // Update status mutation
@@ -159,6 +168,26 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
       updateStatus.mutate({ id: selectedEmpresa.id, status: "recusado" });
     }
   };
+
+  const deleteEmpresa = useMutation({
+    mutationFn: async (empresaId: string) => {
+      const { error } = await supabase
+        .from("rel_cidade_servico_empresa")
+        .delete()
+        .eq("id", empresaId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-cidade-empresas", cidadeId] });
+      toast.success("Empresa excluída com sucesso");
+      setEmpresaToDelete(null);
+    },
+    onError: (error) => {
+      console.error("Erro ao excluir empresa:", error);
+      toast.error("Erro ao excluir empresa");
+    },
+  });
 
   // Filter empresas
   const filteredEmpresas = empresas?.filter((empresa) => {
@@ -330,8 +359,8 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
                     <TableCell>
                       {empresa.data_inicio && empresa.data_fim ? (
                         <span className="text-sm">
-                          {format(new Date(empresa.data_inicio), "dd/MM/yy")} -{" "}
-                          {format(new Date(empresa.data_fim), "dd/MM/yy")}
+                          {format(parseDateOnly(empresa.data_inicio), "dd/MM/yy")} -{" "}
+                          {format(parseDateOnly(empresa.data_fim), "dd/MM/yy")}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">-</span>
@@ -365,12 +394,48 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
                             </Button>
                           </>
                         )}
+                        {empresa.status === "aguardando_pagamento" && empresa.asaas_payment_url && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(empresa.asaas_payment_url!);
+                                  toast.success("Link de pagamento copiado");
+                                } catch (error) {
+                                  console.error("Erro ao copiar link:", error);
+                                  toast.error("Não foi possível copiar o link");
+                                }
+                              }}
+                              title="Copiar link de pagamento"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => window.open(empresa.asaas_payment_url!, "_blank", "noopener,noreferrer")}
+                              title="Abrir link de pagamento"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
                           onClick={() => setEditingEmpresaId(empresa.id)}
                         >
                           <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => setEmpresaToDelete(empresa)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -409,6 +474,30 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : null}
               {actionType === "aprovar" ? "Aprovar" : "Recusar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!empresaToDelete} onOpenChange={(open) => !open && setEmpresaToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir empresa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`A empresa "${empresaToDelete?.nome}" será removida permanentemente. Esta ação não pode ser desfeita.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteEmpresa.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => empresaToDelete && deleteEmpresa.mutate(empresaToDelete.id)}
+              disabled={deleteEmpresa.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteEmpresa.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
