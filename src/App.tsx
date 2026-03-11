@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, dehydrate, hydrate } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -66,7 +66,57 @@ import CuponsListPage from "@/pages/CuponsListPage";
 import MeusCuponsPage from "@/pages/MeusCuponsPage";
 import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
 import SuportePage from "@/pages/SuportePage";
-const queryClient = new QueryClient();
+
+const QUERY_CACHE_STORAGE_KEY = "gc:offline-query-cache:v1";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 60 * 24,
+      retry: 1,
+      networkMode: "offlineFirst",
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const safeLoadCache = () => {
+  try {
+    const raw = localStorage.getItem(QUERY_CACHE_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error("Erro ao ler cache offline:", error);
+    return null;
+  }
+};
+
+const safeSaveCache = (state: unknown) => {
+  try {
+    localStorage.setItem(QUERY_CACHE_STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.error("Erro ao salvar cache offline:", error);
+  }
+};
+
+const cachedState = safeLoadCache();
+if (cachedState) {
+  hydrate(queryClient, cachedState);
+}
+
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+queryClient.getQueryCache().subscribe(() => {
+  if (persistTimer) clearTimeout(persistTimer);
+
+  // Debounce para evitar gravações excessivas durante múltiplas queries seguidas.
+  persistTimer = setTimeout(() => {
+    const dehydratedState = dehydrate(queryClient, {
+      shouldDehydrateQuery: (query) => query.state.status === "success",
+    });
+    safeSaveCache(dehydratedState);
+  }, 400);
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

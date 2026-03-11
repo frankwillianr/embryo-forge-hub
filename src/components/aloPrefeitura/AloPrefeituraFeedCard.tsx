@@ -64,7 +64,6 @@ const AloPrefeituraFeedCard = ({
   const fingerprint = user?.id || getFingerprint();
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showFullText, setShowFullText] = useState(false);
   const [showCommentSheet, setShowCommentSheet] = useState(false);
   const [comentario, setComentario] = useState("");
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
@@ -340,7 +339,6 @@ const AloPrefeituraFeedCard = ({
   };
 
   const descricao = item.descricao || "";
-  const shouldTruncate = descricao.length > 100;
 
   useEffect(() => {
     const syncPlayback = (videoEl: HTMLVideoElement | null) => {
@@ -565,19 +563,7 @@ const AloPrefeituraFeedCard = ({
           </p>
           {descricao && (
             <div className="text-[13px] text-muted-foreground leading-relaxed mt-1">
-              {shouldTruncate && !showFullText ? (
-                <>
-                  <p className="whitespace-pre-line line-clamp-3">{descricao}</p>
-                  <button
-                    onClick={() => setShowFullText(true)}
-                    className="text-foreground font-semibold hover:text-muted-foreground transition-colors mt-0.5"
-                  >
-                    ver mais...
-                  </button>
-                </>
-              ) : (
-                <p className="whitespace-pre-line">{descricao}</p>
-              )}
+              <p className="whitespace-pre-line">{descricao}</p>
             </div>
           )}
         </div>
