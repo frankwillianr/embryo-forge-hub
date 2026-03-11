@@ -327,9 +327,6 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
           <p className="font-semibold text-primary text-[15px]">{formatPrice(anuncio.preco)}</p>
           <h3 className="text-sm font-medium text-foreground line-clamp-2 leading-tight">{anuncio.titulo}</h3>
           <p className="text-xs text-muted-foreground">{timeAgo}</p>
-          <p className="text-[10px] text-muted-foreground break-all">criador: {anuncio.user_id ?? "null"}</p>
-          <p className="text-[10px] text-muted-foreground break-all">logado: {user?.id ?? "não logado"} | {user?.email ?? ""}</p>
-          <p className="text-[10px] text-muted-foreground">owner: {isOwner ? "SIM" : "NÃO"} | whats match: {isOwnerByContato ? "SIM" : "NÃO"}</p>
         </div>
       </div>
 
