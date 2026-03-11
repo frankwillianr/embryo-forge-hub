@@ -73,8 +73,9 @@ const DoacaoCard = ({ anuncio, cidadeSlug }: DoacaoCardProps) => {
   const normalizePhone = (value?: string | null) => (value || "").replace(/\D/g, "");
   const isOwnerByUserId = !!user?.id && anuncio.user_id === user.id;
   const isOwnerByContato =
-    !anuncio.user_id &&
+    !!user?.id &&
     normalizePhone(anuncio.whatsapp) !== "" &&
+    normalizePhone(profile?.contato) !== "" &&
     normalizePhone(anuncio.whatsapp) === normalizePhone(profile?.contato);
   const isOwner = isOwnerByUserId || isOwnerByContato;
   const isDoado = anuncio.status === "doado";
