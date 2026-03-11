@@ -65,6 +65,7 @@ const AdminCidadePushNotifications = ({ cidadeId }: AdminCidadePushNotifications
         console.error("Erro detalhado no dryRun de push:", detailed, error);
         throw new Error(detailed);
       }
+      console.log("DryRun push response:", data);
       return data;
     },
   });
@@ -91,6 +92,7 @@ const AdminCidadePushNotifications = ({ cidadeId }: AdminCidadePushNotifications
           body: body.trim(),
         },
       });
+      console.log("Push send response:", data);
 
       toast.dismiss();
 
@@ -102,11 +104,26 @@ const AdminCidadePushNotifications = ({ cidadeId }: AdminCidadePushNotifications
       }
 
       if (!data?.success) {
-        toast.error(data?.error || "Falha ao enviar push.");
+        const detailed =
+          data?.error ||
+          data?.message ||
+          (Array.isArray(data?.failureReasons) && data.failureReasons.length > 0
+            ? data.failureReasons.join(" | ")
+            : null) ||
+          "Falha ao enviar push.";
+        console.error("Falha de push (payload):", data);
+        toast.error(`Falha ao enviar push: ${detailed}`);
         return;
       }
 
-      toast.success(`Push enviado. Sucesso: ${data.successCount ?? 0} | Falhas: ${data.failureCount ?? 0}`);
+      if ((data?.failureCount ?? 0) > 0) {
+        const reasonPreview = Array.isArray(data?.failureReasons) ? data.failureReasons.slice(0, 2).join(" | ") : "";
+        toast.warning(
+          `Push parcial. Sucesso: ${data.successCount ?? 0} | Falhas: ${data.failureCount ?? 0}${reasonPreview ? ` | ${reasonPreview}` : ""}`,
+        );
+      } else {
+        toast.success(`Push enviado. Sucesso: ${data.successCount ?? 0} | Falhas: ${data.failureCount ?? 0}`);
+      }
     } catch (err) {
       toast.dismiss();
       toast.error("Erro inesperado ao enviar push.");

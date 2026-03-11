@@ -258,9 +258,19 @@ serve(async (req: Request): Promise<Response> => {
 
         const respPayload = await resp.json();
         const fcmErrorCode = getFcmErrorCode(respPayload);
+        const topErrorMessage = respPayload?.error?.message || null;
 
         if (!resp.ok && (fcmErrorCode === "UNREGISTERED" || fcmErrorCode === "INVALID_ARGUMENT")) {
           invalidTokens.push(token);
+        }
+
+        if (!resp.ok) {
+          console.error("FCM envio falhou", {
+            status: resp.status,
+            fcmErrorCode,
+            topErrorMessage,
+            tokenPrefix: token.substring(0, 20),
+          });
         }
 
         return {
@@ -268,6 +278,7 @@ serve(async (req: Request): Promise<Response> => {
           ok: resp.ok,
           status: resp.status,
           fcmErrorCode,
+          errorMessage: topErrorMessage,
           result: respPayload,
         };
       }),
@@ -275,6 +286,13 @@ serve(async (req: Request): Promise<Response> => {
 
     const successCount = results.filter((r) => r.ok).length;
     const failureCount = results.length - successCount;
+    const failureReasons = [
+      ...new Set(
+        results
+          .filter((r) => !r.ok)
+          .map((r) => r.fcmErrorCode || r.errorMessage || `HTTP_${r.status}`),
+      ),
+    ];
 
     if (invalidTokens.length > 0) {
       const { error: deleteError } = await supabase
@@ -291,10 +309,12 @@ serve(async (req: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify({
-        success: true,
+        success: successCount > 0,
+        message: successCount > 0 ? "Push processado" : "Nenhum push entregue",
         sent: tokens.length,
         successCount,
         failureCount,
+        failureReasons,
         invalidTokensRemoved: invalidTokens.length,
         results,
       }),
