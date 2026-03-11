@@ -1,16 +1,18 @@
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+﻿import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Home, Newspaper, Film, Megaphone, Menu, Map } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { type Jornal, parseImagens } from "@/types/jornal";
 import JornalFeedCard from "@/components/jornal/JornalFeedCard";
+import jornalBanner from "@/assets/jornal-banner.jpg";
 
 const JornalListPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const [categoriaAtiva, setCategoriaAtiva] = useState("todos");
 
   const { data: jornais = [], isLoading } = useQuery({
     queryKey: ["jornais-list", slug],
@@ -44,29 +46,46 @@ const JornalListPage = () => {
     enabled: !!slug,
   });
 
-  // Scroll automático até a notícia quando há hash na URL
   useEffect(() => {
-    if (!isLoading && location.hash) {
-      const jornalId = location.hash.substring(1); // Remove o #
-      const element = document.getElementById(`jornal-${jornalId}`);
+    if (isLoading) return;
 
-      if (element) {
-        // Aguarda um momento para garantir que o DOM está pronto
-        setTimeout(() => {
-          element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start'
-          });
-          // Remove o hash da URL sem recarregar a página
-          window.history.replaceState(null, '', location.pathname);
-        }, 100);
+    const navState = (location.state as { scrollToTop?: boolean; fromJornalCard?: boolean } | null) || null;
+
+    if (navState?.scrollToTop) {
+      window.scrollTo({ top: 0, behavior: "auto" });
+      if (location.hash) {
+        window.history.replaceState(null, "", location.pathname);
       }
+      return;
     }
-  }, [isLoading, location.hash, location.pathname]);
+
+    if (!location.hash) return;
+
+    const jornalId = location.hash.substring(1);
+    const element = document.getElementById(`jornal-${jornalId}`);
+
+    if (element) {
+      setTimeout(() => {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.history.replaceState(null, "", location.pathname);
+      }, 100);
+    }
+  }, [isLoading, location.hash, location.pathname, location.state]);
+
+  const categorias = useMemo(() => {
+    const list = jornais
+      .map((j) => (j.categoria || "").trim())
+      .filter((c) => c.length > 0);
+    return Array.from(new Set(list)).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [jornais]);
+
+  const jornaisFiltrados = useMemo(() => {
+    if (categoriaAtiva === "todos") return jornais;
+    return jornais.filter((j) => (j.categoria || "").trim() === categoriaAtiva);
+  }, [jornais, categoriaAtiva]);
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header estilo Instagram */}
       <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 pt-safe border-b border-border/50 bg-background/95 backdrop-blur-sm">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}`)}>
           <ArrowLeft className="h-4 w-4" />
@@ -74,7 +93,59 @@ const JornalListPage = () => {
         <h1 className="text-base font-semibold">Jornal da cidade</h1>
       </header>
 
-      {/* Feed estilo Instagram */}
+      <div className="relative h-52 overflow-hidden border-b border-border">
+        <img src={jornalBanner} alt="Jornal da cidade" className="w-full h-full object-cover scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/35 to-black/70" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,160,46,0.38),transparent_45%)]" />
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="rounded-2xl border border-white/20 bg-white/12 px-4 py-3 backdrop-blur-md shadow-lg">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+              <Newspaper className="h-3.5 w-3.5" />
+              Notícias da cidade
+            </div>
+            <div className="mt-2 flex items-end justify-between gap-2">
+              <h2 className="text-[22px] leading-tight font-black text-white">Jornal da Cidade</h2>
+              <div className="h-8 min-w-8 px-2 rounded-full bg-white/20 border border-white/30 text-xs font-semibold text-white flex items-center justify-center">
+                {jornais.length}
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-white/80">Atualizações locais em tempo real para você.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-b border-border bg-card/30">
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 px-4 py-3 w-max">
+            <button
+              type="button"
+              onClick={() => setCategoriaAtiva("todos")}
+              className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                categoriaAtiva === "todos"
+                  ? "border-primary bg-primary/15 text-foreground"
+                  : "border-border bg-background text-muted-foreground"
+              }`}
+            >
+              Todos
+            </button>
+            {categorias.map((categoria) => (
+              <button
+                key={categoria}
+                type="button"
+                onClick={() => setCategoriaAtiva(categoria)}
+                className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
+                  categoriaAtiva === categoria
+                    ? "border-primary bg-primary/15 text-foreground"
+                    : "border-border bg-background text-muted-foreground"
+                }`}
+              >
+                {categoria}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
@@ -94,19 +165,16 @@ const JornalListPage = () => {
             </div>
           ))}
         </div>
-      ) : jornais.length === 0 ? (
-        <div className="text-center text-muted-foreground py-12 text-sm">
-          Nenhuma notícia publicada ainda
-        </div>
+      ) : jornaisFiltrados.length === 0 ? (
+        <div className="text-center text-muted-foreground py-12 text-sm">Nenhuma notícia nesta categoria</div>
       ) : (
         <div>
-          {jornais.map((jornal) => (
+          {jornaisFiltrados.map((jornal) => (
             <JornalFeedCard key={jornal.id} jornal={jornal} cidadeSlug={slug} />
           ))}
         </div>
       )}
 
-      {/* Bottom Navigation - Pill Style */}
       <nav className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4 pb-safe">
         <div className="relative flex items-center">
           <button

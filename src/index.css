@@ -276,3 +276,27 @@ All colors MUST be HSL.
   border: none !important;
   box-shadow: none !important;
 }
+
+/* Botao de acao sutil mantendo identidade laranja */
+.btn-solar-soft {
+  border: 1px solid hsl(var(--primary) / 0.38);
+  background: hsl(var(--primary) / 0.14);
+  color: hsl(var(--foreground));
+  box-shadow: 0 1px 2px hsl(var(--primary) / 0.18);
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-solar-soft:hover {
+  background: hsl(var(--primary) / 0.2);
+  border-color: hsl(var(--primary) / 0.5);
+}
+
+.btn-solar-soft:active {
+  transform: translateY(0.5px);
+}
+
+.dark .btn-solar-soft {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--primary) / 0.45);
+  background: hsl(var(--primary) / 0.22);
+}

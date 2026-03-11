@@ -1,0 +1,197 @@
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2, Plus, Search, UserCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+interface EmpresaCreateModalProps {
+  cidadeId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+interface UserProfile {
+  id: string;
+  nome: string | null;
+  email: string | null;
+  cpf: string | null;
+}
+
+const formatCpf = (cpf: string | null) => {
+  const d = (cpf || "").replace(/\D/g, "");
+  if (d.length !== 11) return cpf || "";
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+};
+
+const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModalProps) => {
+  const queryClient = useQueryClient();
+  const [userSearch, setUserSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [nome, setNome] = useState("");
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
+
+  const cpfDigits = useMemo(() => userSearch.replace(/\D/g, ""), [userSearch]);
+  const normalizedTerm = useMemo(() => userSearch.trim(), [userSearch]);
+
+  const { data: userResults = [], isFetching: searchingUsers } = useQuery({
+    queryKey: ["admin-empresa-user-search", normalizedTerm],
+    queryFn: async () => {
+      const filters: string[] = [];
+      if (normalizedTerm.length >= 3) {
+        filters.push(`email.ilike.%${normalizedTerm}%`, `nome.ilike.%${normalizedTerm}%`);
+      }
+      if (cpfDigits.length >= 3) filters.push(`cpf.ilike.%${cpfDigits}%`);
+      if (filters.length === 0) return [] as UserProfile[];
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, nome, email, cpf")
+        .or(filters.join(","))
+        .limit(8);
+
+      if (error) throw error;
+      return (data || []) as UserProfile[];
+    },
+    enabled: open && (normalizedTerm.length >= 3 || cpfDigits.length >= 3),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedUser?.id) throw new Error("Selecione um usuario por email/CPF");
+      if (nome.trim().length < 3) throw new Error("Nome da empresa invalido");
+
+      const { error } = await supabase.from("rel_cidade_servico_empresa").insert({
+        cidade_id: cidadeId,
+        user_id: selectedUser.id,
+        nome: nome.trim(),
+        categoria: "geral",
+        status: "aguardando_pagamento",
+        data_inicio: dataInicio || null,
+        data_fim: dataFim || null,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-cidade-empresas", cidadeId] });
+      toast.success("Empresa criada com sucesso");
+      onOpenChange(false);
+      setSelectedUser(null);
+      setUserSearch("");
+      setNome("");
+      setDataInicio("");
+      setDataFim("");
+    },
+    onError: (error) => {
+      toast.error((error as Error).message || "Erro ao criar empresa");
+    },
+  });
+
+  const isValid = !!selectedUser?.id && nome.trim().length >= 3;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Adicionar empresa</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-5 py-2">
+          <div className="space-y-2">
+            <Label>Vincular usuario (email ou CPF) *</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Digite email, CPF ou nome"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            {searchingUsers && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Buscando usuarios...
+              </div>
+            )}
+            {!selectedUser && userResults.length > 0 && (
+              <div className="rounded-md border divide-y max-h-56 overflow-auto">
+                {userResults.map((u) => (
+                  <button
+                    type="button"
+                    key={u.id}
+                    className="w-full px-3 py-2 text-left hover:bg-muted/40"
+                    onClick={() => setSelectedUser(u)}
+                  >
+                    <p className="text-sm font-medium">{u.nome || "Sem nome"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {u.email || "sem email"} {u.cpf ? `• CPF ${formatCpf(u.cpf)}` : ""}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+            {selectedUser && (
+              <div className="rounded-md border bg-muted/30 p-3 flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold flex items-center gap-1">
+                    <UserCheck className="h-3.5 w-3.5" />
+                    {selectedUser.nome || "Sem nome"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedUser.email || "sem email"} {selectedUser.cpf ? `• CPF ${formatCpf(selectedUser.cpf)}` : ""}
+                  </p>
+                </div>
+                <Button type="button" size="sm" variant="outline" onClick={() => setSelectedUser(null)}>
+                  Trocar
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Nome da empresa *</Label>
+            <Input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="Ex: Eletrica Silva"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Data inicio</Label>
+              <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Data fim</Label>
+              <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={createMutation.isPending}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={() => createMutation.mutate()}
+              disabled={!isValid || createMutation.isPending}
+              className="gap-2"
+            >
+              {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Criar empresa
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default EmpresaCreateModal;

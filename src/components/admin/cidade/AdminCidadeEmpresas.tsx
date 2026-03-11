@@ -38,11 +38,13 @@ import {
   CreditCard,
   Pencil,
   Filter,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import EmpresaEditModal from "./EmpresaEditModal";
+import EmpresaCreateModal from "./EmpresaCreateModal";
 
 type EmpresaStatus = "aguardando_pagamento" | "pendente" | "ativo" | "recusado" | "expirado";
 
@@ -97,6 +99,7 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
   const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null);
   const [actionType, setActionType] = useState<"aprovar" | "recusar" | null>(null);
   const [editingEmpresaId, setEditingEmpresaId] = useState<string | null>(null);
+  const [creatingEmpresa, setCreatingEmpresa] = useState(false);
 
   // Fetch empresas for this city
   const { data: empresas, isLoading } = useQuery({
@@ -269,6 +272,14 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
             <SelectItem value="expirados">Expirados</SelectItem>
           </SelectContent>
         </Select>
+        <Button
+          type="button"
+          onClick={() => setCreatingEmpresa(true)}
+          className="gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Adicionar empresa
+        </Button>
       </div>
 
       {/* Table */}
@@ -409,6 +420,12 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
         cidadeId={cidadeId}
         open={!!editingEmpresaId}
         onOpenChange={(open) => !open && setEditingEmpresaId(null)}
+      />
+
+      <EmpresaCreateModal
+        cidadeId={cidadeId}
+        open={creatingEmpresa}
+        onOpenChange={setCreatingEmpresa}
       />
     </div>
   );

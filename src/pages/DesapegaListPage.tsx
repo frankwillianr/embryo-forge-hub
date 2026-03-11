@@ -74,9 +74,10 @@ const DesapegaListPage = () => {
           Marketplace local
         </h1>
         <Button
+          variant="ghost"
           size="sm"
           onClick={() => navigate(`/cidade/${slug}/desapega/novo`)}
-          className="gap-1.5"
+          className="btn-solar-soft gap-1.5"
         >
           <Plus className="h-4 w-4" />
           Anunciar

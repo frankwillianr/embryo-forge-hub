@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,7 +46,7 @@ const CATEGORIA_LABEL: Record<string, string> = {
 };
 
 const CATEGORIAS_OPTIONS = Object.entries(CATEGORIA_LABEL).sort((a, b) =>
-  a[1].localeCompare(b[1], "pt-BR")
+  a[1].localeCompare(b[1], "pt-BR"),
 );
 
 const OrcamentosCidadePage = () => {
@@ -114,6 +114,24 @@ const OrcamentosCidadePage = () => {
         </Button>
       </header>
 
+      <div className="relative h-52 overflow-hidden border-b border-border bg-[linear-gradient(130deg,hsl(var(--primary)/0.42)_0%,hsl(var(--card))_42%,hsl(var(--background))_100%)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,160,46,0.5),transparent_45%)]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/45 via-black/20 to-black/45" />
+        <div className="absolute -right-6 -top-6 h-36 w-36 rounded-full bg-white/10 blur-2xl" />
+        <div className="absolute left-4 right-4 bottom-4">
+          <div className="rounded-2xl border border-white/20 bg-white/12 px-4 py-3 backdrop-blur-md shadow-lg">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+              <FileText className="h-3.5 w-3.5" />
+              Demandas da cidade
+            </div>
+            <h2 className="mt-2 text-[22px] leading-tight font-black text-white">Orçamentos solicitados</h2>
+            <p className="mt-1 text-xs text-white/80">
+              Veja pedidos ativos e envie seu orçamento em poucos toques.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="p-4 space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-medium text-foreground">Filtrar por categoria</label>
@@ -153,23 +171,14 @@ const OrcamentosCidadePage = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              {solicitacoes.length} solicitação(ões)
-            </p>
+            <p className="text-xs text-muted-foreground">{solicitacoes.length} solicitação(ões)</p>
             {solicitacoes.map((s) => (
-              <div
-                key={s.id}
-                className="p-4 rounded-xl border border-border bg-card text-left"
-              >
-                <p className="text-sm font-medium text-primary">
-                  {CATEGORIA_LABEL[s.categoria] || s.categoria}
-                </p>
+              <div key={s.id} className="p-4 rounded-xl border border-border bg-card text-left">
+                <p className="text-sm font-medium text-primary">{CATEGORIA_LABEL[s.categoria] || s.categoria}</p>
                 <p className="text-sm text-muted-foreground mt-1">{s.descricao}</p>
                 <div className="text-xs text-muted-foreground mt-2 space-y-0.5">
                   {s.bairro && <p>Bairro: {s.bairro}</p>}
-                  {!s.bairro && s.cep && (
-                    <p>Região: {String(s.cep).replace(/(\d{5})(\d{3})/, "$1-$2")}</p>
-                  )}
+                  {!s.bairro && s.cep && <p>Região: {String(s.cep).replace(/(\d{5})(\d{3})/, "$1-$2")}</p>}
                   <p>
                     {format(new Date(s.created_at), "dd/MM/yyyy", { locale: ptBR })} · Solicitado por{" "}
                     {s.nome_solicitante_censurado || "Anônimo"}

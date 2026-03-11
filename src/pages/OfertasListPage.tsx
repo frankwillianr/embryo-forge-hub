@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Search, BadgePercent } from "lucide-react";
@@ -108,7 +108,6 @@ const OfertasListPage = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
         <Button variant="ghost" size="icon" onClick={() => navigate(`/cidade/${slug}`)}>
           <ArrowLeft className="h-5 w-5" />
@@ -116,17 +115,22 @@ const OfertasListPage = () => {
         <h1 className="text-lg font-semibold text-foreground">Mural de ofertas</h1>
       </header>
 
-      {/* Banner Hero */}
-      <div className="relative h-40 overflow-hidden">
-        <img src={ofertasBanner} alt="Ofertas" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <div className="absolute bottom-3 left-4 right-4">
-          <p className="text-xs text-muted-foreground">Economize</p>
-          <h2 className="text-lg font-bold text-foreground">Ofertas Imperdíveis</h2>
+      <div className="relative h-52 overflow-hidden border-b border-border">
+        <img src={ofertasBanner} alt="Ofertas" className="w-full h-full object-cover scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/65 via-black/35 to-black/70" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,160,46,0.42),transparent_45%)]" />
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="rounded-2xl border border-white/20 bg-white/12 px-4 py-3 backdrop-blur-md shadow-lg">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+              <BadgePercent className="h-3.5 w-3.5" />
+              Promoções da cidade
+            </div>
+            <h2 className="mt-2 text-[22px] leading-tight font-black text-white">Mural de Ofertas</h2>
+            <p className="mt-1 text-xs text-white/80">Descontos e oportunidades para você economizar hoje.</p>
+          </div>
         </div>
       </div>
 
-      {/* Search */}
       <div className="px-4 py-3 border-b border-border bg-card/50">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -139,18 +143,18 @@ const OfertasListPage = () => {
         </div>
       </div>
 
-      {/* Filtro de categorias */}
       <div className="border-b border-border bg-card/30">
         <div className="overflow-x-auto scrollbar-hide">
           <div className="flex gap-2 px-4 py-3 w-max">
             {TODAS_CATEGORIAS.map((cat) => (
               <button
                 key={cat.id}
+                type="button"
                 onClick={() => setCategoriaAtiva(cat.id)}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`flex-shrink-0 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
                   categoriaAtiva === cat.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    ? "border-primary bg-primary/15 text-foreground"
+                    : "border-border bg-background text-muted-foreground"
                 }`}
               >
                 <span>{cat.icone}</span>
@@ -161,7 +165,6 @@ const OfertasListPage = () => {
         </div>
       </div>
 
-      {/* Lista de ofertas */}
       <main className="flex-1 p-4">
         {isLoading ? (
           <div className="grid grid-cols-2 gap-3">
@@ -187,12 +190,8 @@ const OfertasListPage = () => {
                     </div>
                   </div>
                   <div className="p-2.5 flex-1">
-                    <h3 className="text-[13px] font-semibold text-foreground line-clamp-2 leading-tight">
-                      {oferta.nome}
-                    </h3>
-                    <span className="inline-block mt-1.5 text-[10px] font-semibold text-primary">
-                      Ver oferta →
-                    </span>
+                    <h3 className="text-[13px] font-semibold text-foreground line-clamp-2 leading-tight">{oferta.nome}</h3>
+                    <span className="inline-block mt-1.5 text-[10px] font-semibold text-primary">Ver oferta →</span>
                   </div>
                 </button>
               );
@@ -201,12 +200,8 @@ const OfertasListPage = () => {
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <BadgePercent className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <h3 className="font-semibold text-foreground mb-1">
-              Nenhuma oferta nessa categoria
-            </h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              Seja o primeiro a anunciar aqui!
-            </p>
+            <h3 className="font-semibold text-foreground mb-1">Nenhuma oferta nessa categoria</h3>
+            <p className="text-sm text-muted-foreground mb-6">Seja o primeiro a anunciar aqui!</p>
             <button
               onClick={() => navigate(`/cidade/${slug}/empresa/novo`)}
               className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"

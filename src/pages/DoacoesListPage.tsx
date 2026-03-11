@@ -59,7 +59,7 @@ const DoacoesListPage = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-lg font-semibold text-foreground flex-1">Doações</h1>
-        <Button size="sm" onClick={() => navigate(`/cidade/${slug}/doacoes/novo`)} className="gap-1.5">
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/cidade/${slug}/doacoes/novo`)} className="btn-solar-soft gap-1.5">
           <Plus className="h-4 w-4" />
           Doar
         </Button>
@@ -102,7 +102,7 @@ const DoacoesListPage = () => {
             </div>
             <h3 className="font-medium text-foreground mb-1">Nenhuma doação encontrada</h3>
             <p className="text-sm text-muted-foreground mb-4">Seja o primeiro a publicar uma doação!</p>
-            <Button onClick={() => navigate(`/cidade/${slug}/doacoes/novo`)} className="gap-2">
+            <Button variant="ghost" onClick={() => navigate(`/cidade/${slug}/doacoes/novo`)} className="btn-solar-soft gap-2">
               <Plus className="h-4 w-4" />
               Criar doação
             </Button>

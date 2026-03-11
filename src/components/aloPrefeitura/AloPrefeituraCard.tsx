@@ -23,7 +23,7 @@ const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
   const videoThumb = getYouTubeThumb(item.video_url);
 
   const handleClick = () => {
-    navigate(`/cidade/${cidadeSlug}/alo-prefeitura#${item.id}`);
+    navigate(`/cidade/${cidadeSlug}/alo-prefeitura#${item.id}`, { state: { fromAloCard: true } });
   };
 
   return (

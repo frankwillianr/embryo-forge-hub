@@ -59,6 +59,28 @@ const EventosListPage = () => {
         <h1 className="text-base font-semibold">Shows e Eventos</h1>
       </header>
 
+      <div className="relative h-48 overflow-hidden border-b border-border bg-[linear-gradient(130deg,hsl(var(--primary)/0.42)_0%,hsl(var(--card))_42%,hsl(var(--background))_100%)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,160,46,0.5),transparent_45%)]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/45 via-black/20 to-black/45" />
+        <div className="absolute left-4 right-4 bottom-4">
+          <div className="rounded-2xl border border-white/20 bg-white/12 px-4 py-3 backdrop-blur-md shadow-lg">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+              <CalendarDays className="h-3.5 w-3.5" />
+              Agenda da cidade
+            </div>
+            <div className="mt-2 flex items-end justify-between gap-2">
+              <h2 className="text-[22px] leading-tight font-black text-white">Próximos Eventos</h2>
+              <div className="h-8 min-w-8 px-2 rounded-full bg-white/20 border border-white/30 text-xs font-semibold text-white flex items-center justify-center">
+                {eventos.length}
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-white/80">
+              Confira shows, festas e encontros para os próximos dias.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Search */}
       <div className="px-4 py-3">
         <div className="relative">

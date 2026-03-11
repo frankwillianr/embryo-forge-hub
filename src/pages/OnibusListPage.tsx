@@ -107,6 +107,21 @@ const OnibusListPage = () => {
         </div>
       </header>
 
+      <div className="relative h-44 overflow-hidden border-b border-border bg-[linear-gradient(130deg,hsl(var(--primary)/0.42)_0%,hsl(var(--card))_42%,hsl(var(--background))_100%)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,160,46,0.48),transparent_45%)]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/45 via-black/20 to-black/45" />
+        <div className="absolute left-4 right-4 bottom-4">
+          <div className="rounded-2xl border border-white/20 bg-white/12 px-4 py-3 backdrop-blur-md shadow-lg">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+              <MapPin className="h-3.5 w-3.5" />
+              Mobilidade da cidade
+            </div>
+            <h2 className="mt-2 text-[22px] leading-tight font-black text-white">Horarios de Onibus</h2>
+            <p className="mt-1 text-xs text-white/80">Consulte linhas e horarios por dia da semana.</p>
+          </div>
+        </div>
+      </div>
+
       <div className="px-5 pt-4 space-y-4">
         {/* Segmented Control iOS */}
         <div className="flex bg-muted/60 rounded-[10px] p-[3px]">

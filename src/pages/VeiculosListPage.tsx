@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowLeft, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fipeApi } from "@/services/fipeApi";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,18 @@ const condicaoOptions = [
   { value: "novo", label: "Novo" },
   { value: "seminovo", label: "Seminovo" },
   { value: "usado", label: "Usado" },
+];
+
+const quickFilterOptions = [
+  { id: "todos", label: "Todos", field: "none" as const },
+  { id: "novo", label: "Novo", field: "condicao" as const },
+  { id: "seminovo", label: "Seminovo", field: "condicao" as const },
+  { id: "usado", label: "Usado", field: "condicao" as const },
+  { id: "flex", label: "Flex", field: "combustivel" as const },
+  { id: "gasolina", label: "Gasolina", field: "combustivel" as const },
+  { id: "diesel", label: "Diesel", field: "combustivel" as const },
+  { id: "eletrico", label: "Elétrico", field: "combustivel" as const },
+  { id: "hibrido", label: "Híbrido", field: "combustivel" as const },
 ];
 
 const VeiculosListPage = () => {
@@ -148,6 +160,35 @@ const VeiculosListPage = () => {
     setKmRange([0, 200000]);
   };
 
+  const applyQuickFilter = (filterId: string) => {
+    if (filterId === "todos") {
+      setCondicao("");
+      setCombustivel("");
+      return;
+    }
+
+    const option = quickFilterOptions.find((item) => item.id === filterId);
+    if (!option) return;
+
+    if (option.field === "condicao") {
+      setCondicao(filterId);
+      setCombustivel("");
+      return;
+    }
+
+    if (option.field === "combustivel") {
+      setCombustivel(filterId);
+      setCondicao("");
+    }
+  };
+
+  const activeQuickFilter =
+    quickFilterOptions.some((item) => item.id === condicao)
+      ? condicao
+      : quickFilterOptions.some((item) => item.id === combustivel)
+        ? combustivel
+        : "todos";
+
   const activeFiltersCount = [
     marcaId,
     modeloId,
@@ -181,9 +222,10 @@ const VeiculosListPage = () => {
           Veículos
         </h1>
         <Button
+          variant="ghost"
           onClick={() => navigate(`/cidade/${slug}/veiculos/novo`)}
           size="sm"
-          className="gap-1.5"
+          className="btn-solar-soft gap-1.5"
         >
           <Plus className="h-4 w-4" />
           Anunciar
@@ -370,6 +412,28 @@ const VeiculosListPage = () => {
             </SheetContent>
           </Sheet>
         </div>
+
+        <div className="mt-3 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 min-w-max pb-1">
+            {quickFilterOptions.map((filter) => {
+              const isActive = activeQuickFilter === filter.id;
+              return (
+                <button
+                  key={filter.id}
+                  type="button"
+                  onClick={() => applyQuickFilter(filter.id)}
+                  className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    isActive
+                      ? "border-primary bg-primary/15 text-foreground"
+                      : "border-border bg-background text-muted-foreground"
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Lista de Veículos */}
@@ -397,8 +461,8 @@ const VeiculosListPage = () => {
           <div className="text-center py-12">
             <p className="text-muted-foreground">Nenhum veículo encontrado</p>
             <Button
-              variant="outline"
-              className="mt-4"
+              variant="ghost"
+              className="btn-solar-soft mt-4"
               onClick={() => navigate(`/cidade/${slug}/veiculos/novo`)}
             >
               Seja o primeiro a anunciar

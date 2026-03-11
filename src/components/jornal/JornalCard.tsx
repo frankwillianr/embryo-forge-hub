@@ -44,7 +44,7 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
       localStorage.setItem("jornal-lidos", JSON.stringify(read));
       setIsRead(true);
     }
-    navigate(`/cidade/${cidadeSlug}/jornal#${jornal.id}`);
+    navigate(`/cidade/${cidadeSlug}/jornal#${jornal.id}`, { state: { fromJornalCard: true } });
   };
 
   const handleSpeakClick = async (e: React.MouseEvent) => {

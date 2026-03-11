@@ -202,16 +202,23 @@ const VagasListPage = () => {
         <h1 className="text-base font-semibold">Vagas de Emprego</h1>
       </header>
 
-      <div className="relative h-40 overflow-hidden">
-        <img src={vagasBanner} alt="Vagas de Emprego" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-        <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-          <div>
-            <p className="text-xs text-muted-foreground">Oportunidades</p>
-            <h2 className="text-lg font-bold text-foreground">Trabalhe na sua cidade</h2>
-          </div>
-          <div className="h-9 min-w-9 px-2 rounded-full bg-card/90 border border-border/60 text-xs font-semibold text-foreground flex items-center justify-center">
-            {contagemPorSegmento.all}
+      <div className="relative h-52 overflow-hidden border-b border-border">
+        <img src={vagasBanner} alt="Vagas de Emprego" className="w-full h-full object-cover scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/35 to-black/70" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,160,46,0.38),transparent_45%)]" />
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="rounded-2xl border border-white/20 bg-white/12 px-4 py-3 backdrop-blur-md shadow-lg">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+              <Briefcase className="h-3.5 w-3.5" />
+              Oportunidades da cidade
+            </div>
+            <div className="mt-2 flex items-end justify-between gap-2">
+              <h2 className="text-[22px] leading-tight font-black text-white">Vagas de Emprego</h2>
+              <div className="h-8 min-w-8 px-2 rounded-full bg-white/20 border border-white/30 text-xs font-semibold text-white flex items-center justify-center">
+                {contagemPorSegmento.all}
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-white/80">Veja vagas abertas e anuncie oportunidades locais.</p>
           </div>
         </div>
       </div>
