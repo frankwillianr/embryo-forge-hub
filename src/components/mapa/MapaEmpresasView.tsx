@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Loader2,
   MapPin,
+  LocateFixed,
   Clock,
   MessageCircle,
   Instagram,
@@ -49,6 +50,7 @@ const GV_CENTER: [number, number] = [-18.8544, -41.9453];
 const GV_ZOOM = 13;
 const GV_MIN_ZOOM = 14;
 const GV_MAX_ZOOM = 18;
+const GV_FOCAL_ZOOM = Math.max(GV_ZOOM, GV_MIN_ZOOM);
 
 const diasOrdem = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 
@@ -112,6 +114,14 @@ function AplicarLimitesZoom() {
   return null;
 }
 
+function RegistrarMapa({ onReady }: { onReady: (map: L.Map) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    onReady(map);
+  }, [map, onReady]);
+  return null;
+}
+
 export default function MapaEmpresasView({
   cidadeId,
   cidadeSlug,
@@ -122,6 +132,7 @@ export default function MapaEmpresasView({
   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllHours, setShowAllHours] = useState(false);
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
 
   const { data: empresas = [], isLoading } = useQuery({
     queryKey: ["mapa-empresas", cidadeId],
@@ -213,6 +224,11 @@ export default function MapaEmpresasView({
       )
     : [];
 
+  const recentralizarMapa = () => {
+    if (!mapInstance) return;
+    mapInstance.setView(GV_CENTER, GV_FOCAL_ZOOM, { animate: true });
+  };
+
   return (
     <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-40 flex flex-col bg-background">
       <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card shrink-0">
@@ -237,6 +253,7 @@ export default function MapaEmpresasView({
           className="w-full h-full z-0"
           scrollWheelZoom
         >
+          <RegistrarMapa onReady={setMapInstance} />
           <AplicarLimitesZoom />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -254,6 +271,17 @@ export default function MapaEmpresasView({
           ))}
           <AjustarBounds empresas={empresas} />
         </MapContainer>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          onClick={recentralizarMapa}
+          className="absolute top-4 right-4 z-[900] h-11 w-11 rounded-full border border-border bg-background/95 backdrop-blur shadow-md"
+          aria-label="Recentralizar mapa"
+          disabled={!mapInstance}
+        >
+          <LocateFixed className="h-5 w-5" />
+        </Button>
         {!isLoading && empresas.length === 0 ? (
           <div className="absolute bottom-4 left-4 right-4 flex items-center gap-2 rounded-lg bg-background/95 backdrop-blur border border-border px-3 py-2 text-sm text-muted-foreground shadow-sm">
             <MapPin className="h-4 w-4 shrink-0" />
