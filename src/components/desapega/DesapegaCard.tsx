@@ -49,7 +49,7 @@ interface DesapegaCardProps {
 const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
   const [manageOpen, setManageOpen] = useState(false);
@@ -65,7 +65,13 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
     [...(anuncio.imagens ?? [])].sort((a, b) => a.ordem - b.ordem).map((img) => img.url),
   );
 
-  const isOwner = !!user?.id && anuncio.user_id === user.id;
+  const normalizePhone = (value?: string | null) => (value || "").replace(/\D/g, "");
+  const isOwnerByUserId = !!user?.id && anuncio.user_id === user.id;
+  const isOwnerByContato =
+    !anuncio.user_id &&
+    normalizePhone(anuncio.whatsapp) !== "" &&
+    normalizePhone(anuncio.whatsapp) === normalizePhone(profile?.contato);
+  const isOwner = isOwnerByUserId || isOwnerByContato;
   const isVendido = anuncio.status === "vendido";
 
   const { data: categorias } = useQuery({
@@ -244,9 +250,17 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
 
   return (
     <>
-      <button
+      <div
         onClick={() => navigate(`/cidade/${cidadeSlug}/desapega/${anuncio.id}`)}
-        className="group text-left"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            navigate(`/cidade/${cidadeSlug}/desapega/${anuncio.id}`);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        className="group text-left cursor-pointer"
       >
         <div className="relative aspect-square rounded-xl overflow-hidden bg-muted mb-2">
           {primeiraImagem ? (
@@ -313,7 +327,7 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
           <h3 className="text-sm font-medium text-foreground line-clamp-2 leading-tight">{anuncio.titulo}</h3>
           <p className="text-xs text-muted-foreground">{timeAgo}</p>
         </div>
-      </button>
+      </div>
 
       <Dialog open={manageOpen} onOpenChange={setManageOpen}>
         <DialogContent>
