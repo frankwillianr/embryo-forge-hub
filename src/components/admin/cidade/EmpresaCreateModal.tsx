@@ -72,6 +72,7 @@ const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModal
         cidade_id: cidadeId,
         user_id: selectedUser.id,
         nome: nome.trim(),
+        whatsapp: "00000000000",
         categoria: "geral",
         status: "aguardando_pagamento",
         data_inicio: dataInicio || null,
