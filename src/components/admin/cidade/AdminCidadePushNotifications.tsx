@@ -13,6 +13,37 @@ interface AdminCidadePushNotificationsProps {
 
 type PushPlatformFilter = "todos" | "ios" | "android";
 
+const parseFunctionError = async (error: any): Promise<string> => {
+  try {
+    const status = error?.context?.status;
+    let payload: any = null;
+
+    if (error?.context && typeof error.context.clone === "function") {
+      const cloned = error.context.clone();
+      const text = await cloned.text();
+      if (text) {
+        try {
+          payload = JSON.parse(text);
+        } catch {
+          payload = { raw: text };
+        }
+      }
+    }
+
+    const details =
+      payload?.error ||
+      payload?.message ||
+      payload?.msg ||
+      payload?.raw ||
+      error?.message ||
+      "Erro desconhecido";
+
+    return status ? `HTTP ${status}: ${details}` : details;
+  } catch {
+    return error?.message || "Erro desconhecido";
+  }
+};
+
 const AdminCidadePushNotifications = ({ cidadeId }: AdminCidadePushNotificationsProps) => {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -29,7 +60,11 @@ const AdminCidadePushNotifications = ({ cidadeId }: AdminCidadePushNotifications
           dryRun: true,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const detailed = await parseFunctionError(error);
+        console.error("Erro detalhado no dryRun de push:", detailed, error);
+        throw new Error(detailed);
+      }
       return data;
     },
   });
@@ -60,7 +95,9 @@ const AdminCidadePushNotifications = ({ cidadeId }: AdminCidadePushNotifications
       toast.dismiss();
 
       if (error) {
-        toast.error(`Erro ao enviar push: ${error.message}`);
+        const detailed = await parseFunctionError(error);
+        console.error("Erro detalhado ao enviar push:", detailed, error);
+        toast.error(`Erro ao enviar push: ${detailed}`);
         return;
       }
 
