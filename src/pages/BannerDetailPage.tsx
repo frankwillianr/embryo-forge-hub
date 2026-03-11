@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import BannerImageCarousel from "@/components/banner/BannerImageCarousel";
 import BannerVideoPlayer from "@/components/banner/BannerVideoPlayer";
 import type { Banner, BannerImagem } from "@/types/banner";
+import { fetchBannerGallery } from "@/lib/bannerGallery";
 
 const BannerDetailPage = () => {
   const { id, slug } = useParams<{ id: string; slug: string }>();
@@ -31,13 +32,7 @@ const BannerDetailPage = () => {
   const { data: images = [] } = useQuery({
     queryKey: ["banner-images", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("banner_imagens")
-        .select("*")
-        .eq("banner_id", id)
-        .order("ordem", { ascending: true });
-
-      if (error) throw error;
+      const data = await fetchBannerGallery(id!);
       return data as BannerImagem[];
     },
     enabled: !!id,
@@ -110,6 +105,7 @@ const BannerDetailPage = () => {
           <BannerVideoPlayer
             videoUrl={banner.video_upload_url}
             youtubeUrl={banner.video_youtube_url}
+            posterUrl={banner.imagem_url}
             title={banner.titulo}
           />
         </div>

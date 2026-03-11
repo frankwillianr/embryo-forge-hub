@@ -24,10 +24,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Image, Loader2, Upload, X } from "lucide-react";
 import { format, parseISO, differenceInDays, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { fetchBannerGallery, replaceBannerGallery } from "@/lib/bannerGallery";
 
 const formSchema = z.object({
   titulo: z.string().min(1, "Título é obrigatório").max(100),
@@ -45,11 +46,19 @@ interface BannerEditModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+interface GalleryItem {
+  imagem_url: string;
+  isLocal?: boolean;
+  file?: File;
+}
+
 const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditModalProps) => {
   const queryClient = useQueryClient();
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [isLoadingDias, setIsLoadingDias] = useState(false);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -73,6 +82,7 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
 
       // Buscar os dias do banner
       loadBannerDias();
+      loadBannerGallery();
     }
   }, [banner, open]);
 
@@ -103,6 +113,56 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
     }
   };
 
+  const loadBannerGallery = async () => {
+    if (!banner?.id) return;
+    setIsLoadingGallery(true);
+    try {
+      const rows = await fetchBannerGallery(banner.id);
+      setGalleryItems(rows.map((row: any) => ({ imagem_url: row.imagem_url })));
+    } catch (error) {
+      console.error("Erro ao carregar galeria do banner:", error);
+      setGalleryItems([]);
+    } finally {
+      setIsLoadingGallery(false);
+    }
+  };
+
+  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const validFiles = files.filter((file) => {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} excede 5MB.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (galleryItems.length + validFiles.length > 5) {
+      toast.error("Máximo de 5 imagens na galeria.");
+      return;
+    }
+
+    const newItems: GalleryItem[] = validFiles.map((file) => ({
+      isLocal: true,
+      file,
+      imagem_url: URL.createObjectURL(file),
+    }));
+
+    setGalleryItems((prev) => [...prev, ...newItems]);
+  };
+
+  const removeGalleryItem = (index: number) => {
+    setGalleryItems((prev) => {
+      const item = prev[index];
+      if (item?.isLocal && item.imagem_url.startsWith("blob:")) {
+        URL.revokeObjectURL(item.imagem_url);
+      }
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
   const updateBannerMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       // Atualizar dados do banner
@@ -117,6 +177,30 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
         .eq("id", banner.id);
 
       if (bannerError) throw bannerError;
+
+      // Atualizar galeria de imagens
+      const uploadedGalleryUrls: string[] = [];
+      for (let i = 0; i < galleryItems.length; i++) {
+        const item = galleryItems[i];
+        if (item.isLocal && item.file) {
+          const fileName = `${Date.now()}_${i}_${item.file.name}`;
+          const filePath = `banners/${banner.admin_user_id || "admin"}/${fileName}`;
+          const { error: uploadError } = await supabase.storage
+            .from("banners")
+            .upload(filePath, item.file);
+
+          if (uploadError) {
+            throw new Error(`Erro ao subir imagem da galeria: ${uploadError.message}`);
+          }
+
+          const { data: publicData } = supabase.storage.from("banners").getPublicUrl(filePath);
+          uploadedGalleryUrls.push(publicData.publicUrl);
+        } else {
+          uploadedGalleryUrls.push(item.imagem_url);
+        }
+      }
+
+      await replaceBannerGallery(banner.id, uploadedGalleryUrls);
 
       // Se as datas foram definidas, atualizar rel_banner_dias
       if (startDate && endDate) {
@@ -267,6 +351,51 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
                 </FormItem>
               )}
             />
+
+            <div className="space-y-3">
+              <FormLabel className="flex items-center gap-2">
+                <Image className="h-4 w-4" />
+                Galeria de Imagens (até 5)
+              </FormLabel>
+              {isLoadingGallery ? (
+                <div className="text-sm text-muted-foreground">Carregando galeria...</div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {galleryItems.map((item, index) => (
+                    <div key={`${item.imagem_url}-${index}`} className="relative aspect-square">
+                      <img
+                        src={item.imagem_url}
+                        alt={`Galeria ${index + 1}`}
+                        className="w-full h-full object-cover rounded-md border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryItem(index)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {galleryItems.length < 5 && (
+                    <label className="aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:border-primary/50 transition-colors flex flex-col items-center justify-center bg-muted/30">
+                      <Upload className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-[11px] text-muted-foreground mt-1">Adicionar</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleGalleryUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Essas imagens aparecem na página de detalhes do banner.
+              </p>
+            </div>
 
             {/* Seleção de datas - 2 date pickers separados */}
             <div className="space-y-3">

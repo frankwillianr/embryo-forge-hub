@@ -29,6 +29,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BannerPreviewModal } from "@/components/banner/BannerPreviewModal";
 import { PaymentConfirmationModal } from "@/components/banner/PaymentConfirmationModal";
+import { insertBannerGallery } from "@/lib/bannerGallery";
 
 const bannerSchema = z.object({
   titulo: z.string().min(3, "Título deve ter pelo menos 3 caracteres").max(100, "Título muito longo"),
@@ -253,12 +254,7 @@ const NovoBannerPage = () => {
 
       // 5. Insert gallery images
       if (galeriaUrls.length > 0) {
-        const galeriaInserts = galeriaUrls.map((url, index) => ({
-          banner_id: bannerData.id,
-          imagem_url: url,
-          ordem: index,
-        }));
-        await supabase.from("banner_imagem").insert(galeriaInserts);
+        await insertBannerGallery(bannerData.id, galeriaUrls);
       }
 
       // 6. Link banner to city

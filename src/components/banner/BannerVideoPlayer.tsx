@@ -4,18 +4,19 @@ import { useState } from "react";
 interface BannerVideoPlayerProps {
   videoUrl?: string | null;
   youtubeUrl?: string | null;
+  posterUrl?: string | null;
   title: string;
 }
 
-const BannerVideoPlayer = ({ videoUrl, youtubeUrl, title }: BannerVideoPlayerProps) => {
-  const [isPlaying, setIsPlaying] = useState(false);
+const BannerVideoPlayer = ({ videoUrl, youtubeUrl, posterUrl, title }: BannerVideoPlayerProps) => {
+  const [isPlaying, setIsPlaying] = useState(true);
 
   // Extract YouTube embed URL
   const getYoutubeEmbedUrl = (url: string) => {
     const videoId = url.match(
       /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
     )?.[1];
-    return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : null;
+    return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&rel=0` : null;
   };
 
   const embedUrl = youtubeUrl ? getYoutubeEmbedUrl(youtubeUrl) : null;
@@ -33,7 +34,10 @@ const BannerVideoPlayer = ({ videoUrl, youtubeUrl, title }: BannerVideoPlayerPro
             src={videoUrl}
             controls
             className="w-full h-full object-contain"
-            poster={undefined}
+            poster={posterUrl || undefined}
+            autoPlay
+            muted
+            playsInline
             preload="metadata"
           >
             Seu navegador não suporta vídeos.
