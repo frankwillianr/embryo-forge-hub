@@ -51,6 +51,12 @@ export const useTrackCidadeAccess = (cidadeSlug?: string) => {
       });
     };
 
+    const markOffline = async () => {
+      await supabase.rpc("mark_online_session_offline", {
+        p_session_id: sessionId,
+      });
+    };
+
     void trackAnalytics();
     void heartbeatOnline();
 
@@ -58,7 +64,13 @@ export const useTrackCidadeAccess = (cidadeSlug?: string) => {
       if (document.visibilityState === "visible") {
         void trackAnalytics();
         void heartbeatOnline();
+      } else if (document.visibilityState === "hidden") {
+        void markOffline();
       }
+    };
+
+    const onPageHide = () => {
+      void markOffline();
     };
 
     const interval = window.setInterval(() => {
@@ -68,9 +80,12 @@ export const useTrackCidadeAccess = (cidadeSlug?: string) => {
     }, ONLINE_HEARTBEAT_MS);
 
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pagehide", onPageHide);
     return () => {
       window.clearInterval(interval);
+      void markOffline();
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pagehide", onPageHide);
     };
   }, [cidadeSlug, sessionId, user?.id]);
 };
