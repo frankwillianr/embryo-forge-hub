@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -236,17 +236,17 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
 
       {/* Orçamentos recebidos / enviados (só para logado) */}
       {user && cidadeSlug && (
-        <div className="flex gap-3 px-5 mt-4">
+        <div className="flex gap-3 px-5 mt-4 overflow-x-hidden">
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 text-xs h-9 border-border bg-card relative"
+            className="flex-1 min-w-0 text-xs h-9 border-border bg-card relative"
             onClick={() => navigate(`/cidade/${cidadeSlug}/orcamentos/recebidos`)}
           >
             <Inbox className="h-3.5 w-3 mr-1.5 shrink-0" />
             <span className="truncate">Orçamentos recebidos</span>
             {recebidosBadge > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
+              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
                 {recebidosBadge > 99 ? "99+" : recebidosBadge}
               </span>
             )}
@@ -254,13 +254,13 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
           <Button
             variant="outline"
             size="sm"
-            className="flex-1 text-xs h-9 border-border bg-card relative"
+            className="flex-1 min-w-0 text-xs h-9 border-border bg-card relative"
             onClick={() => navigate(`/cidade/${cidadeSlug}/orcamentos/enviados`)}
           >
             <Send className="h-3.5 w-3 mr-1.5 shrink-0" />
             <span className="truncate">Orçamentos enviados</span>
             {enviadosBadge > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
+              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-semibold px-1">
                 {enviadosBadge > 99 ? "99+" : enviadosBadge}
               </span>
             )}
@@ -336,3 +336,6 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
 };
 
 export default SolicitarOrcamentoSection;
+
+
+
