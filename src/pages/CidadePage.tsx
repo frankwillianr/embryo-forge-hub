@@ -12,7 +12,6 @@ import MapaEmpresasView from "@/components/mapa/MapaEmpresasView";
 import { Button } from "@/components/ui/button";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/hooks/useAuth";
-import { useActiveUsersPresence } from "@/hooks/useActiveUsersPresence";
 import { useTrackCidadeAccess } from "@/hooks/useTrackCidadeAccess";
 import { toast } from "sonner";
 
@@ -32,7 +31,6 @@ const CidadePage = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<TabType>("home");
   const { profile } = useAuth();
-  const { onlineCount, isConnected } = useActiveUsersPresence(slug);
   useTrackCidadeAccess(slug);
   const scrollPositions = useRef<Record<TabType, number>>({
     home: 0, cinema: 0, prefeitura: 0, maps: 0, menu: 0,
@@ -195,8 +193,6 @@ const CidadePage = () => {
             bannerUrl={cidade?.banner_url}
             cidadeNome={cidade?.nome}
             userName={firstName}
-            onlineCount={onlineCount}
-            onlineConnected={isConnected}
           />
         ) : activeTab !== "maps" ? (
           <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
