@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sun, Moon, Sunrise, Sunset, Cloud, CloudRain, Loader2, MapPin } from "lucide-react";
+import { Sun, Moon, Sunrise, Sunset, Cloud, CloudRain, Loader2, MapPin, Users } from "lucide-react";
 
 interface WeatherData {
   temperature: number;
@@ -62,9 +62,11 @@ interface CidadeBannerProps {
   bannerUrl?: string | null;
   cidadeNome?: string;
   userName?: string;
+  onlineCount?: number;
+  onlineConnected?: boolean;
 }
 
-const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) => {
+const CidadeBanner = ({ bannerUrl, cidadeNome, userName, onlineCount = 0, onlineConnected = false }: CidadeBannerProps) => {
   const displayName = userName || "Visitante";
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay());
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -216,6 +218,13 @@ const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) =>
               <span>{location.neighborhood}</span>
             </div>
           }
+        </div>
+
+        <div className="mt-2 inline-flex w-fit items-center gap-2 rounded-full bg-black/30 px-3 py-1 text-xs">
+          <Users className="h-3.5 w-3.5" />
+          <span>
+            {onlineConnected ? `${onlineCount.toLocaleString("pt-BR")} online agora` : "Conectando..."}
+          </span>
         </div>
       </div>
     </div>);

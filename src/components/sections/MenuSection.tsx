@@ -3,6 +3,7 @@ import { User, Phone, Mail, MapPin, LogOut, Car, Megaphone, Briefcase, ChevronRi
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,48 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const { data: cidadeAdminInfo } = useQuery({
+    queryKey: ["menu-cidade-admin-info", cidadeSlug, user?.id],
+    queryFn: async () => {
+      if (!cidadeSlug || !user?.id) return { cidadeId: null, isCidadeAdmin: false };
+
+      const { data: cidadeData, error: cidadeError } = await supabase
+        .from("cidade")
+        .select("id")
+        .eq("slug", cidadeSlug)
+        .maybeSingle();
+
+      if (cidadeError) throw cidadeError;
+      if (!cidadeData?.id) return { cidadeId: null, isCidadeAdmin: false };
+
+      const firstRpc = await supabase.rpc("admin_listar_admins_cidade", {
+        p_cidade_id: cidadeData.id,
+      });
+
+      const secondRpc = firstRpc.error
+        ? await supabase.rpc("admin_listar_admins_cidade", {
+            cidade_id: cidadeData.id,
+          })
+        : firstRpc;
+
+      const adminRows = Array.isArray(secondRpc.data) ? secondRpc.data : [];
+      const isCidadeAdmin = adminRows.some((row) => row?.user_id === user.id);
+
+      return {
+        cidadeId: cidadeData.id,
+        isCidadeAdmin,
+      };
+    },
+    enabled: !!cidadeSlug && !!user?.id,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchInterval: 15000,
+  });
+
+  const cidadeId = cidadeAdminInfo?.cidadeId;
+  const isCidadeAdmin = cidadeAdminInfo?.isCidadeAdmin ?? false;
 
   const handleLogin = () => {
     navigate(`/cidade/${cidadeSlug}/auth`);
@@ -188,6 +231,18 @@ const MenuSection = ({ cidadeNome, cidadeSlug }: MenuSectionProps) => {
                 </span>
               </button>
             ))}
+
+            {isCidadeAdmin && cidadeId && (
+              <button
+                onClick={() => navigate(`/admin/cidades/${cidadeId}`)}
+                className="w-full flex items-center gap-3 py-3 text-left hover:text-primary transition-colors group"
+              >
+                <Building2 className="h-[18px] w-[18px] text-muted-foreground group-hover:text-primary transition-colors" />
+                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                  Painel Admin
+                </span>
+              </button>
+            )}
           </div>
         </div>
       )}

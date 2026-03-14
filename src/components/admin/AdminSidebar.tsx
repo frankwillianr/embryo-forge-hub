@@ -22,8 +22,9 @@ const AdminSidebar = () => {
       <Button
         variant="ghost"
         size="icon"
-        className="fixed top-4 left-4 z-50 lg:hidden text-white hover:bg-white/10"
+        className="fixed top-4 left-4 z-[60] lg:hidden bg-black text-white shadow-md hover:bg-black/90"
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Abrir menu admin"
       >
         {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </Button>
