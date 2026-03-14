@@ -9,7 +9,14 @@ interface OfertasSectionProps {
   cidadeSlug?: string;
 }
 
-type Oferta = { id: string; nome: string; categoria: string; banner_oferta_url: string };
+type Oferta = {
+  id: string;
+  nome: string;
+  categoria: string;
+  categorias_adicionais: string[] | null;
+  banner_oferta_url: string | null;
+  logomarca_url: string | null;
+};
 
 const CATEGORIAS = [
   { id: "todas", label: "🏷️ Todas" },
@@ -23,13 +30,36 @@ const CATEGORIAS = [
 ];
 
 const CATEGORIA_MAP: Record<string, string[]> = {
-  beleza: ["salao", "barbeiro", "manicure", "estetica", "maquiagem", "sobrancelha", "depilacao"],
+  beleza: ["salao", "barbeiro", "manicure", "estetica", "maquiagem", "sobrancelha", "depilacao", "cosmeticos", "cosmetico"],
   servicos: ["reparos", "eletricista", "encanador", "obras", "limpeza", "dedetizacao", "chaveiro", "pintor", "marceneiro", "serralheria", "vidraceiro", "ar-condicionado", "jardinagem", "mudancas", "diarista", "costura"],
   profissionais: ["advogado", "contador", "despachante", "engenheiro", "arquiteto", "corretor", "fotografo", "aulas", "idiomas", "informatica", "eventos"],
   saude: ["clinica", "dentista", "psicologo", "fisioterapeuta", "nutricionista", "personal", "academia", "massagista", "farmacia"],
   comercio: ["desapega", "lojas", "promocoes", "restaurantes", "entregador", "moda", "eletronicos"],
   veiculos: ["mecanico", "lava-jato", "auto-pecas", "guincho", "funilaria", "borracharia", "vistoria", "motorista"],
   pets: ["veterinario", "pet", "petshop", "adestrador", "hotel-pet", "passeador"],
+};
+
+const normalizeCategoria = (value?: string | null) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+const parseCategoriasAdicionais = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((v) => String(v));
+  }
+
+  if (typeof value === "string") {
+    const cleaned = value.replace(/^\{|\}$/g, "");
+    return cleaned
+      .split(",")
+      .map((v) => v.replace(/^"+|"+$/g, "").trim())
+      .filter(Boolean);
+  }
+
+  return [];
 };
 
 const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
@@ -58,10 +88,9 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rel_cidade_servico_empresa")
-        .select("id, nome, categoria, banner_oferta_url")
+        .select("id, nome, categoria, categorias_adicionais, banner_oferta_url, logomarca_url")
         .eq("cidade_id", cidade!.id)
-        .eq("status", "ativo")
-        .not("banner_oferta_url", "is", null);
+        .eq("status", "ativo");
       if (error) throw error;
       return (data || []) as Oferta[];
     },
@@ -73,8 +102,24 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
   const ofertasFiltradas = useMemo(() => {
     if (!ofertas) return [];
     if (categoriaAtiva === "todas") return [...ofertas].sort(() => Math.random() - 0.5);
-    const dbCats = CATEGORIA_MAP[categoriaAtiva] || [];
-    return ofertas.filter((o) => dbCats.includes(o.categoria));
+    const dbCats = (CATEGORIA_MAP[categoriaAtiva] || []).map(normalizeCategoria);
+    const dbSet = new Set(dbCats);
+
+    return ofertas.filter((o) => {
+      const categoriasEmpresa = [
+        o.categoria,
+        ...parseCategoriasAdicionais(o.categorias_adicionais),
+      ].map(normalizeCategoria);
+
+      if (categoriasEmpresa.some((cat) => dbSet.has(cat))) return true;
+
+      // fallback extra para variações de cosméticos
+      if (categoriaAtiva === "beleza") {
+        return categoriasEmpresa.some((cat) => cat.startsWith("cosmetic"));
+      }
+
+      return false;
+    });
   }, [ofertas, categoriaAtiva]);
 
   // Centraliza aba sem rolar a página
@@ -188,11 +233,15 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
                 onClick={() => navigate(`/cidade/${cidadeSlug}/servicos/${oferta.categoria}/${oferta.id}`)}
                 className="relative flex-shrink-0 w-64 aspect-[1288/718] rounded-2xl overflow-hidden shadow-md transition-transform active:scale-[0.98]"
               >
-                <img
-                  src={oferta.banner_oferta_url}
-                  alt={oferta.nome}
-                  className="w-full h-full object-cover"
-                />
+                {oferta.banner_oferta_url || oferta.logomarca_url ? (
+                  <img
+                    src={oferta.banner_oferta_url || oferta.logomarca_url || ""}
+                    alt={oferta.nome}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-muted to-muted/60" />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white text-sm font-semibold truncate">{oferta.nome}</p>

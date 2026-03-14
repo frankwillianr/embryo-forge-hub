@@ -22,7 +22,7 @@ type Servico = { id: string; nome: string; icon?: string; emoji?: string };
 
 // Mapeamento: categoria do app → categorias no banco
 const categoriaBancoMap: Record<string, string[]> = {
-  beleza: ["salao", "barbeiro", "manicure", "estetica", "maquiagem", "sobrancelha", "depilacao"],
+  beleza: ["salao", "barbeiro", "manicure", "estetica", "maquiagem", "sobrancelha", "depilacao", "cosmeticos"],
   servicos: ["reparos", "eletricista", "encanador", "obras", "limpeza", "dedetizacao", "chaveiro", "pintor", "marceneiro", "serralheria", "vidraceiro", "ar-condicionado", "jardinagem", "mudancas", "diarista", "costura"],
   profissionais: ["advogado", "contador", "despachante", "engenheiro", "arquiteto", "corretor", "fotografo", "aulas", "idiomas", "informatica", "eventos"],
   saude: ["clinica", "dentista", "psicologo", "fisioterapeuta", "nutricionista", "personal", "academia", "massagista", "farmacia"],
@@ -45,6 +45,7 @@ const categorias: Array<{ id: string; titulo: string; emoji: string; servicos: S
       { id: "maquiagem", nome: "Maquiagem", emoji: "💄" },
       { id: "sobrancelha", nome: "Sobrancelha", emoji: "🪮" },
       { id: "depilacao", nome: "Depilação", emoji: "🌸" },
+      { id: "cosmeticos", nome: "Cosméticos", emoji: "💄" },
     ],
   },
   {
@@ -171,6 +172,7 @@ const todosServicosAutocomplete = [
   { id: "psicologo", nome: "Psicólogo" },
   { id: "barbeiro", nome: "Barbeiro" },
   { id: "manicure", nome: "Manicure" },
+  { id: "cosmeticos", nome: "Cosméticos" },
   { id: "advogado", nome: "Advogado" },
   { id: "contador", nome: "Contador" },
   { id: "veterinario", nome: "Veterinário" },

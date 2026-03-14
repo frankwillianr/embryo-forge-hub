@@ -11,6 +11,7 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
   maquiagem: "Maquiagem",
   sobrancelha: "Sobrancelha",
   depilacao: "Depilação",
+  cosmeticos: "Cosméticos",
   // Serviços
   reparos: "Reparos",
   eletricista: "Eletricista",
@@ -88,6 +89,7 @@ export const CATEGORIAS_SERVICO_META: Record<string, { nome: string; icone: stri
   maquiagem: { nome: "Maquiagem", icone: "💄" },
   sobrancelha: { nome: "Sobrancelha", icone: "🪮" },
   depilacao: { nome: "Depilação", icone: "🌸" },
+  cosmeticos: { nome: "Cosméticos", icone: "💄" },
   reparos: { nome: "Reparos", icone: "🔧" },
   eletricista: { nome: "Eletricista", icone: "⚡" },
   encanador: { nome: "Encanador", icone: "🚿" },
