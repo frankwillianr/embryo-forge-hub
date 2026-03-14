@@ -107,14 +107,14 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
   const { data: eventos = [], isLoading } = useQuery({
     queryKey: ["musica-ao-vivo-home", cidadeSlug],
     queryFn: async () => {
-      const hoje = new Date().toISOString().split("T")[0];
+      const now = new Date();
+      const hoje = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
       const { data: eventosData, error: eventosError } = await supabase
         .from("evento_musical")
         .select("id, bar_id, cantor_id, data_evento, horario, estilo_musical")
         .gte("data_evento", hoje)
-        .order("data_evento", { ascending: true })
-        .limit(10);
+        .order("data_evento", { ascending: true });
 
       if (eventosError) {
         console.warn("[MusicaAoVivoSection] erro ao buscar eventos:", eventosError.message);
@@ -135,11 +135,20 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
       const barsMap = new Map((barsData || []).map((b: any) => [b.id, b]));
       const cantoresMap = new Map((cantoresData || []).map((c: any) => [c.id, c]));
 
-      return eventosBase.map((evento) => ({
+      const eventosComRelacionamento = eventosBase.map((evento) => ({
         ...evento,
         bar: barsMap.get(evento.bar_id) || null,
         cantor: cantoresMap.get(evento.cantor_id) || null,
       }));
+
+      // Ordena do mais próximo para o mais distante considerando data + horário.
+      return eventosComRelacionamento.sort((a, b) => {
+        const horaA = extrairHora(a.data_evento, a.horario) || "00:00";
+        const horaB = extrairHora(b.data_evento, b.horario) || "00:00";
+        const dateA = new Date(`${a.data_evento}T${horaA}:00`).getTime();
+        const dateB = new Date(`${b.data_evento}T${horaB}:00`).getTime();
+        return dateA - dateB;
+      });
     },
     enabled: !!cidadeSlug,
   });
