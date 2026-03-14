@@ -1,7 +1,6 @@
-import { LayoutDashboard, MapPin, Menu, X, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, MapPin, ArrowLeft } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
@@ -14,18 +13,21 @@ const AdminSidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const handleToggle = () => setIsOpen((prev) => !prev);
+    const handleClose = () => setIsOpen(false);
+
+    window.addEventListener("admin:toggle-sidebar", handleToggle as EventListener);
+    window.addEventListener("admin:close-sidebar", handleClose as EventListener);
+
+    return () => {
+      window.removeEventListener("admin:toggle-sidebar", handleToggle as EventListener);
+      window.removeEventListener("admin:close-sidebar", handleClose as EventListener);
+    };
+  }, []);
+
   return (
     <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-[60] bg-black text-white shadow-md hover:bg-black/90 lg:hidden"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Abrir menu admin"
-      >
-        {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
-
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -35,9 +37,15 @@ const AdminSidebar = () => {
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-screen w-64 bg-black transition-transform lg:translate-x-0",
+          "fixed left-0 top-0 z-40 h-[100dvh] w-64 overflow-y-auto bg-black transition-transform lg:h-screen lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
         )}
+        style={{
+          paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.75rem)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          paddingLeft: "env(safe-area-inset-left, 0px)",
+          paddingRight: "env(safe-area-inset-right, 0px)",
+        }}
       >
         <div className="flex h-16 items-center px-6">
           <h1 className="tracking-tight text-xl font-semibold text-white">Admin</h1>

@@ -1,7 +1,7 @@
-﻿import { useState, useEffect, useRef } from "react";
+﻿import { memo, useState, useEffect, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Heart, MessageCircle, Pause, Volume2, VolumeX, Trash2, X } from "lucide-react";
+import { Heart, MessageCircle, Pause, Play, Volume2, VolumeX, Trash2, X } from "lucide-react";
 import { type AloPrefeitura } from "@/types/aloPrefeitura";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,14 @@ const getFingerprint = () => {
     hash = hash & hash;
   }
   return hash.toString();
+};
+
+const getYouTubeThumb = (url?: string | null) => {
+  if (!url) return null;
+  const match = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
+  );
+  return match?.[1] ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
 };
 
 interface AloPrefeituraFeedCardProps {
@@ -77,6 +85,7 @@ const AloPrefeituraFeedCard = ({
 
   const imagens = item.imagens || [];
   const hasMultipleImages = imagens.length > 1;
+  const hasMainVideo = imagens.length === 0 && !!item.video_url;
   const getYouTubeEmbedUrl = (url?: string | null) => {
     if (!url) return null;
     const match = url.match(
@@ -85,6 +94,7 @@ const AloPrefeituraFeedCard = ({
     return match?.[1] ? `https://www.youtube.com/embed/${match[1]}?rel=0` : null;
   };
   const embedUrl = getYouTubeEmbedUrl(item.video_url);
+  const youtubeThumb = getYouTubeThumb(item.video_url);
 
   // iOS keyboard detection
   useEffect(() => {
@@ -121,6 +131,8 @@ const AloPrefeituraFeedCard = ({
 
       return (data?.tipo as "like" | "dislike") || null;
     },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   // Busca dados atualizados (likes count)
@@ -135,6 +147,8 @@ const AloPrefeituraFeedCard = ({
 
       return { likes_count: likesCount || 0 };
     },
+    staleTime: 20_000,
+    refetchOnWindowFocus: false,
   });
 
   // Busca contagem de comentÃ¡rios
@@ -149,6 +163,8 @@ const AloPrefeituraFeedCard = ({
       if (error) return 0;
       return count || 0;
     },
+    staleTime: 20_000,
+    refetchOnWindowFocus: false,
   });
 
   // Busca comentÃ¡rios
@@ -385,7 +401,7 @@ const AloPrefeituraFeedCard = ({
 
       {/* Imagem/Carrossel */}
       <div
-        className="relative aspect-square w-full overflow-hidden bg-muted/30"
+        className={`relative w-full overflow-hidden bg-muted/30 ${hasMainVideo ? "aspect-[25/36]" : "aspect-square"}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -429,13 +445,24 @@ const AloPrefeituraFeedCard = ({
         ) : item.video_url ? (
           <div className="relative w-full h-full bg-muted/50">
             {embedUrl ? (
-              <iframe
-                src={`${embedUrl}&autoplay=${isVideoActive && globalAutoplay ? "1" : "0"}&mute=${globalMuted ? "1" : "0"}&controls=1&playsinline=1`}
-                title={item.titulo}
-                className="w-full h-full"
-                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                allowFullScreen
-              />
+              isVideoActive ? (
+                <iframe
+                  src={`${embedUrl}&autoplay=${globalAutoplay ? "1" : "0"}&mute=${globalMuted ? "1" : "0"}&controls=1&playsinline=1`}
+                  title={item.titulo}
+                  className="w-full h-full"
+                  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                  allowFullScreen
+                />
+              ) : youtubeThumb ? (
+                <img
+                  src={youtubeThumb}
+                  alt={item.titulo}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/80" />
+              )
             ) : (
               <>
                 <video
@@ -444,12 +471,20 @@ const AloPrefeituraFeedCard = ({
                   className="w-full h-full object-cover"
                   loop
                   playsInline
-                  preload="metadata"
+                  preload={isVideoActive ? "metadata" : "none"}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
               </>
             )}
-            {!embedUrl && (
+            {embedUrl ? (
+              !isVideoActive && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-12 h-12 rounded-full bg-black/45 backdrop-blur-[1px] flex items-center justify-center">
+                    <Play className="h-5 w-5 text-white ml-0.5" />
+                  </div>
+                </div>
+              )
+            ) : (
               <div className="absolute right-2 bottom-2 flex items-center gap-2">
                 <button
                   type="button"
@@ -501,7 +536,7 @@ const AloPrefeituraFeedCard = ({
             className="w-full rounded-xl aspect-video object-contain bg-black"
             loop
             playsInline
-            preload="metadata"
+            preload={isVideoActive ? "metadata" : "none"}
           />
           <div className="mt-2 flex justify-end gap-2">
             <button
@@ -698,5 +733,6 @@ const AloPrefeituraFeedCard = ({
   );
 };
 
-export default AloPrefeituraFeedCard;
+export default memo(AloPrefeituraFeedCard);
+
 

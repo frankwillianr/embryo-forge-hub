@@ -87,6 +87,10 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
         <BannerCarousel banners={banners} cidadeSlug={cidadeSlug} />
       ) : null}
 
+      <MusicaAoVivoSection cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
       <JornalHorizontalList cidadeSlug={cidadeSlug} />
 
       <Separador />
@@ -104,10 +108,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       <Separador />
 
       <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
-
-      <Separador />
-
-      <MusicaAoVivoSection cidadeSlug={cidadeSlug} />
 
       <Separador />
 

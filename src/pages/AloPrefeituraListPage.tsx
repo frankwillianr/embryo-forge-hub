@@ -95,6 +95,7 @@ const AloPrefeituraListPage = () => {
     if (isLoading || itemIds.length === 0) return;
 
     const visibleRatios = new Map<string, number>();
+    let currentActiveId: string | null = null;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -113,10 +114,14 @@ const AloPrefeituraListPage = () => {
           }
         });
 
-        setActiveItemId(maxRatio >= 0.45 ? nextActiveId : null);
+        const computedActive = maxRatio >= 0.45 ? nextActiveId : null;
+        if (computedActive !== currentActiveId) {
+          currentActiveId = computedActive;
+          setActiveItemId(computedActive);
+        }
       },
       {
-        threshold: [0, 0.25, 0.45, 0.65, 0.85, 1],
+        threshold: [0, 0.45, 0.75, 1],
       }
     );
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+﻿import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,8 +37,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const tabRefsRef = useRef<(HTMLButtonElement | null)[]>([]);
-  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const userInteractedRef = useRef(false);
+  const ofertasScrollRef = useRef<HTMLDivElement>(null);
 
   const { data: cidade } = useQuery({
     queryKey: ["cidade-id", cidadeSlug],
@@ -88,24 +87,30 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
     container.scrollTo({ left: target, behavior: "smooth" });
   }, [categoriaAtiva]);
 
-  // Autoplay: avança categoria a cada 5s
+  // Autoplay horizontal do mural de ofertas (a cada 3s)
   useEffect(() => {
-    autoPlayRef.current = setInterval(() => {
-      if (userInteractedRef.current) return;
-      setCategoriaAtiva((prev) => {
-        const available = categoriasComOfertas;
-        const idx = available.indexOf(prev);
-        return available[(idx + 1) % available.length];
-      });
-    }, 5000);
-    return () => { if (autoPlayRef.current) clearInterval(autoPlayRef.current); };
-  }, [categoriasComOfertas]);
+    const container = ofertasScrollRef.current;
+    if (!container) return;
 
-  const handleTabClick = useCallback((catId: string) => {
-    setCategoriaAtiva(catId);
-    userInteractedRef.current = true;
-    setTimeout(() => { userInteractedRef.current = false; }, 10_000);
-  }, []);
+    const intervalId = window.setInterval(() => {
+      if (!ofertasFiltradas.length) return;
+
+      const firstCard = container.querySelector("button");
+      const cardWidth = firstCard ? (firstCard as HTMLElement).offsetWidth + 12 : 268; // largura + gap
+      const maxScroll = container.scrollWidth - container.clientWidth;
+
+      if (maxScroll <= 0) return;
+
+      const next = container.scrollLeft + cardWidth;
+      if (next >= maxScroll - 4) {
+        container.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        container.scrollTo({ left: next, behavior: "smooth" });
+      }
+    }, 3000);
+
+    return () => window.clearInterval(intervalId);
+  }, [categoriaAtiva, ofertasFiltradas.length]);
 
   if (isLoading) {
     return (
@@ -157,7 +162,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
             <button
               key={cat.id}
               ref={(el) => { tabRefsRef.current[index] = el; }}
-              onClick={() => handleTabClick(cat.id)}
+              onClick={() => setCategoriaAtiva(cat.id)}
               className={`flex-shrink-0 px-4 pb-2.5 text-[13px] font-medium transition-all relative whitespace-nowrap ${
                 categoriaAtiva === cat.id
                   ? "text-foreground"
@@ -174,14 +179,14 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
       </div>
 
       {/* Lista horizontal */}
-      <div className="overflow-x-auto scrollbar-hide">
+      <div ref={ofertasScrollRef} className="overflow-x-auto scrollbar-hide">
         <div className="flex gap-3 px-5 pb-2">
           {ofertasFiltradas.length > 0 ? (
             ofertasFiltradas.map((oferta) => (
               <button
                 key={oferta.id}
                 onClick={() => navigate(`/cidade/${cidadeSlug}/servicos/${oferta.categoria}/${oferta.id}`)}
-                className="relative flex-shrink-0 w-64 h-[192px] rounded-2xl overflow-hidden shadow-md transition-transform active:scale-[0.98]"
+                className="relative flex-shrink-0 w-64 aspect-[1288/718] rounded-2xl overflow-hidden shadow-md transition-transform active:scale-[0.98]"
               >
                 <img
                   src={oferta.banner_oferta_url}
@@ -197,7 +202,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
           ) : (
             <button
               onClick={() => navigate(`/cidade/${cidadeSlug}/empresa/novo`)}
-              className="flex-shrink-0 w-64 h-[192px] rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center gap-2 transition-colors hover:bg-primary/10 active:scale-[0.98]"
+              className="flex-shrink-0 w-64 aspect-[1288/718] rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center gap-2 transition-colors hover:bg-primary/10 active:scale-[0.98]"
             >
               <BadgePercent className="h-8 w-8 text-primary/40" />
               <p className="text-sm font-medium text-primary/60">Coloque sua empresa aqui</p>
@@ -211,3 +216,4 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
 };
 
 export default OfertasSection;
+

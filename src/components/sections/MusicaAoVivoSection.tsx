@@ -191,8 +191,10 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/20" />
 
-                <div className="absolute top-2 right-2 rounded-full bg-black/55 px-2 py-0.5 border border-white/20">
-                  <p className="text-[10px] text-white/95 font-semibold">{item.bar?.nome_bar || "Bar"}</p>
+                <div className="absolute top-2 left-12 right-2 rounded-full bg-black/55 px-2 py-0.5 border border-white/20">
+                  <p className="text-[10px] text-white/95 font-semibold truncate">
+                    {item.bar?.nome_bar || "Bar"}
+                  </p>
                 </div>
                 {item.bar?.logo ? (
                   <div className="absolute top-2 left-2 h-8 w-8 rounded-full overflow-hidden border border-white/40 shadow-md bg-white/10">

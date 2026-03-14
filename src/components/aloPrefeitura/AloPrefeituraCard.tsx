@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Play } from "lucide-react";
@@ -7,6 +8,7 @@ import type { AloPrefeitura } from "@/types/aloPrefeitura";
 interface AloPrefeituraCardProps {
   item: AloPrefeitura;
   cidadeSlug?: string;
+  isActive?: boolean;
 }
 
 const getYouTubeThumb = (url?: string | null) => {
@@ -17,18 +19,30 @@ const getYouTubeThumb = (url?: string | null) => {
   return match?.[1] ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
 };
 
-const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
+const AloPrefeituraCard = ({ item, cidadeSlug, isActive = false }: AloPrefeituraCardProps) => {
   const navigate = useNavigate();
   const primeiraImagem = item.imagens?.[0]?.imagem_url;
   const videoThumb = getYouTubeThumb(item.video_url);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !item.video_url || videoThumb) return;
+
+    if (isActive) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [isActive, item.video_url, videoThumb]);
 
   const handleClick = () => {
     navigate(`/cidade/${cidadeSlug}/alo-prefeitura#${item.id}`, { state: { fromAloCard: true } });
   };
 
   return (
-    <div onClick={handleClick} className="flex-shrink-0 w-64 cursor-pointer group">
-      <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted/50">
+    <div onClick={handleClick} className="flex-shrink-0 w-56 cursor-pointer group">
+      <div className="h-[245px] max-w-full overflow-hidden rounded-2xl bg-muted/50">
         {primeiraImagem ? (
           <img
             src={primeiraImagem}
@@ -45,9 +59,9 @@ const AloPrefeituraCard = ({ item, cidadeSlug }: AloPrefeituraCardProps) => {
               />
             ) : (
               <video
+                ref={videoRef}
                 src={item.video_url}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                autoPlay
                 loop
                 muted
                 playsInline

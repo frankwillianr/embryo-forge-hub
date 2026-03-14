@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, Upload, X, Image, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, X, Image, ChevronRight, Menu } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cidade, CidadeInsert } from "@/types/cidade";
@@ -223,7 +223,19 @@ const AdminCidades = () => {
           <p className="text-gray-500 mt-1 text-sm">Gerencie as cidades do sistema</p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => window.dispatchEvent(new Event("admin:toggle-sidebar"))}
+            aria-label="Abrir menu admin"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
+
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button 
               onClick={() => resetForm()}
@@ -328,7 +340,8 @@ const AdminCidades = () => {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Cards da lista */}

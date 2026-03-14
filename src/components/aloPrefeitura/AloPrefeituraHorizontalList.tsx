@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Megaphone, Plus } from "lucide-react";
@@ -14,6 +14,10 @@ interface AloPrefeituraHorizontalListProps {
 const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalListProps) => {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
+  const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const activeItemIdRef = useRef<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ["alo-prefeitura-home", cidadeSlug],
@@ -71,6 +75,61 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
   const items = data?.items || [];
   const cidadeId = data?.cidadeId;
 
+  useEffect(() => {
+    if (items.length > 0 && !activeItemId) {
+      setActiveItemId(items[0].id);
+    }
+  }, [items, activeItemId]);
+
+  useEffect(() => {
+    activeItemIdRef.current = activeItemId;
+  }, [activeItemId]);
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container || items.length === 0) return;
+    let rafId: number | null = null;
+
+    const updateActiveByCenter = () => {
+      const containerCenter = container.scrollLeft + container.clientWidth / 2;
+      let nearestId: string | null = null;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+
+      items.forEach((item) => {
+        const el = cardRefs.current[item.id];
+        if (!el) return;
+        const elCenter = el.offsetLeft + el.offsetWidth / 2;
+        const distance = Math.abs(elCenter - containerCenter);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestId = item.id;
+        }
+      });
+
+      if (nearestId && nearestId !== activeItemIdRef.current) {
+        setActiveItemId(nearestId);
+      }
+    };
+
+    const onScroll = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        updateActiveByCenter();
+      });
+    };
+
+    updateActiveByCenter();
+    container.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", updateActiveByCenter);
+
+    return () => {
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      container.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", updateActiveByCenter);
+    };
+  }, [items]);
+
   if (isLoading) {
     return (
       <div className="px-5 py-6">
@@ -122,10 +181,16 @@ const AloPrefeituraHorizontalList = ({ cidadeSlug }: AloPrefeituraHorizontalList
 
       {/* Scroll horizontal */}
       {items.length > 0 ? (
-        <div className="overflow-x-auto scrollbar-hide">
+        <div ref={scrollRef} className="overflow-x-auto scrollbar-hide">
           <div className="flex gap-4 px-5 pb-2">
             {items.map((item) => (
-              <AloPrefeituraCard key={item.id} item={item} cidadeSlug={cidadeSlug} />
+              <div key={item.id} ref={(el) => { cardRefs.current[item.id] = el; }}>
+                <AloPrefeituraCard
+                  item={item}
+                  cidadeSlug={cidadeSlug}
+                  isActive={activeItemId === item.id}
+                />
+              </div>
             ))}
           </div>
         </div>
