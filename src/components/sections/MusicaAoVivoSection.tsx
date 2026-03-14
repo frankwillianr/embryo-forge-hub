@@ -20,7 +20,7 @@ interface EventoMusicalItem {
   data_evento: string;
   horario: string | null;
   estilo_musical: string | null;
-  bar?: { nome_bar: string; logo?: string | null; local?: string | null } | null;
+  bar?: { nome_bar: string; logo?: string | null; local?: string | null; cidade?: string | null } | null;
   cantor?: { nome: string; foto?: string | null; instagram?: string | null } | null;
 }
 
@@ -110,10 +110,45 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
       const now = new Date();
       const hoje = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
+      const normalize = (value?: string | null) =>
+        String(value || "")
+          .trim()
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+
+      const { data: cidadeData } = await supabase
+        .from("cidade")
+        .select("nome")
+        .eq("slug", cidadeSlug)
+        .maybeSingle();
+      if (!cidadeData?.nome || !cidadeSlug) return [];
+      const cidadeNomeNormalizado = normalize(cidadeData.nome);
+      const cidadeSlugNormalizado = normalize(cidadeSlug).replace(/-/g, " ");
+
+      const { data: barsData, error: barsError } = await supabase
+        .from("bar")
+        .select("id, nome_bar, logo, local, cidade");
+      if (barsError) {
+        console.warn("[MusicaAoVivoSection] erro ao buscar bares:", barsError.message);
+        return [];
+      }
+
+      const barsFiltrados = (barsData || []).filter((bar: any) => {
+        const cidadeBar = normalize(bar.cidade);
+        return (
+          cidadeBar === cidadeNomeNormalizado ||
+          cidadeBar === cidadeSlugNormalizado
+        );
+      });
+      const barIds = Array.from(new Set(barsFiltrados.map((b: any) => b.id)));
+      if (barIds.length === 0) return [];
+
       const { data: eventosData, error: eventosError } = await supabase
         .from("evento_musical")
         .select("id, bar_id, cantor_id, data_evento, horario, estilo_musical")
         .gte("data_evento", hoje)
+        .in("bar_id", barIds)
         .order("data_evento", { ascending: true });
 
       if (eventosError) {
@@ -124,20 +159,21 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
       const eventosBase = (eventosData || []) as EventoMusicalItem[];
       if (eventosBase.length === 0) return [];
 
-      const barIds = Array.from(new Set(eventosBase.map((e) => e.bar_id).filter(Boolean)));
-      const cantorIds = Array.from(new Set(eventosBase.map((e) => e.cantor_id).filter(Boolean)));
-
-      const [{ data: barsData }, { data: cantoresData }] = await Promise.all([
-        supabase.from("bar").select("id, nome_bar, logo, local").in("id", barIds),
-        supabase.from("cantor").select("id, nome, foto, instagram").in("id", cantorIds),
-      ]);
-
-      const barsMap = new Map((barsData || []).map((b: any) => [b.id, b]));
-      const cantoresMap = new Map((cantoresData || []).map((c: any) => [c.id, c]));
-
-      const eventosComRelacionamento = eventosBase.map((evento) => ({
+      const barsMap = new Map((barsFiltrados || []).map((b: any) => [b.id, b]));
+      const eventosFiltradosPorCidade = eventosBase.map((evento) => ({
         ...evento,
         bar: barsMap.get(evento.bar_id) || null,
+        cantor: null,
+      }));
+
+      const cantorIds = Array.from(new Set(eventosFiltradosPorCidade.map((e) => e.cantor_id).filter(Boolean)));
+      const { data: cantoresData } = cantorIds.length
+        ? await supabase.from("cantor").select("id, nome, foto, instagram").in("id", cantorIds)
+        : { data: [] as any[] };
+      const cantoresMap = new Map((cantoresData || []).map((c: any) => [c.id, c]));
+
+      const eventosComRelacionamento = eventosFiltradosPorCidade.map((evento) => ({
+        ...evento,
         cantor: cantoresMap.get(evento.cantor_id) || null,
       }));
 

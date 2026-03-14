@@ -66,14 +66,17 @@ const UpdateAvailableBanner = () => {
   if (!hasUpdate) return null;
 
   return (
-    <div className="fixed top-4 left-1/2 z-[100] w-[calc(100%-1.5rem)] max-w-xl -translate-x-1/2 rounded-xl border border-primary/30 bg-card/95 backdrop-blur px-4 py-3 shadow-xl">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-foreground">
-          Nova atualizacao disponivel. Atualize para continuar usando.
-        </p>
-        <Button size="sm" onClick={refreshNow} disabled={isRefreshing}>
-          {isRefreshing ? "Atualizando..." : "Atualizar agora"}
-        </Button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-primary/30 bg-card px-6 py-7 shadow-2xl">
+        <div className="space-y-4 text-center">
+          <h2 className="text-xl font-semibold text-foreground">Atualizacao disponivel</h2>
+          <p className="text-sm text-muted-foreground">
+            Nova atualizacao disponivel. Atualize para continuar usando.
+          </p>
+          <Button className="w-full" onClick={refreshNow} disabled={isRefreshing}>
+            {isRefreshing ? "Atualizando..." : "Atualizar agora"}
+          </Button>
+        </div>
       </div>
     </div>
   );
