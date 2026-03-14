@@ -37,12 +37,16 @@ interface Cidade {
   slug: string;
 }
 
-const AdminCinema = () => {
+interface AdminCinemaProps {
+  forcedCidadeId?: string;
+}
+
+const AdminCinema = ({ forcedCidadeId }: AdminCinemaProps) => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingFilme, setEditingFilme] = useState<Cinema | null>(null);
   const [formData, setFormData] = useState({
-    cidade_id: "",
+    cidade_id: forcedCidadeId || "",
     nome_filme: "",
     sinopse: "",
     nome_cinema: "",
@@ -69,12 +73,18 @@ const AdminCinema = () => {
 
   // Busca filmes
   const { data: filmes = [], isLoading } = useQuery({
-    queryKey: ["admin-cinema"],
+    queryKey: ["admin-cinema", forcedCidadeId || "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("rel_cidade_cinema")
         .select("*")
         .order("created_at", { ascending: false });
+
+      if (forcedCidadeId) {
+        query = query.eq("cidade_id", forcedCidadeId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as Cinema[];
     },
@@ -142,7 +152,7 @@ const AdminCinema = () => {
   const handleOpenCreate = () => {
     setEditingFilme(null);
     setFormData({
-      cidade_id: cidades[0]?.id || "",
+      cidade_id: forcedCidadeId || cidades[0]?.id || "",
       nome_filme: "",
       sinopse: "",
       nome_cinema: "",
@@ -195,7 +205,9 @@ const AdminCinema = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Cinema</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            {forcedCidadeId ? "Cinema da cidade" : "Cinema"}
+          </h1>
           <p className="text-muted-foreground">Gerencie os filmes em cartaz</p>
         </div>
         <Button onClick={handleOpenCreate} className="gap-2">
@@ -285,6 +297,7 @@ const AdminCinema = () => {
               <Select
                 value={formData.cidade_id}
                 onValueChange={(v) => setFormData({ ...formData, cidade_id: v })}
+                disabled={!!forcedCidadeId}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a cidade" />

@@ -40,13 +40,17 @@ import { toast } from "sonner";
 import { format, startOfDay, subDays, isAfter } from "date-fns";
 import VideoUpload from "@/components/shared/VideoUpload";
 
-const AdminJornal = () => {
+interface AdminJornalProps {
+  forcedCidadeId?: string;
+}
+
+const AdminJornal = ({ forcedCidadeId }: AdminJornalProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingJornal, setEditingJornal] = useState<Jornal | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "7days">("all");
-  const [cidadeId, setCidadeId] = useState("");
+  const [cidadeId, setCidadeId] = useState(forcedCidadeId || "");
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [dataNoticia, setDataNoticia] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -76,14 +80,19 @@ const AdminJornal = () => {
 
   // Fetch jornais
   const { data: jornais = [], isLoading } = useQuery({
-    queryKey: ["admin-jornais"],
+    queryKey: ["admin-jornais", forcedCidadeId || "all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("rel_cidade_jornal")
         .select("*")
         .order("data_noticia", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
 
+      if (forcedCidadeId) {
+        query = query.eq("cidade_id", forcedCidadeId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
 
       return data.map((j) => ({
@@ -290,7 +299,7 @@ const AdminJornal = () => {
   // (imagens agora são gerenciadas na coluna JSON da tabela principal)
 
   const resetForm = () => {
-    setCidadeId("");
+    setCidadeId(forcedCidadeId || "");
     setTitulo("");
     setDescricao("");
     setDataNoticia(format(new Date(), "yyyy-MM-dd"));
@@ -420,7 +429,7 @@ const AdminJornal = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="cidade">Cidade</Label>
-                <Select value={cidadeId} onValueChange={setCidadeId} required>
+                <Select value={cidadeId} onValueChange={setCidadeId} required disabled={!!forcedCidadeId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a cidade" />
                   </SelectTrigger>

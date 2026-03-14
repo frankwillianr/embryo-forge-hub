@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider, dehydrate, hydrate } from "@tanstack/
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import AdminLayout from "@/components/admin/AdminLayout";
+import AdminRouteGuard from "@/components/admin/AdminRouteGuard";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminCidades from "@/pages/admin/AdminCidades";
 import AdminCidadeDetail from "@/pages/admin/AdminCidadeDetail";
@@ -189,13 +190,13 @@ const App = () => (
             </Route>
 
             {/* Admin routes without max-width constraint */}
-            <Route path="/admin" element={<AdminLayout><AdminDashboard /></AdminLayout>} />
-            <Route path="/admin/cidades" element={<AdminLayout><AdminCidades /></AdminLayout>} />
-            <Route path="/admin/cidades/:cidadeId" element={<AdminLayout><AdminCidadeDetail /></AdminLayout>} />
-            <Route path="/admin/jornal" element={<AdminLayout><AdminJornal /></AdminLayout>} />
-            <Route path="/admin/cinema" element={<AdminLayout><AdminCinema /></AdminLayout>} />
-            <Route path="/admin/alo-prefeitura" element={<AdminLayout><AdminAloPrefeitura /></AdminLayout>} />
-            <Route path="/admin/scraping" element={<AdminLayout><AdminScraping /></AdminLayout>} />
+            <Route path="/admin" element={<AdminRouteGuard><AdminLayout><AdminDashboard /></AdminLayout></AdminRouteGuard>} />
+            <Route path="/admin/cidades" element={<AdminRouteGuard><AdminLayout><AdminCidades /></AdminLayout></AdminRouteGuard>} />
+            <Route path="/admin/cidades/:cidadeId" element={<AdminRouteGuard><AdminLayout><AdminCidadeDetail /></AdminLayout></AdminRouteGuard>} />
+            <Route path="/admin/jornal" element={<AdminRouteGuard><AdminLayout><AdminJornal /></AdminLayout></AdminRouteGuard>} />
+            <Route path="/admin/cinema" element={<AdminRouteGuard><AdminLayout><AdminCinema /></AdminLayout></AdminRouteGuard>} />
+            <Route path="/admin/alo-prefeitura" element={<AdminRouteGuard><AdminLayout><AdminAloPrefeitura /></AdminLayout></AdminRouteGuard>} />
+            <Route path="/admin/scraping" element={<AdminRouteGuard><AdminLayout><AdminScraping /></AdminLayout></AdminRouteGuard>} />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

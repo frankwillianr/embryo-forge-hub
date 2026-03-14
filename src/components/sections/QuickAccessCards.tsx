@@ -24,8 +24,8 @@ const cards = [
   },
   {
     id: "onibus",
-    title: "Horário de Ônibus",
-    subtitle: "Confira os horários",
+    title: "Horario de Onibus",
+    subtitle: "Confira os horarios",
     icon: Bus,
     gradient: "from-blue-500 to-cyan-400",
     bgPattern: "bg-gradient-to-br",
@@ -54,17 +54,14 @@ const QuickAccessCards = ({ cidadeSlug }: QuickAccessCardsProps) => {
             onClick={() => handleClick(card.id)}
             className={`aspect-square rounded-2xl ${card.bgPattern} ${card.gradient} p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden`}
           >
-            {/* Background decoration */}
             <div className="absolute -right-3 -bottom-3 opacity-20">
               <card.icon className="w-14 h-14" strokeWidth={1} />
             </div>
-            
-            {/* Icon */}
+
             <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
               <card.icon className="w-4 h-4 text-white" />
             </div>
-            
-            {/* Text */}
+
             <div className="text-left relative z-10">
               <h3 className="text-[10px] font-bold leading-tight">{card.title}</h3>
               <p className="text-[8px] opacity-80 mt-0.5 line-clamp-1">{card.subtitle}</p>

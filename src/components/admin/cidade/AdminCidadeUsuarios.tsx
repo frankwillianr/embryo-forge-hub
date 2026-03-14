@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, User, Ban, MessageCircleOff, CreditCard, FileText, Check, Users } from "lucide-react";
+import { Search, MessageCircleOff, CreditCard, FileText, Check, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,14 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 interface AdminCidadeUsuariosProps {
   cidadeId: string;
@@ -43,94 +37,170 @@ interface Usuario {
   nome: string;
   email: string;
   foto_url: string | null;
-  created_at: string;
+  created_at?: string;
   pagamentos_count: number;
   postagens_count: number;
   comentarios_bloqueados: boolean;
 }
 
+const isFunctionParamMismatch = (error: unknown, functionName: string, paramName: string) => {
+  const message = (error as { message?: string } | null)?.message?.toLowerCase() || "";
+  return (
+    message.includes("could not find the function") &&
+    message.includes(`public.${functionName}`.toLowerCase()) &&
+    message.includes(`(${paramName.toLowerCase()})`)
+  );
+};
+
 const AdminCidadeUsuarios = ({ cidadeId }: AdminCidadeUsuariosProps) => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Buscar usuários que interagiram com esta cidade
   const { data: usuarios, isLoading } = useQuery({
     queryKey: ["admin-cidade-usuarios", cidadeId],
     queryFn: async () => {
-      // Buscar pagamentos de banners nesta cidade
-      const { data: pagamentos } = await supabase
-        .from("pagamento_banner")
-        .select("user_id")
-        .eq("cidade_id", cidadeId);
+      const userMeta = new Map<string, { nome: string; email: string }>();
+      const userIdSet = new Set<string>();
 
-      // Buscar banners nesta cidade
-      const { data: banners } = await supabase
-        .from("banner")
-        .select("user_id")
-        .eq("cidade_id", cidadeId);
+      const addUserIds = (rows: Array<{ user_id?: string | null }> | null | undefined) => {
+        (rows || []).forEach((r) => {
+          const id = r.user_id;
+          if (id) userIdSet.add(id);
+        });
+      };
 
-      // Buscar comentários nesta cidade (via jornais)
-      const { data: jornais } = await supabase
-        .from("rel_cidade_jornal")
-        .select("id")
-        .eq("cidade_id", cidadeId);
+      // 1) RPC de busca de usuarios (fonte principal para admins)
+      const rpc = await supabase.rpc("admin_buscar_usuarios", {
+        p_cidade_id: cidadeId,
+        p_busca: "",
+        p_limit: 50,
+      });
 
-      const jornalIds = jornais?.map((j) => j.id) || [];
-      
+      let rpcRows = rpc.data as Array<{ id: string; nome: string | null; email: string | null; cpf: string | null }> | null;
+      if (rpc.error) {
+        if (isFunctionParamMismatch(rpc.error, "admin_buscar_usuarios", "p_cidade_id")) {
+          const fallback = await supabase.rpc("admin_buscar_usuarios", {
+            cidade_id: cidadeId,
+            busca: "",
+            limit: 50,
+          });
+          if (fallback.error) throw fallback.error;
+          rpcRows = fallback.data as Array<{ id: string; nome: string | null; email: string | null; cpf: string | null }> | null;
+        } else {
+          throw rpc.error;
+        }
+      }
+
+      (rpcRows || []).forEach((u) => {
+        userIdSet.add(u.id);
+        userMeta.set(u.id, { nome: u.nome || "Sem nome", email: u.email || "" });
+      });
+
+      // 2) Complemento por interacoes da cidade
+      const { data: pagamentos } = await supabase.from("pagamento_banner").select("user_id").eq("cidade_id", cidadeId);
+      const { data: banners } = await supabase.from("banner").select("user_id").eq("cidade_id", cidadeId);
+      const { data: jornais } = await supabase.from("rel_cidade_jornal").select("id").eq("cidade_id", cidadeId);
+      const { data: alos } = await supabase.from("rel_cidade_alo_prefeitura").select("user_id").eq("cidade_id", cidadeId);
+      const { data: checkins } = await supabase.from("checkin").select("user_id").eq("cidade_id", cidadeId);
+      const { data: cupons } = await supabase.from("usuario_cupom").select("user_id").eq("cidade_id", cidadeId);
+      const { data: cuponsEmpresa } = await supabase.from("usuario_cupom_empresa").select("user_id").eq("cidade_id", cidadeId);
+      const { data: solicitacoes } = await supabase.from("solicitacao_orcamento").select("user_id").eq("cidade_id", cidadeId);
+      const { data: empresas } = await supabase.from("rel_cidade_servico_empresa").select("user_id").eq("cidade_id", cidadeId);
+      const { data: desapegas } = await supabase.from("rel_cidade_desapega").select("user_id").eq("cidade_id", cidadeId);
+      const { data: doacoes } = await supabase.from("rel_cidade_doacao").select("user_id").eq("cidade_id", cidadeId);
+
+      addUserIds(pagamentos as Array<{ user_id?: string | null }> | undefined);
+      addUserIds(banners as Array<{ user_id?: string | null }> | undefined);
+      addUserIds(alos as Array<{ user_id?: string | null }> | undefined);
+      addUserIds(checkins as Array<{ user_id?: string | null }> | undefined);
+      addUserIds(cupons as Array<{ user_id?: string | null }> | undefined);
+      addUserIds(cuponsEmpresa as Array<{ user_id?: string | null }> | undefined);
+      addUserIds(solicitacoes as Array<{ user_id?: string | null }> | undefined);
+      addUserIds(empresas as Array<{ user_id?: string | null }> | undefined);
+      addUserIds(desapegas as Array<{ user_id?: string | null }> | undefined);
+      addUserIds(doacoes as Array<{ user_id?: string | null }> | undefined);
+
+      const jornalIds = (jornais || []).map((j) => j.id);
       let comentariosUserIds: string[] = [];
       if (jornalIds.length > 0) {
         const { data: comentarios } = await supabase
           .from("rel_cidade_jornal_comentarios")
           .select("user_id")
           .in("jornal_id", jornalIds);
-        comentariosUserIds = comentarios?.map((c) => c.user_id) || [];
+        comentariosUserIds = (comentarios || []).map((c) => c.user_id).filter(Boolean) as string[];
+        comentariosUserIds.forEach((id) => userIdSet.add(id));
       }
 
-      // Combinar todos os user_ids únicos
-      const allUserIds = [
-        ...(pagamentos?.map((p) => p.user_id) || []),
-        ...(banners?.map((b) => b.user_id) || []),
-        ...comentariosUserIds,
-      ];
-      
-      const uniqueUserIds = [...new Set(allUserIds.filter(Boolean))];
+      // 3) Complemento por analytics de acesso da cidade (usuarios logados)
+      const { data: cidadeData } = await supabase
+        .from("cidade")
+        .select("slug")
+        .eq("id", cidadeId)
+        .maybeSingle();
 
-      if (uniqueUserIds.length === 0) return [];
+      if (cidadeData?.slug) {
+        const { data: accessUsers } = await supabase
+          .from("app_access_event")
+          .select("user_id")
+          .eq("cidade_slug", cidadeData.slug)
+          .not("user_id", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1000);
 
-      // Buscar profiles
-      const { data: profiles, error: profilesError } = await supabase
+        addUserIds(accessUsers as Array<{ user_id?: string | null }> | undefined);
+      }
+
+      // 4) Fallback: se vier muito pouco, tenta profiles direto para nao travar operacao
+      if (userIdSet.size <= 1) {
+        const { data: globalProfiles } = await supabase
+          .from("profiles")
+          .select("id, nome, email")
+          .order("created_at", { ascending: false })
+          .limit(200);
+
+        (globalProfiles || []).forEach((p) => {
+          userIdSet.add(p.id);
+          userMeta.set(p.id, { nome: p.nome || "Sem nome", email: p.email || "" });
+        });
+      }
+
+      const userIds = Array.from(userIdSet);
+      if (userIds.length === 0) return [] as Usuario[];
+
+      const { data: profileRows } = await supabase
         .from("profiles")
         .select("id, nome, email, foto_url, created_at")
-        .in("id", uniqueUserIds);
+        .in("id", userIds);
 
-      if (profilesError) throw profilesError;
-      if (!profiles) return [];
+      const profileMap = new Map((profileRows || []).map((p) => [p.id, p]));
 
-      // Buscar usuários bloqueados de comentar nesta cidade
       const { data: bloqueados } = await supabase
         .from("rel_cidade_jornal_comentarios_bloqueados")
         .select("user_id")
         .eq("cidade_id", cidadeId);
+      const bloqueadosIds = (bloqueados || []).map((b) => b.user_id);
 
-      const bloqueadosIds = bloqueados?.map((b) => b.user_id) || [];
-
-      // Montar dados completos
-      return profiles.map((profile) => {
-        const pagamentosCount = pagamentos?.filter(p => p.user_id === profile.id).length || 0;
-        const postagensCount = banners?.filter(b => b.user_id === profile.id).length || 0;
-        const comentariosBloqueados = bloqueadosIds.includes(profile.id);
+      return userIds.map((id) => {
+        const profile = profileMap.get(id);
+        const meta = userMeta.get(id);
+        const pagamentosCount = (pagamentos || []).filter((p) => p.user_id === id).length;
+        const postagensCount =
+          (banners || []).filter((b) => b.user_id === id).length + comentariosUserIds.filter((uid) => uid === id).length;
 
         return {
-          ...profile,
+          id,
+          nome: profile?.nome || meta?.nome || "Sem nome",
+          email: profile?.email || meta?.email || "",
+          foto_url: profile?.foto_url || null,
+          created_at: profile?.created_at,
           pagamentos_count: pagamentosCount,
           postagens_count: postagensCount,
-          comentarios_bloqueados: comentariosBloqueados,
+          comentarios_bloqueados: bloqueadosIds.includes(id),
         } as Usuario;
       });
     },
   });
 
-  // Bloquear/desbloquear comentários
   const toggleComentariosMutation = useMutation({
     mutationFn: async ({ userId, bloquear }: { userId: string; bloquear: boolean }) => {
       if (bloquear) {
@@ -150,21 +220,17 @@ const AdminCidadeUsuarios = ({ cidadeId }: AdminCidadeUsuariosProps) => {
     onSuccess: (_, { bloquear }) => {
       queryClient.invalidateQueries({ queryKey: ["admin-cidade-usuarios", cidadeId] });
       queryClient.invalidateQueries({ queryKey: ["admin-cidade-bloqueados-full", cidadeId] });
-      toast.success(bloquear ? "Usuário bloqueado de comentar!" : "Usuário pode comentar novamente!");
+      toast.success(bloquear ? "Usuario bloqueado de comentar!" : "Usuario pode comentar novamente!");
     },
     onError: () => {
       toast.error("Erro ao atualizar bloqueio");
     },
   });
 
-  // Filtrar usuários
   const usuariosFiltrados = usuarios?.filter((u) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    return (
-      u.nome?.toLowerCase().includes(term) ||
-      u.email?.toLowerCase().includes(term)
-    );
+    return u.nome?.toLowerCase().includes(term) || u.email?.toLowerCase().includes(term);
   });
 
   if (isLoading) {
@@ -175,24 +241,18 @@ const AdminCidadeUsuarios = ({ cidadeId }: AdminCidadeUsuariosProps) => {
     return (
       <div className="text-center py-12 border rounded-lg bg-gray-50">
         <Users className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-        <h3 className="font-semibold text-lg mb-2 text-gray-900">Nenhum usuário</h3>
-        <p className="text-gray-500 text-sm">
-          Esta cidade ainda não possui usuários com interações.
-        </p>
+        <h3 className="font-semibold text-lg mb-2 text-gray-900">Nenhum usuario</h3>
+        <p className="text-gray-500 text-sm">Nenhum usuario encontrado para esta cidade.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900">
-          Usuários ({usuarios.length})
-        </h3>
+        <h3 className="font-semibold text-gray-900">Usuarios ({usuarios.length})</h3>
       </div>
 
-      {/* Search */}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
@@ -203,32 +263,28 @@ const AdminCidadeUsuarios = ({ cidadeId }: AdminCidadeUsuariosProps) => {
         />
       </div>
 
-      {/* Table */}
       <div className="border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow className="bg-gray-50">
-              <TableHead className="text-gray-600">Usuário</TableHead>
+              <TableHead className="text-gray-600">Usuario</TableHead>
               <TableHead className="text-gray-600">Email</TableHead>
               <TableHead className="text-gray-600 text-center">Pagamentos</TableHead>
               <TableHead className="text-gray-600 text-center">Postagens</TableHead>
               <TableHead className="text-gray-600">Status</TableHead>
-              <TableHead className="text-gray-600 text-right">Ações</TableHead>
+              <TableHead className="text-gray-600 text-right">Acoes</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {usuariosFiltrados?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-12 text-gray-500">
-                  Nenhum usuário encontrado
+                  Nenhum usuario encontrado
                 </TableCell>
               </TableRow>
             ) : (
               usuariosFiltrados?.map((usuario) => (
-                <TableRow 
-                  key={usuario.id} 
-                  className={usuario.comentarios_bloqueados ? "bg-orange-50/50" : ""}
-                >
+                <TableRow key={usuario.id} className={usuario.comentarios_bloqueados ? "bg-orange-50/50" : ""}>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
@@ -237,14 +293,10 @@ const AdminCidadeUsuarios = ({ cidadeId }: AdminCidadeUsuariosProps) => {
                           {usuario.nome?.charAt(0).toUpperCase() || "U"}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium text-gray-900">
-                        {usuario.nome || "Sem nome"}
-                      </span>
+                      <span className="text-sm font-medium text-gray-900">{usuario.nome || "Sem nome"}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-gray-600">
-                    {usuario.email}
-                  </TableCell>
+                  <TableCell className="text-sm text-gray-600">{usuario.email || "-"}</TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1">
                       <CreditCard className="h-3.5 w-3.5 text-gray-400" />
@@ -260,7 +312,7 @@ const AdminCidadeUsuarios = ({ cidadeId }: AdminCidadeUsuariosProps) => {
                   <TableCell>
                     {usuario.comentarios_bloqueados ? (
                       <Badge variant="secondary" className="text-[10px] bg-orange-100 text-orange-700">
-                        Sem comentários
+                        Sem comentarios
                       </Badge>
                     ) : (
                       <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700">
@@ -270,7 +322,6 @@ const AdminCidadeUsuarios = ({ cidadeId }: AdminCidadeUsuariosProps) => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end">
-                      {/* Bloquear/Liberar Comentários */}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <AlertDialog>
@@ -295,13 +346,13 @@ const AdminCidadeUsuarios = ({ cidadeId }: AdminCidadeUsuariosProps) => {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>
                                   {usuario.comentarios_bloqueados
-                                    ? "Liberar comentários?"
-                                    : "Bloquear comentários?"}
+                                    ? "Liberar comentarios?"
+                                    : "Bloquear comentarios?"}
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   {usuario.comentarios_bloqueados
-                                    ? `O usuário "${usuario.nome}" poderá voltar a comentar nesta cidade.`
-                                    : `O usuário "${usuario.nome}" não poderá mais comentar nesta cidade.`}
+                                    ? `O usuario "${usuario.nome}" podera voltar a comentar nesta cidade.`
+                                    : `O usuario "${usuario.nome}" nao podera mais comentar nesta cidade.`}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -326,9 +377,7 @@ const AdminCidadeUsuarios = ({ cidadeId }: AdminCidadeUsuariosProps) => {
                           </AlertDialog>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {usuario.comentarios_bloqueados
-                            ? "Liberar comentários"
-                            : "Bloquear comentários"}
+                          {usuario.comentarios_bloqueados ? "Liberar comentarios" : "Bloquear comentarios"}
                         </TooltipContent>
                       </Tooltip>
                     </div>
