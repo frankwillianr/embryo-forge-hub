@@ -69,6 +69,7 @@ const EditarEmpresaPage = () => {
   const [buscaCategoria, setBuscaCategoria] = useState("");
   const categoriasInicializadasRef = useRef(false);
   const fotosInicializadasRef = useRef(false);
+  const saveInFlightRef = useRef(false);
   const [fotosAlteradas, setFotosAlteradas] = useState(false);
   const [cupomNome, setCupomNome] = useState("");
   const [cupomValor, setCupomValor] = useState("");
@@ -261,9 +262,12 @@ const EditarEmpresaPage = () => {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async () => {
-      if (!empresaId || !user?.id) throw new Error("ID da empresa ou usuário não encontrado");
+      if (saveInFlightRef.current) return;
+      if (!empresaId || !user?.id) throw new Error("ID da empresa ou usuario nao encontrado");
 
-      const categoriaPrincipal = categoriasSelecionadas[0] ?? null;
+      saveInFlightRef.current = true;
+      try {
+        const categoriaPrincipal = categoriasSelecionadas[0] ?? null;
       const adicionais: string[] = categoriasSelecionadas.slice(1, MAX_CATEGORIAS);
 
       const coords = await geocodeEndereco({
@@ -316,8 +320,21 @@ const EditarEmpresaPage = () => {
 
       if (deleteFotosError) throw deleteFotosError;
 
-      if (fotos.length > 0) {
-        const fotosData = fotos.map((url, index) => ({
+      const { count: fotosRestantes, error: checkDeleteError } = await supabase
+        .from("rel_cidade_servico_empresa_foto")
+        .select("id", { count: "exact", head: true })
+        .eq("empresa_id", empresaId);
+
+      if (checkDeleteError) throw checkDeleteError;
+      if ((fotosRestantes ?? 0) > 0) {
+        throw new Error("Nao foi possivel remover fotos antigas. Verifique a policy DELETE da tabela rel_cidade_servico_empresa_foto.");
+      }
+
+      const fotosNormalizadas = fotos.map((url) => url.trim()).filter(Boolean);
+      const fotosUnicas = Array.from(new Set(fotosNormalizadas));
+
+      if (fotosUnicas.length > 0) {
+        const fotosData = fotosUnicas.map((url, index) => ({
           empresa_id: empresaId,
           url,
           ordem: index,
@@ -328,6 +345,9 @@ const EditarEmpresaPage = () => {
           .insert(fotosData);
 
         if (fotosError) throw fotosError;
+      }
+      } finally {
+        saveInFlightRef.current = false;
       }
     },
     onSuccess: () => {
@@ -726,8 +746,11 @@ const EditarEmpresaPage = () => {
         <Button
           className="w-full bg-[#331D4A] hover:bg-[#331D4A]/90 text-white rounded-xl"
           size="lg"
-          disabled={!isValid || updateMutation.isPending}
-          onClick={() => updateMutation.mutate()}
+          disabled={!isValid || updateMutation.isPending || saveInFlightRef.current}
+          onClick={() => {
+            if (saveInFlightRef.current || updateMutation.isPending) return;
+            updateMutation.mutate();
+          }}
         >
           {updateMutation.isPending ? (
             <>
@@ -744,3 +767,4 @@ const EditarEmpresaPage = () => {
 };
 
 export default EditarEmpresaPage;
+
