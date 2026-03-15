@@ -39,10 +39,11 @@ interface Cantor {
 interface EventoMusical {
   id: string;
   bar_id: string;
-  cantor_id: string;
+  cantor_id: string | null;
   data_evento: string;
   horario: string | null;
   estilo_musical: string | null;
+  banner_evento: string | null;
   bar?: { id: string; nome_bar: string } | null;
   cantor?: { id: string; nome: string } | null;
 }
@@ -61,6 +62,7 @@ const AdminCidadeMusicaAoVivo = ({ cidadeId: _cidadeId }: AdminCidadeMusicaAoViv
     data_evento: "",
     horario: "",
     estilo_musical: "",
+    banner_evento: "",
   });
 
   const [barSearch, setBarSearch] = useState("");
@@ -112,7 +114,7 @@ const AdminCidadeMusicaAoVivo = ({ cidadeId: _cidadeId }: AdminCidadeMusicaAoViv
     queryFn: async () => {
       const { data, error } = await supabase
         .from("evento_musical")
-        .select("id, bar_id, cantor_id, data_evento, horario, estilo_musical, bar:bar_id(id,nome_bar), cantor:cantor_id(id,nome)")
+        .select("id, bar_id, cantor_id, data_evento, horario, estilo_musical, banner_evento, bar:bar_id(id,nome_bar), cantor:cantor_id(id,nome)")
         .order("data_evento", { ascending: false });
       if (error) throw error;
       return (data || []) as unknown as EventoMusical[];
@@ -246,16 +248,17 @@ const AdminCidadeMusicaAoVivo = ({ cidadeId: _cidadeId }: AdminCidadeMusicaAoViv
         return;
       }
 
-      if (!eventoForm.bar_id || !eventoForm.cantor_id || !eventoForm.data_evento || !eventoForm.horario || !eventoForm.estilo_musical.trim()) {
-        throw new Error("Bar, cantor, data, hora e estilo musical sao obrigatorios");
+      if (!eventoForm.bar_id || !eventoForm.data_evento || !eventoForm.horario || !eventoForm.estilo_musical.trim()) {
+        throw new Error("Bar, data, hora e estilo musical sao obrigatorios");
       }
 
       const payload = {
         bar_id: eventoForm.bar_id,
-        cantor_id: eventoForm.cantor_id,
+        cantor_id: eventoForm.cantor_id || null,
         data_evento: eventoForm.data_evento,
         horario: eventoForm.horario,
         estilo_musical: eventoForm.estilo_musical.trim(),
+        banner_evento: eventoForm.banner_evento.trim() || null,
       };
 
       if (editingId) {
@@ -319,7 +322,7 @@ const AdminCidadeMusicaAoVivo = ({ cidadeId: _cidadeId }: AdminCidadeMusicaAoViv
   const resetForms = () => {
     setBarForm({ nome_bar: "", logo: "", local: "" });
     setCantorForm({ nome: "", instagram: "", foto: "" });
-    setEventoForm({ bar_id: "", cantor_id: "", data_evento: "", horario: "", estilo_musical: "" });
+    setEventoForm({ bar_id: "", cantor_id: "", data_evento: "", horario: "", estilo_musical: "", banner_evento: "" });
     setBarSearch("");
     setCantorSearch("");
     setShowBarSuggestions(false);
@@ -373,10 +376,11 @@ const AdminCidadeMusicaAoVivo = ({ cidadeId: _cidadeId }: AdminCidadeMusicaAoViv
     setEditingId(item.id);
     setEventoForm({
       bar_id: item.bar_id,
-      cantor_id: item.cantor_id,
+      cantor_id: item.cantor_id || "",
       data_evento: item.data_evento,
       horario: item.horario || "",
       estilo_musical: item.estilo_musical || "",
+      banner_evento: item.banner_evento || "",
     });
     setBarSearch(item.bar?.nome_bar || "");
     setCantorSearch(item.cantor?.nome || "");
@@ -469,7 +473,7 @@ const AdminCidadeMusicaAoVivo = ({ cidadeId: _cidadeId }: AdminCidadeMusicaAoViv
                 <div className="space-y-1 min-w-0">
                   <p className="font-medium text-foreground">{item.estilo_musical || "Sem estilo"}</p>
                   <p className="text-xs text-muted-foreground break-words">
-                    {item.bar?.nome_bar || "Bar"} • {item.cantor?.nome || "Cantor"} • {item.data_evento} {item.horario ? `as ${item.horario}` : ""}
+                    {item.bar?.nome_bar || "Bar"} • {item.cantor?.nome || "Sem cantor"} • {item.data_evento} {item.horario ? `as ${item.horario}` : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -561,11 +565,15 @@ const AdminCidadeMusicaAoVivo = ({ cidadeId: _cidadeId }: AdminCidadeMusicaAoViv
               </div>
 
               <div className="space-y-2">
-                <Label>Cantor *</Label>
+                <Label>Cantor (opcional)</Label>
                 <div className="relative">
                   <Input
                     value={cantorSearch}
-                    onChange={(e) => { setCantorSearch(e.target.value); setShowCantorSuggestions(true); }}
+                    onChange={(e) => {
+                      setCantorSearch(e.target.value);
+                      setEventoForm((prev) => ({ ...prev, cantor_id: "" }));
+                      setShowCantorSuggestions(true);
+                    }}
                     onFocus={() => setShowCantorSuggestions(true)}
                     onBlur={() => window.setTimeout(() => setShowCantorSuggestions(false), 120)}
                     placeholder="Buscar cantor"
@@ -590,6 +598,18 @@ const AdminCidadeMusicaAoVivo = ({ cidadeId: _cidadeId }: AdminCidadeMusicaAoViv
                     </div>
                   )}
                 </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => {
+                    setEventoForm((prev) => ({ ...prev, cantor_id: "" }));
+                    setCantorSearch("");
+                    setShowCantorSuggestions(false);
+                  }}
+                >
+                  Remover cantor
+                </Button>
               </div>
 
               <div className="space-y-2">
@@ -616,6 +636,17 @@ const AdminCidadeMusicaAoVivo = ({ cidadeId: _cidadeId }: AdminCidadeMusicaAoViv
                   value={eventoForm.estilo_musical}
                   onChange={(e) => setEventoForm((prev) => ({ ...prev, estilo_musical: e.target.value }))}
                   placeholder="Sertanejo, pagode, rock..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Banner do evento</Label>
+                <ImageUpload
+                  images={eventoForm.banner_evento ? [eventoForm.banner_evento] : []}
+                  onChange={(images) => setEventoForm((prev) => ({ ...prev, banner_evento: images[0] || "" }))}
+                  maxImages={1}
+                  bucket="avatars"
+                  folder="musica-ao-vivo/evento"
                 />
               </div>
             </div>

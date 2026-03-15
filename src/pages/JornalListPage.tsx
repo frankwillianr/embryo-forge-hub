@@ -1,6 +1,6 @@
 ﻿import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Home, Newspaper, Film, Megaphone, Menu, Map } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,43 +8,102 @@ import { type Jornal, parseImagens } from "@/types/jornal";
 import JornalFeedCard from "@/components/jornal/JornalFeedCard";
 import jornalBanner from "@/assets/jornal-banner.jpg";
 
+const PAGE_SIZE = 10;
+
 const JornalListPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const location = useLocation();
   const [categoriaAtiva, setCategoriaAtiva] = useState("todos");
+  const [hasUserScrolled, setHasUserScrolled] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  const { data: jornais = [], isLoading } = useQuery({
-    queryKey: ["jornais-list", slug],
+  const { data: cidadeData, isLoading: isLoadingCidade } = useQuery({
+    queryKey: ["cidade-id", slug],
     queryFn: async () => {
-      const { data: cidadeData, error: cidadeError } = await supabase
+      const { data, error } = await supabase
         .from("cidade")
         .select("id")
         .eq("slug", slug)
         .maybeSingle();
 
-      if (cidadeError) throw cidadeError;
-      if (!cidadeData) return [];
-
-      const { data: jornaisData, error: jornaisError } = await supabase
-        .from("rel_cidade_jornal")
-        .select("*")
-        .eq("cidade_id", cidadeData.id)
-        .eq("ativo", true)
-        .not("titulo", "like", "%{{%")
-        .order("data_noticia", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false });
-
-      if (jornaisError) throw jornaisError;
-      if (!jornaisData || jornaisData.length === 0) return [];
-
-      return jornaisData.map((j) => ({
-        ...j,
-        imagens: parseImagens(j.imagens),
-      })) as Jornal[];
+      if (error) throw error;
+      return data;
     },
     enabled: !!slug,
   });
+
+  const { data: categoriasData = [] } = useQuery({
+    queryKey: ["jornais-categorias", slug, cidadeData?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rel_cidade_jornal")
+        .select("categoria")
+        .eq("cidade_id", cidadeData!.id)
+        .eq("ativo", true)
+        .not("titulo", "like", "%{{%");
+
+      if (error) throw error;
+
+      const list = (data || [])
+        .map((item) => (item.categoria || "").trim())
+        .filter((categoria) => categoria.length > 0);
+
+      return Array.from(new Set(list)).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    },
+    enabled: !!cidadeData?.id,
+  });
+
+  const {
+    data: jornaisPages,
+    isLoading: isLoadingJornais,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["jornais-list", slug, cidadeData?.id, categoriaAtiva],
+    queryFn: async ({ pageParam = 0 }) => {
+      const query = supabase
+        .from("rel_cidade_jornal")
+        .select("*")
+        .eq("cidade_id", cidadeData!.id)
+        .eq("ativo", true)
+        .not("titulo", "like", "%{{%")
+        .order("data_noticia", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .range(pageParam, pageParam + PAGE_SIZE - 1);
+
+      const filteredQuery =
+        categoriaAtiva === "todos" ? query : query.eq("categoria", categoriaAtiva);
+
+      const { data, error } = await filteredQuery;
+      if (error) throw error;
+
+      const items = (data || []).map((j) => ({
+        ...j,
+        imagens: parseImagens(j.imagens),
+      })) as Jornal[];
+
+      return {
+        items,
+        nextOffset: pageParam + items.length,
+      };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.items.length < PAGE_SIZE) return undefined;
+      return lastPage.nextOffset;
+    },
+    enabled: !!cidadeData?.id,
+  });
+
+  const jornais = useMemo(
+    () => jornaisPages?.pages.flatMap((page) => page.items) ?? [],
+    [jornaisPages]
+  );
+
+  const categorias = useMemo(() => categoriasData, [categoriasData]);
+  const isLoading = isLoadingCidade || isLoadingJornais;
 
   useEffect(() => {
     if (isLoading) return;
@@ -69,15 +128,50 @@ const JornalListPage = () => {
         element.scrollIntoView({ behavior: "smooth", block: "start" });
         window.history.replaceState(null, "", location.pathname);
       }, 100);
+    } else if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [isLoading, location.hash, location.pathname, location.state]);
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    location.hash,
+    location.pathname,
+    location.state,
+    jornais.length,
+  ]);
 
-  const categorias = useMemo(() => {
-    const list = jornais
-      .map((j) => (j.categoria || "").trim())
-      .filter((c) => c.length > 0);
-    return Array.from(new Set(list)).sort((a, b) => a.localeCompare(b, "pt-BR"));
-  }, [jornais]);
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.scrollY > 40) {
+        setHasUserScrolled(true);
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (isLoading || !hasNextPage || isFetchingNextPage) return;
+
+    const target = loadMoreRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasUserScrolled) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: "120px 0px", threshold: 0.1 }
+    );
+
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, hasUserScrolled, isFetchingNextPage, isLoading]);
 
   const jornaisFiltrados = useMemo(() => {
     if (categoriaAtiva === "todos") return jornais;
@@ -172,6 +266,10 @@ const JornalListPage = () => {
           {jornaisFiltrados.map((jornal) => (
             <JornalFeedCard key={jornal.id} jornal={jornal} cidadeSlug={slug} />
           ))}
+          <div ref={loadMoreRef} className="h-8" />
+          {isFetchingNextPage && (
+            <div className="py-6 text-center text-xs text-muted-foreground">Carregando mais notícias...</div>
+          )}
         </div>
       )}
 

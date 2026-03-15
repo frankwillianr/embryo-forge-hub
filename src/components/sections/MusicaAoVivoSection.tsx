@@ -16,10 +16,11 @@ interface MusicaAoVivoSectionProps {
 interface EventoMusicalItem {
   id: string;
   bar_id: string;
-  cantor_id: string;
+  cantor_id: string | null;
   data_evento: string;
   horario: string | null;
   estilo_musical: string | null;
+  banner_evento: string | null;
   bar?: { nome_bar: string; logo?: string | null; local?: string | null; cidade?: string | null } | null;
   cantor?: { nome: string; foto?: string | null; instagram?: string | null } | null;
 }
@@ -27,10 +28,10 @@ interface EventoMusicalItem {
 const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
   const [eventoSelecionado, setEventoSelecionado] = useState<EventoMusicalItem | null>(null);
 
-  const normalizarFotoCantor = (foto?: string | null) => {
-    if (!foto) return null;
+  const normalizarImagem = (value?: string | null) => {
+    if (!value) return null;
 
-    let valor = String(foto).trim().replace(/^"+|"+$/g, "");
+    let valor = String(value).trim().replace(/^"+|"+$/g, "");
     if (!valor) return null;
 
     if (valor.startsWith("[") && valor.endsWith("]")) {
@@ -146,7 +147,7 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
 
       const { data: eventosData, error: eventosError } = await supabase
         .from("evento_musical")
-        .select("id, bar_id, cantor_id, data_evento, horario, estilo_musical")
+        .select("id, bar_id, cantor_id, data_evento, horario, estilo_musical, banner_evento")
         .gte("data_evento", hoje)
         .in("bar_id", barIds)
         .order("data_evento", { ascending: true });
@@ -224,9 +225,9 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
               className="min-w-[170px] max-w-[170px] text-left"
             >
               <div className="relative h-[230px] rounded-[20px] overflow-hidden shadow-lg border border-white/10">
-                {normalizarFotoCantor(item.cantor?.foto) || item.bar?.logo ? (
+                {normalizarImagem(item.banner_evento) || normalizarImagem(item.cantor?.foto) ? (
                   <img
-                    src={normalizarFotoCantor(item.cantor?.foto) || item.bar?.logo || ""}
+                    src={normalizarImagem(item.banner_evento) || normalizarImagem(item.cantor?.foto) || ""}
                     alt={item.cantor?.nome || item.bar?.nome_bar || "Show"}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
@@ -253,7 +254,7 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
 
                 <div className="absolute left-3 right-3 bottom-3">
                   <p className="text-[22px] leading-[1] font-bold text-white drop-shadow-md line-clamp-1">
-                    {item.cantor?.nome || "Cantor"}
+                    {item.bar?.nome_bar || "Bar"}
                   </p>
                   <p className="text-[11px] text-white/85 mt-1 line-clamp-1">
                     {item.estilo_musical || "Show ao vivo"} • {formatarDataShow(item.data_evento, item.horario).linha2}
@@ -278,6 +279,16 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
 
           {eventoSelecionado && (
             <div className="space-y-4">
+              {normalizarImagem(eventoSelecionado.banner_evento) ? (
+                <div className="overflow-hidden rounded-xl border bg-card">
+                  <img
+                    src={normalizarImagem(eventoSelecionado.banner_evento) || ""}
+                    alt={eventoSelecionado.estilo_musical || "Banner do evento"}
+                    className="w-full h-auto max-h-[60vh] object-contain bg-muted"
+                  />
+                </div>
+              ) : null}
+
               <div className="rounded-xl border bg-card p-3">
                 <p className="text-sm font-semibold text-foreground">
                   {eventoSelecionado.estilo_musical || "Show ao vivo"}
@@ -311,40 +322,42 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
                 ) : null}
               </div>
 
-              <div className="rounded-xl border bg-card p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <UserRound className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold text-foreground">Cantor</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {normalizarFotoCantor(eventoSelecionado.cantor?.foto) ? (
-                    <img
-                      src={normalizarFotoCantor(eventoSelecionado.cantor?.foto) || ""}
-                      alt={eventoSelecionado.cantor?.nome || "Cantor"}
-                      className="h-12 w-12 rounded-full object-cover border"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-muted-foreground">
-                      {(eventoSelecionado.cantor?.nome || "C").charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{eventoSelecionado.cantor?.nome || "Cantor nao informado"}</p>
-                    {eventoSelecionado.cantor?.instagram?.trim() ? (
-                      <a
-                        href={`https://instagram.com/${eventoSelecionado.cantor.instagram.replace(/^@/, "").trim()}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-primary underline underline-offset-2"
-                      >
-                        Instagram: @{eventoSelecionado.cantor.instagram.replace(/^@/, "").trim()}
-                      </a>
+              {eventoSelecionado.cantor ? (
+                <div className="rounded-xl border bg-card p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <UserRound className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-semibold text-foreground">Cantor</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {normalizarImagem(eventoSelecionado.cantor.foto) ? (
+                      <img
+                        src={normalizarImagem(eventoSelecionado.cantor.foto) || ""}
+                        alt={eventoSelecionado.cantor.nome || "Cantor"}
+                        className="h-12 w-12 rounded-full object-cover border"
+                      />
                     ) : (
-                      <p className="text-xs text-muted-foreground">Instagram nao informado</p>
+                      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-muted-foreground">
+                        {(eventoSelecionado.cantor.nome || "C").charAt(0).toUpperCase()}
+                      </div>
                     )}
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{eventoSelecionado.cantor.nome}</p>
+                      {eventoSelecionado.cantor.instagram?.trim() ? (
+                        <a
+                          href={`https://instagram.com/${eventoSelecionado.cantor.instagram.replace(/^@/, "").trim()}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-primary underline underline-offset-2"
+                        >
+                          Instagram: @{eventoSelecionado.cantor.instagram.replace(/^@/, "").trim()}
+                        </a>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Instagram nao informado</p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           )}
         </DialogContent>
