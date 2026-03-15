@@ -36,6 +36,7 @@ const CidadePage = () => {
     home: 0, cinema: 0, prefeitura: 0, maps: 0, menu: 0,
   });
 
+
   // Get first name from profile
   const firstName = profile?.nome?.split(" ")[0] || null;
 
@@ -60,6 +61,18 @@ const CidadePage = () => {
   const { permissionStatus } = usePushNotifications({
     cidadeId: cidade?.id || null
   });
+
+  useEffect(() => {
+    console.log("[CidadePage] state", {
+      slug,
+      activeTab,
+      cidadeId: cidade?.id ?? null,
+      cidadeNome: cidade?.nome ?? null,
+      userId: profile?.id ?? null,
+      pushPermissionStatus: permissionStatus ?? null,
+      now: new Date().toISOString(),
+    });
+  }, [slug, activeTab, cidade?.id, cidade?.nome, profile?.id, permissionStatus]);
 
   useEffect(() => {
     if (permissionStatus === 'granted') {
