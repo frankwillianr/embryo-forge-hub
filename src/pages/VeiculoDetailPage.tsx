@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft,
@@ -46,6 +47,7 @@ const cambioLabels: Record<string, string> = {
 const VeiculoDetailPage = () => {
   const { slug, veiculoId } = useParams<{ slug: string; veiculoId: string }>();
   const navigate = useNavigate();
+  useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Buscar veículo
@@ -115,7 +117,7 @@ const VeiculoDetailPage = () => {
   const imagens = veiculo.imagens?.sort((a, b) => a.ordem - b.ordem) || [];
 
   return (
-    <div className="min-h-screen bg-background pb-36">
+    <div id="swipe-back-page" className="min-h-screen bg-background pb-36">
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-center px-4 py-3 pt-safe bg-background/95 backdrop-blur-sm border-b border-border/50">
         <Button

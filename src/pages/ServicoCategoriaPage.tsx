@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { ArrowLeft, Plus, Search, MapPin, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { CATEGORIAS_SERVICO_META } from "@/lib/categoriasServico";
 const ServicoCategoriaPage = () => {
   const { slug, categoriaId } = useParams<{ slug: string; categoriaId: string }>();
   const navigate = useNavigate();
+  useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -69,7 +71,7 @@ const ServicoCategoriaPage = () => {
   });
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div id="swipe-back-page" className="flex flex-col min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
         <Button

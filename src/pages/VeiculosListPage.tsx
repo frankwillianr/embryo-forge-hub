@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { ArrowLeft, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { fipeApi } from "@/services/fipeApi";
@@ -53,6 +54,7 @@ const quickFilterOptions = [
 const VeiculosListPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
   const [searchTerm, setSearchTerm] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -212,7 +214,7 @@ const VeiculosListPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div id="swipe-back-page" className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
         <Button variant="ghost" size="icon" onClick={() => navigate(`/cidade/${slug}`)}>

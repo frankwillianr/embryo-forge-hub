@@ -1,6 +1,7 @@
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { ArrowLeft, Home, Newspaper, Film, Megaphone, Menu, Map as MapIcon, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ const PAGE_SIZE = 8;
 const AloPrefeituraListPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
   const location = useLocation();
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [globalMuted, setGlobalMuted] = useState(true);
@@ -229,7 +231,7 @@ const AloPrefeituraListPage = () => {
   }, [isLoading, itemIds]);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div id="swipe-back-page" className="min-h-screen bg-background pb-24">
       {/* Header estilo Instagram */}
       <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 pt-safe border-b border-border/50 bg-background/95 backdrop-blur-sm">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}`)}>

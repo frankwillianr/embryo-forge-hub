@@ -21,6 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { toast } from "sonner";
 import type { Jornal } from "@/types/jornal";
 
@@ -52,6 +53,7 @@ interface Comentario {
 const JornalDetailPage = () => {
   const { slug, jornalId } = useParams<{ slug: string; jornalId: string }>();
   const navigate = useNavigate();
+  useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -328,7 +330,7 @@ const JornalDetailPage = () => {
   const totalMediaItems = (hasVideo ? 1 : 0) + imagens.length;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div id="swipe-back-page" className="min-h-screen bg-background pb-20">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 pt-safe border-b border-border/50 bg-background/95 backdrop-blur-sm">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}/jornal`)}>

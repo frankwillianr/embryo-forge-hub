@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, CalendarDays, Clock, MapPin, Ticket, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 const EventoDetailPage = () => {
   const { slug, eventoId } = useParams<{ slug: string; eventoId: string }>();
   const navigate = useNavigate();
+  useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
 
   const { data: evento, isLoading } = useQuery({
     queryKey: ["evento-detail", eventoId],
@@ -54,7 +56,7 @@ const EventoDetailPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div id="swipe-back-page" className="min-h-screen bg-background">
       {/* Header */}
       <div className="pt-safe px-4 pb-2 flex items-center gap-3">
         <button

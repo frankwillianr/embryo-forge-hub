@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ArrowLeft, ThumbsUp, ThumbsDown, Share2 } from "lucide-react";
@@ -25,6 +26,7 @@ const getFingerprint = () => {
 const AloPrefeituraDetailPage = () => {
   const { slug, itemId } = useParams<{ slug: string; itemId: string }>();
   const navigate = useNavigate();
+  useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
   const queryClient = useQueryClient();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const fingerprint = getFingerprint();
@@ -151,7 +153,7 @@ const AloPrefeituraDetailPage = () => {
   const embedUrl = item.video_url ? getYouTubeEmbedUrl(item.video_url) : null;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div id="swipe-back-page" className="min-h-screen bg-background pb-20">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 pt-safe border-b border-border/50 bg-background/95 backdrop-blur-sm">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}/alo-prefeitura`)}>

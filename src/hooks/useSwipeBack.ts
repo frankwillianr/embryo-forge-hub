@@ -7,12 +7,6 @@ interface UseSwipeBackOptions {
   containerRef?: React.RefObject<HTMLElement | null>;
 }
 
-/**
- * Instagram/iOS-style swipe-back with visual depth effect.
- * - Current page slides right following the finger
- * - Behind it, a "previous page" surface scales from 0.92→1.0 with scrim fading out
- * - Box shadow on the current page edge for depth
- */
 export function useSwipeBack({
   threshold = 80,
   onBack,
@@ -49,7 +43,6 @@ export function useSwipeBack({
       const dx = touch.clientX - startX.current;
       const dy = Math.abs(touch.clientY - startY.current);
 
-      // Decide direction on first significant movement
       if (!isLocked.current) {
         const totalMove = Math.abs(dx) + dy;
         if (totalMove < 10) return;
@@ -59,6 +52,11 @@ export function useSwipeBack({
         }
         isLocked.current = true;
         setupLayers();
+      }
+
+      // Prevent native scroll so WebView doesn't steal the horizontal gesture
+      if (isLocked.current) {
+        e.preventDefault();
       }
 
       if (dx > 0) {
@@ -82,14 +80,10 @@ export function useSwipeBack({
       }
     };
 
-    // --- Layer setup ---
-
     const setupLayers = () => {
       const container = getContainer();
       if (!container) return;
 
-      // 1) "Previous page" layer — simulates the page behind
-      //    Uses the app background + a subtle inner content hint
       const prev = document.createElement("div");
       prev.style.cssText = `
         position: fixed; inset: 0; z-index: 0;
@@ -100,7 +94,6 @@ export function useSwipeBack({
         border-radius: 8px;
         overflow: hidden;
       `;
-      // Add a fake "header bar" to hint at a page behind
       prev.innerHTML = `
         <div style="
           padding: 14px 20px; padding-top: max(14px, env(safe-area-inset-top));
@@ -122,7 +115,6 @@ export function useSwipeBack({
         </div>
       `;
 
-      // 2) Dark scrim on top of "previous page"
       const scrim = document.createElement("div");
       scrim.style.cssText = `
         position: fixed; inset: 0; z-index: 1;
@@ -131,14 +123,12 @@ export function useSwipeBack({
         pointer-events: none;
       `;
 
-      // Insert layers behind container
       const parent = container.parentElement || document.body;
       parent.insertBefore(prev, container);
       parent.insertBefore(scrim, container);
       prevPageLayer.current = prev;
       scrimLayer.current = scrim;
 
-      // Style the container (current page) for sliding
       container.style.transition = "none";
       container.style.willChange = "transform";
       container.style.position = "relative";
@@ -157,15 +147,12 @@ export function useSwipeBack({
         container.style.transform = `translateX(${dx}px)`;
       }
 
-      // "Previous page" scales from 0.92 → 1.0
       if (prevPageLayer.current) {
         const scale = 0.92 + 0.08 * progress;
         prevPageLayer.current.style.transform = `scale(${scale})`;
-        // Fade the border-radius away
         prevPageLayer.current.style.borderRadius = `${8 * (1 - progress)}px`;
       }
 
-      // Scrim fades from 0.12 → 0
       if (scrimLayer.current) {
         scrimLayer.current.style.background = `rgba(0,0,0,${0.12 * (1 - progress)})`;
       }
@@ -189,7 +176,6 @@ export function useSwipeBack({
         scrimLayer.current.style.background = "rgba(0,0,0,0)";
       }
 
-      // Navigate after animation — don't reset styles, component will unmount
       setTimeout(() => {
         removeLayers();
         if (onBack) {
@@ -252,7 +238,8 @@ export function useSwipeBack({
     };
 
     document.addEventListener("touchstart", handleTouchStart, { passive: true });
-    document.addEventListener("touchmove", handleTouchMove, { passive: true });
+    // passive: false required for preventDefault() to work in WebView
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
     document.addEventListener("touchend", handleTouchEnd, { passive: true });
 
     return () => {

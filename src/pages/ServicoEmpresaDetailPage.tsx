@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useSwipeBack } from "@/hooks/useSwipeBack";
 import {
   ArrowLeft,
   MessageCircle,
@@ -33,6 +34,7 @@ const ServicoEmpresaDetailPage = () => {
     empresaId: string;
   }>();
   const navigate = useNavigate();
+  useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllHours, setShowAllHours] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -184,7 +186,7 @@ const ServicoEmpresaDetailPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div id="swipe-back-page" className="min-h-screen bg-background pb-24">
       {/* Header flutuante */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center p-4 pt-safe">
         <button
