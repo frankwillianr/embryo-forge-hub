@@ -103,10 +103,20 @@ const CidadePage = () => {
   // Restaura scroll da Home ao montar sem efeito de "refresh visual"
   useLayoutEffect(() => {
     const saved = sessionStorage.getItem(`home-scroll-${slug}`);
-    if (saved && Number(saved) > 0) {
-      window.scrollTo({ top: Number(saved), behavior: "instant" });
-      sessionStorage.removeItem(`home-scroll-${slug}`);
-    }
+    if (!saved || Number(saved) <= 0) return;
+
+    const target = Number(saved);
+    sessionStorage.removeItem(`home-scroll-${slug}`);
+
+    // Try immediately (works when data is cached)
+    window.scrollTo({ top: target, behavior: "auto" });
+
+    // Retry after a tick in case content wasn't rendered yet
+    requestAnimationFrame(() => {
+      if (Math.abs(window.scrollY - target) > 50) {
+        window.scrollTo({ top: target, behavior: "auto" });
+      }
+    });
   }, [slug]);
 
   // Handle navigation state (e.g., from cinema horizontal list)
