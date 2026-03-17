@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, ShieldCheck, X, Camera, Video, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,31 @@ const NovaDenunciaModal = ({
   const [video, setVideo] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  // Stable blob URLs for image previews - created once per file list change
+  const imagemPreviews = useMemo(
+    () => imagens.map((file) => URL.createObjectURL(file)),
+    [imagens]
+  );
+
+  // Revoke old blob URLs on change and on unmount
+  useEffect(() => {
+    return () => {
+      imagemPreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [imagemPreviews]);
+
+  // Stable blob URL for video preview
+  const videoPreview = useMemo(
+    () => (video ? URL.createObjectURL(video) : null),
+    [video]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (videoPreview) URL.revokeObjectURL(videoPreview);
+    };
+  }, [videoPreview]);
 
   const resetForm = () => {
     setTitulo("");
@@ -243,7 +268,7 @@ const NovaDenunciaModal = ({
               {imagens.map((file, index) => (
                 <div key={index} className="relative">
                   <img
-                    src={URL.createObjectURL(file)}
+                    src={imagemPreviews[index]}
                     alt={`Preview ${index + 1}`}
                     className="w-16 h-16 object-cover rounded-lg"
                   />
@@ -278,7 +303,7 @@ const NovaDenunciaModal = ({
             {video ? (
               <div className="relative rounded-xl overflow-hidden bg-black">
                 <video
-                  src={URL.createObjectURL(video)}
+                  src={videoPreview!}
                   className="w-full aspect-video object-contain"
                   controls
                   preload="metadata"

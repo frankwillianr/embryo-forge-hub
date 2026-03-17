@@ -420,6 +420,7 @@ const AloPrefeituraFeedCard = ({
                   <img
                     src={img.imagem_url}
                     alt={`${item.titulo} - ${index + 1}`}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 </div>

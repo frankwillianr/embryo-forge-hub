@@ -12,6 +12,7 @@ import QuickAccessCards from "@/components/sections/QuickAccessCards";
 import EventosSection from "@/components/eventos/EventosSection";
 import CinemaHorizontalList from "@/components/cinema/CinemaHorizontalList";
 import OnibusHorizontalList from "@/components/onibus/OnibusHorizontalList";
+import LazySection from "@/components/LazySection";
 import type { Banner } from "@/types/banner";
 
 interface HomeSectionProps {
@@ -99,28 +100,40 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
 
       <Separador />
 
-      <OfertasSection cidadeSlug={cidadeSlug} />
+      <LazySection minHeight="200px">
+        <OfertasSection cidadeSlug={cidadeSlug} />
+      </LazySection>
 
       <Separador />
 
-      <ServicosSection cidadeSlug={cidadeSlug} />
+      <LazySection minHeight="200px">
+        <ServicosSection cidadeSlug={cidadeSlug} />
+      </LazySection>
 
       <Separador />
 
-      <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
+      <LazySection minHeight="240px">
+        <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
+      </LazySection>
 
       <Separador />
 
-      <CinemaHorizontalList cidadeSlug={cidadeSlug} />
+      <LazySection minHeight="200px">
+        <CinemaHorizontalList cidadeSlug={cidadeSlug} />
+      </LazySection>
 
       <Separador />
 
-      <SolicitarOrcamentoSection cidadeSlug={cidadeSlug} />
+      <LazySection minHeight="160px">
+        <SolicitarOrcamentoSection cidadeSlug={cidadeSlug} />
+      </LazySection>
 
       <Separador />
 
-      <QuickAccessCards cidadeSlug={cidadeSlug} />
-      <OnibusHorizontalList cidadeSlug={cidadeSlug} />
+      <LazySection minHeight="160px">
+        <QuickAccessCards cidadeSlug={cidadeSlug} />
+        <OnibusHorizontalList cidadeSlug={cidadeSlug} />
+      </LazySection>
     </div>
   );
 };

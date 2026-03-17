@@ -143,6 +143,7 @@ const AloPrefeituraVerticalList = ({ cidadeSlug }: AloPrefeituraVerticalListProp
                       <img
                         src={primeiraImagem}
                         alt={item.titulo}
+                        loading="lazy"
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     ) : item.video_url ? (
