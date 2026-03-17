@@ -5,37 +5,41 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 const HOME_PATTERN = /^\/cidade\/[^/]+$/;
 
+/**
+ * Derives the parent route from a given path.
+ * /cidade/gv/jornal/123  → /cidade/gv/jornal
+ * /cidade/gv/jornal       → /cidade/gv
+ * /cidade/gv              → null (is home, should exit)
+ */
+const getParentRoute = (pathname: string): string | null => {
+  // Remove trailing slash
+  const clean = pathname.replace(/\/$/, "");
+
+  // Already on city home
+  if (HOME_PATTERN.test(clean)) return null;
+
+  // Go up one segment
+  const lastSlash = clean.lastIndexOf("/");
+  if (lastSlash <= 0) return null;
+
+  const parent = clean.substring(0, lastSlash);
+
+  // If parent is just "/cidade", go to default city home
+  if (parent === "/cidade" || parent === "/") {
+    return null;
+  }
+
+  return parent;
+};
+
 const AndroidBackButtonHandler = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const navDepthRef = useRef(0);
   const pathnameRef = useRef(location.pathname);
 
-  // Keep pathname ref fresh without re-registering the listener
+  // Keep pathname ref always fresh
   useEffect(() => {
     pathnameRef.current = location.pathname;
-  }, [location.pathname]);
-
-  // Track navigation depth: +1 on push, -1 on pop, 0 on replace
-  useEffect(() => {
-    const handlePopState = () => {
-      navDepthRef.current = Math.max(0, navDepthRef.current - 1);
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  // Increment depth on pathname change (push navigations)
-  const prevPathnameRef = useRef(location.pathname);
-  useEffect(() => {
-    if (location.pathname !== prevPathnameRef.current) {
-      // Only increment on push (not on pop, which is handled above)
-      // We check history action via a simple heuristic:
-      // popstate already decremented, so this is a new push
-      navDepthRef.current += 1;
-      prevPathnameRef.current = location.pathname;
-    }
   }, [location.pathname]);
 
   // Register back button handler once
@@ -49,22 +53,17 @@ const AndroidBackButtonHandler = () => {
     const setupBackHandler = async () => {
       const listener = await CapacitorApp.addListener("backButton", () => {
         const currentPath = pathnameRef.current;
-        const isHome = HOME_PATTERN.test(currentPath);
 
-        // If we're on the home page, exit the app
-        if (isHome) {
+        // Derive the parent route from the current path
+        const parent = getParentRoute(currentPath);
+
+        if (parent) {
+          // Navigate to parent route (replaces to avoid history buildup)
+          navigate(parent, { replace: true });
+        } else {
+          // We're on the city home page — exit the app
           CapacitorApp.exitApp();
-          return;
         }
-
-        // If we have navigation depth, go back
-        if (navDepthRef.current > 0) {
-          navigate(-1);
-          return;
-        }
-
-        // No depth left but not on home — navigate to home
-        navigate("/cidade/governador-valadares", { replace: true });
       });
 
       cleanup = () => {
