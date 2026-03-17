@@ -17,6 +17,7 @@ import AdminAloPrefeitura from "@/pages/admin/AdminAloPrefeitura";
 import AdminScraping from "@/pages/admin/AdminScraping";
 import MobileLayout from "@/components/MobileLayout";
 import AnimatedRoutes from "@/components/navigation/AnimatedRoutes";
+import AndroidBackButtonHandler from "@/components/navigation/AndroidBackButtonHandler";
 
 import CidadePage from "@/pages/CidadePage";
 import BannerDetailPage from "@/pages/BannerDetailPage";
@@ -131,6 +132,7 @@ const App = () => (
         <Sonner />
         <UpdateAvailableBanner />
         <BrowserRouter>
+          <AndroidBackButtonHandler />
           <AnimatedRoutes>
             <Routes>
             {/* Public routes with mobile max-width */}

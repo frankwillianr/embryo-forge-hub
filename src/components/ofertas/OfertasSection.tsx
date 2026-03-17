@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BadgePercent } from "lucide-react";
+import { BadgePercent, Heart } from "lucide-react";
 
 interface OfertasSectionProps {
   cidadeSlug?: string;
@@ -65,9 +65,11 @@ const parseCategoriasAdicionais = (value: unknown): string[] => {
 const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
   const navigate = useNavigate();
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
+  const [likedOfertas, setLikedOfertas] = useState<Set<string>>(new Set());
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const tabRefsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const ofertasScrollRef = useRef<HTMLDivElement>(null);
+  const likeStorageKey = `ofertas-liked-${cidadeSlug || "global"}`;
 
   const { data: cidade } = useQuery({
     queryKey: ["cidade-id", cidadeSlug],
@@ -157,6 +159,35 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
     return () => window.clearInterval(intervalId);
   }, [categoriaAtiva, ofertasFiltradas.length]);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(likeStorageKey);
+      if (!raw) return;
+      const ids = JSON.parse(raw);
+      if (Array.isArray(ids)) {
+        setLikedOfertas(new Set(ids.map((id) => String(id))));
+      }
+    } catch {
+      // noop
+    }
+  }, [likeStorageKey]);
+
+  useEffect(() => {
+    localStorage.setItem(likeStorageKey, JSON.stringify(Array.from(likedOfertas)));
+  }, [likeStorageKey, likedOfertas]);
+
+  const toggleLikeOferta = (ofertaId: string) => {
+    setLikedOfertas((prev) => {
+      const next = new Set(prev);
+      if (next.has(ofertaId)) {
+        next.delete(ofertaId);
+      } else {
+        next.add(ofertaId);
+      }
+      return next;
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="py-6">
@@ -228,9 +259,17 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
         <div className="flex gap-3 px-5 pb-2">
           {ofertasFiltradas.length > 0 ? (
             ofertasFiltradas.map((oferta) => (
-              <button
+              <div
                 key={oferta.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/cidade/${cidadeSlug}/servicos/${oferta.categoria}/${oferta.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate(`/cidade/${cidadeSlug}/servicos/${oferta.categoria}/${oferta.id}`);
+                  }
+                }}
                 className="relative flex-shrink-0 w-64 aspect-[1288/718] rounded-2xl overflow-hidden shadow-md transition-transform active:scale-[0.98]"
               >
                 {oferta.banner_oferta_url || oferta.logomarca_url ? (
@@ -243,10 +282,27 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
                   <div className="w-full h-full bg-gradient-to-br from-muted to-muted/60" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <button
+                  type="button"
+                  aria-label={likedOfertas.has(oferta.id) ? "Descurtir oferta" : "Curtir oferta"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleLikeOferta(oferta.id);
+                  }}
+                  className="absolute top-2 right-2 z-10 h-9 w-9 rounded-full bg-white/95 border border-white shadow-lg flex items-center justify-center"
+                >
+                  <Heart
+                    className={`h-4 w-4 transition-colors ${
+                      likedOfertas.has(oferta.id)
+                        ? "text-red-500 fill-red-500"
+                        : "text-red-500"
+                    }`}
+                  />
+                </button>
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white text-sm font-semibold truncate">{oferta.nome}</p>
                 </div>
-              </button>
+              </div>
             ))
           ) : (
             <button

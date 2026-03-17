@@ -2,19 +2,35 @@ import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Play, Volume2, VolumeX } from "lucide-react";
+import { Heart, Loader2, Play, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { audioManager } from "@/lib/audioManager";
 import { type Jornal, parseImagens } from "@/types/jornal";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface JornalCardProps {
   jornal: Jornal;
   cidadeSlug?: string;
 }
 
+const getFingerprint = () => {
+  const nav = window.navigator;
+  const screen = window.screen;
+  const data = [nav.userAgent, nav.language, screen.width, screen.height].join("|");
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    hash = (hash << 5) - hash + data.charCodeAt(i);
+    hash = hash & hash;
+  }
+  return hash.toString();
+};
+
 const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const primeiraImagem = parseImagens(jornal.imagens)[0];
+  const fingerprint = getFingerprint();
   const cachedAudioUrl = useRef<string | null>(jornal.audio_url || null);
   const [isRead, setIsRead] = useState(() => {
     const read = JSON.parse(localStorage.getItem("jornal-lidos") || "[]");
@@ -36,6 +52,82 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
       unsubscribe();
     };
   }, [jornal.id]);
+
+  const { data: userReaction } = useQuery({
+    queryKey: ["jornal-card-reaction", jornal.id, fingerprint],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("rel_cidade_jornal_reacoes")
+        .select("tipo")
+        .eq("jornal_id", jornal.id)
+        .eq("user_fingerprint", fingerprint)
+        .maybeSingle();
+
+      return (data?.tipo as "like" | "dislike") || null;
+    },
+  });
+
+  const { data: likesCount = 0 } = useQuery({
+    queryKey: ["jornal-card-likes-count", jornal.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("rel_cidade_jornal_reacoes")
+        .select("*", { count: "exact", head: true })
+        .eq("jornal_id", jornal.id)
+        .eq("tipo", "like");
+
+      return count || 0;
+    },
+  });
+
+  const reactMutation = useMutation({
+    mutationFn: async () => {
+      const { data: currentReaction } = await supabase
+        .from("rel_cidade_jornal_reacoes")
+        .select("id, tipo")
+        .eq("jornal_id", jornal.id)
+        .eq("user_fingerprint", fingerprint)
+        .maybeSingle();
+
+      if (currentReaction?.tipo === "like") {
+        const { error } = await supabase
+          .from("rel_cidade_jornal_reacoes")
+          .delete()
+          .eq("id", currentReaction.id);
+        if (error) throw error;
+        return null;
+      }
+
+      const { error } = await supabase
+        .from("rel_cidade_jornal_reacoes")
+        .upsert(
+          { jornal_id: jornal.id, user_fingerprint: fingerprint, tipo: "like" },
+          { onConflict: "jornal_id,user_fingerprint" }
+        );
+      if (error) throw error;
+      return "like";
+    },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["jornal-card-reaction", jornal.id, fingerprint] });
+      const previousReaction = queryClient.getQueryData(["jornal-card-reaction", jornal.id, fingerprint]);
+      queryClient.setQueryData(
+        ["jornal-card-reaction", jornal.id, fingerprint],
+        (old: "like" | "dislike" | null) => (old === "like" ? null : "like")
+      );
+      return { previousReaction };
+    },
+    onError: (_err, _vars, context) => {
+      queryClient.setQueryData(
+        ["jornal-card-reaction", jornal.id, fingerprint],
+        context?.previousReaction
+      );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["jornal-card-reaction", jornal.id, fingerprint] });
+      queryClient.invalidateQueries({ queryKey: ["jornal-card-likes-count", jornal.id] });
+      queryClient.invalidateQueries({ queryKey: ["jornal-feed", jornal.id] });
+    },
+  });
 
   const handleClick = () => {
     if (!isRead) {
@@ -101,7 +193,7 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
 
   return (
     <div onClick={handleClick} className="flex-shrink-0 w-64 cursor-pointer group">
-      <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted/50">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-muted/50">
         {primeiraImagem ? (
           <img
             src={primeiraImagem}
@@ -141,9 +233,28 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
             )}
           </div>
         </div>
-        <h3 className="font-medium text-foreground line-clamp-3 text-[13px] leading-tight tracking-tight">
-          {jornal.titulo}
-        </h3>
+        <div className="flex items-start gap-2">
+          <h3 className="flex-1 font-medium text-foreground line-clamp-3 text-[13px] leading-tight tracking-tight">
+            {jornal.titulo}
+          </h3>
+          <button
+            type="button"
+            aria-label={userReaction === "like" ? "Descurtir notícia" : "Curtir notícia"}
+            onClick={(e) => {
+              e.stopPropagation();
+              reactMutation.mutate();
+            }}
+            disabled={reactMutation.isPending}
+            className="mt-0.5 inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/85 px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-70"
+          >
+            <Heart
+              className={`h-3.5 w-3.5 transition-colors ${
+                userReaction === "like" ? "text-red-500 fill-red-500" : "text-muted-foreground"
+              }`}
+            />
+            <span className="tabular-nums">{likesCount}</span>
+          </button>
+        </div>
         <button
           onClick={handleSpeakClick}
           disabled={isLoadingAudio}
