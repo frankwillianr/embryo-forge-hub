@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import UpdateAvailableBanner from "@/components/app/UpdateAvailableBanner";
+import { IonApp } from "@ionic/react";
 import { QueryClient, QueryClientProvider, dehydrate, hydrate } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -15,6 +16,7 @@ import AdminCinema from "@/pages/admin/AdminCinema";
 import AdminAloPrefeitura from "@/pages/admin/AdminAloPrefeitura";
 import AdminScraping from "@/pages/admin/AdminScraping";
 import MobileLayout from "@/components/MobileLayout";
+import AnimatedRoutes from "@/components/navigation/AnimatedRoutes";
 
 import CidadePage from "@/pages/CidadePage";
 import BannerDetailPage from "@/pages/BannerDetailPage";
@@ -121,14 +123,16 @@ queryClient.getQueryCache().subscribe(() => {
 });
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
+  <IonApp>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
         <Toaster />
         <Sonner />
         <UpdateAvailableBanner />
         <BrowserRouter>
-          <Routes>
+          <AnimatedRoutes>
+            <Routes>
             {/* Public routes with mobile max-width */}
             <Route element={<MobileLayout />}>
               <Route path="/" element={<Navigate to="/cidade/governador-valadares" replace />} />
@@ -199,11 +203,13 @@ const App = () => (
             <Route path="/admin/scraping" element={<AdminRouteGuard><AdminLayout><AdminScraping /></AdminLayout></AdminRouteGuard>} />
 
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </AnimatedRoutes>
         </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </IonApp>
 );
 
 export default App;

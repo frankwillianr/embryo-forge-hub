@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Home, Newspaper, Film, Megaphone, Menu, Map, ArrowLeft, Bell } from "lucide-react";
+import { IonPage } from "@ionic/react";
 import { supabase } from "@/integrations/supabase/client";
 import CidadeBanner from "@/components/CidadeBanner";
 import HomeSection from "@/components/sections/HomeSection";
@@ -99,16 +100,14 @@ const CidadePage = () => {
     };
   }, [activeTab, slug]);
 
-  // Restaura scroll da Home ao montar
-  useEffect(() => {
+  // Restaura scroll da Home ao montar sem efeito de "refresh visual"
+  useLayoutEffect(() => {
     const saved = sessionStorage.getItem(`home-scroll-${slug}`);
     if (saved && Number(saved) > 0) {
-      setTimeout(() => {
-        window.scrollTo({ top: Number(saved), behavior: "instant" });
-      }, 150);
+      window.scrollTo({ top: Number(saved), behavior: "instant" });
       sessionStorage.removeItem(`home-scroll-${slug}`);
     }
-  }, []);
+  }, [slug]);
 
   // Handle navigation state (e.g., from cinema horizontal list)
   useEffect(() => {
@@ -198,7 +197,7 @@ const CidadePage = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <IonPage className="flex flex-col min-h-screen bg-background overflow-visible [contain:none]">
       {/* Main Content */}
       <main className="flex-1 pb-20">
         {isHome ? (
@@ -222,7 +221,7 @@ const CidadePage = () => {
           </header>
         ) : null}
 
-        <div className="animate-in fade-in duration-300">
+        <div>
           {renderSection()}
         </div>
 
@@ -312,7 +311,7 @@ const CidadePage = () => {
           </div>
         </div>
       </nav>
-    </div>
+    </IonPage>
   );
 };
 
