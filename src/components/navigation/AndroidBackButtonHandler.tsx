@@ -1,6 +1,4 @@
 import { useEffect, useRef } from "react";
-import { Capacitor } from "@capacitor/core";
-import { App as CapacitorApp } from "@capacitor/app";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const HOME_PATTERN = /^\/cidade\/[^/]+$/;
@@ -9,72 +7,68 @@ const HOME_PATTERN = /^\/cidade\/[^/]+$/;
  * Derives the parent route from a given path.
  * /cidade/gv/jornal/123  → /cidade/gv/jornal
  * /cidade/gv/jornal       → /cidade/gv
- * /cidade/gv              → null (is home, should exit)
+ * /cidade/gv              → null (is home)
  */
 const getParentRoute = (pathname: string): string | null => {
-  // Remove trailing slash
   const clean = pathname.replace(/\/$/, "");
-
-  // Already on city home
   if (HOME_PATTERN.test(clean)) return null;
 
-  // Go up one segment
   const lastSlash = clean.lastIndexOf("/");
   if (lastSlash <= 0) return null;
 
   const parent = clean.substring(0, lastSlash);
-
-  // If parent is just "/cidade", go to default city home
-  if (parent === "/cidade" || parent === "/") {
-    return null;
-  }
+  if (parent === "/cidade" || parent === "/") return null;
 
   return parent;
 };
 
+/**
+ * Handles Android back button for SPA inside a WebView.
+ *
+ * The app loads from a remote URL (capacitor server.url), so the
+ * Capacitor JS bridge is NOT available. Instead we push a fake
+ * history entry and listen for popstate — that way the first back
+ * press pops our dummy entry instead of closing the WebView.
+ */
 const AndroidBackButtonHandler = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const pathnameRef = useRef(location.pathname);
 
-  // Keep pathname ref always fresh
   useEffect(() => {
     pathnameRef.current = location.pathname;
   }, [location.pathname]);
 
-  // Register back button handler once
   useEffect(() => {
-    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== "android") {
-      return;
-    }
-
-    let cleanup: (() => void) | undefined;
-
-    const setupBackHandler = async () => {
-      const listener = await CapacitorApp.addListener("backButton", () => {
-        const currentPath = pathnameRef.current;
-
-        // Derive the parent route from the current path
-        const parent = getParentRoute(currentPath);
-
-        if (parent) {
-          // Navigate to parent route (replaces to avoid history buildup)
-          navigate(parent, { replace: true });
-        } else {
-          // We're on the city home page — exit the app
-          CapacitorApp.exitApp();
-        }
-      });
-
-      cleanup = () => {
-        listener.remove();
-      };
+    // Push a sentinel state so the first back press triggers popstate
+    // instead of leaving the page / closing the WebView.
+    const pushSentinel = () => {
+      window.history.pushState({ sentinel: true }, "");
     };
 
-    setupBackHandler();
+    const handlePopState = (e: PopStateEvent) => {
+      // If this popstate is from our sentinel being popped, handle it
+      // Otherwise let React Router handle it normally
+      const currentPath = pathnameRef.current;
+      const parent = getParentRoute(currentPath);
+
+      if (parent) {
+        navigate(parent, { replace: true });
+      }
+      // If no parent (already on home), let the browser handle it
+      // (which will close the app — correct behavior)
+      // But re-push sentinel for future back presses
+      if (parent) {
+        // Small delay to let React Router settle, then re-push sentinel
+        setTimeout(pushSentinel, 100);
+      }
+    };
+
+    pushSentinel();
+    window.addEventListener("popstate", handlePopState);
 
     return () => {
-      cleanup?.();
+      window.removeEventListener("popstate", handlePopState);
     };
   }, [navigate]);
 
