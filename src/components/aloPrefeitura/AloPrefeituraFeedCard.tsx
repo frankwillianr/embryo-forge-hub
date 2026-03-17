@@ -401,7 +401,7 @@ const AloPrefeituraFeedCard = ({
 
       {/* Imagem/Carrossel */}
       <div
-        className={`relative w-full overflow-hidden bg-muted/30 ${hasMainVideo ? "aspect-[25/36]" : "aspect-square"}`}
+        className={`relative w-full overflow-hidden bg-muted/30 ${hasMainVideo ? "" : "aspect-square"}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -444,32 +444,34 @@ const AloPrefeituraFeedCard = ({
             )}
           </>
         ) : item.video_url ? (
-          <div className="relative w-full h-full bg-muted/50">
+          <div className="relative w-full bg-muted/50">
             {embedUrl ? (
               isVideoActive ? (
-                <iframe
-                  src={`${embedUrl}&autoplay=${globalAutoplay ? "1" : "0"}&mute=${globalMuted ? "1" : "0"}&controls=1&playsinline=1`}
-                  title={item.titulo}
-                  className="w-full h-full"
-                  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                  allowFullScreen
-                />
+                <div className="aspect-video">
+                  <iframe
+                    src={`${embedUrl}&autoplay=${globalAutoplay ? "1" : "0"}&mute=${globalMuted ? "1" : "0"}&controls=1&playsinline=1`}
+                    title={item.titulo}
+                    className="w-full h-full"
+                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                    allowFullScreen
+                  />
+                </div>
               ) : youtubeThumb ? (
                 <img
                   src={youtubeThumb}
                   alt={item.titulo}
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto"
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/80" />
+                <div className="w-full aspect-video bg-gradient-to-br from-muted/40 to-muted/80" />
               )
             ) : (
               <>
                 <video
                   ref={primaryVideoRef}
                   src={item.video_url}
-                  className="w-full h-full object-cover"
+                  className="w-full h-auto"
                   loop
                   playsInline
                   preload={isVideoActive ? "metadata" : "none"}

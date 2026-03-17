@@ -36,7 +36,7 @@ const EventoCard = ({
     >
       <div className="relative h-[140px] w-full">
         {imagem_url ? (
-          <img src={imagem_url} alt={titulo} className="w-full h-full object-cover" />
+          <img src={imagem_url} alt={titulo} loading="lazy" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
             <CalendarDays className="h-10 w-10 text-muted-foreground/40" />

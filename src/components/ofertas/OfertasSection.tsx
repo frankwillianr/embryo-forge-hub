@@ -92,7 +92,8 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
         .from("rel_cidade_servico_empresa")
         .select("id, nome, categoria, categorias_adicionais, banner_oferta_url, logomarca_url")
         .eq("cidade_id", cidade!.id)
-        .eq("status", "ativo");
+        .eq("status", "ativo")
+        .limit(60);
       if (error) throw error;
       return (data || []) as Oferta[];
     },
@@ -103,7 +104,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
 
   const ofertasFiltradas = useMemo(() => {
     if (!ofertas) return [];
-    if (categoriaAtiva === "todas") return [...ofertas].sort(() => Math.random() - 0.5);
+    if (categoriaAtiva === "todas") return ofertas;
     const dbCats = (CATEGORIA_MAP[categoriaAtiva] || []).map(normalizeCategoria);
     const dbSet = new Set(dbCats);
 
@@ -276,6 +277,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
                   <img
                     src={oferta.banner_oferta_url || oferta.logomarca_url || ""}
                     alt={oferta.nome}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 ) : (

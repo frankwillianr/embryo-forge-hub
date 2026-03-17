@@ -218,6 +218,7 @@ const BannerCarousel = ({
         <img
           src={banner.banner_oferta_url}
           alt={banner.nome}
+          loading="lazy"
           className="w-full h-28 object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -281,7 +282,8 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         .select("id, nome, categoria, banner_oferta_url")
         .eq("cidade_id", cidade!.id)
         .eq("status", "ativo")
-        .not("banner_oferta_url", "is", null);
+        .not("banner_oferta_url", "is", null)
+        .limit(50);
 
       if (error) throw error;
       return data || [];
@@ -533,6 +535,7 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
                       <img
                         src={item.icon}
                         alt={item.nome}
+                        loading="lazy"
                         className="w-11 h-11 object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
                       />
                     ) : (

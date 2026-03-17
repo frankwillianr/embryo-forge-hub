@@ -65,6 +65,8 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
 
       return (data?.tipo as "like" | "dislike") || null;
     },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: likesCount = 0 } = useQuery({
@@ -78,6 +80,8 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
 
       return count || 0;
     },
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
   const reactMutation = useMutation({
@@ -198,6 +202,7 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
           <img
             src={primeiraImagem}
             alt={jornal.titulo}
+            loading="lazy"
             className="w-full h-full object-cover kenburns-img"
           />
         ) : jornal.video_url ? (

@@ -32,7 +32,8 @@ const JornalHorizontalList = ({ cidadeSlug }: JornalHorizontalListProps) => {
         .eq("ativo", true)
         .not("titulo", "like", "%{{%")
         .order("data_noticia", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(15);
 
       if (jornaisError) throw jornaisError;
       if (!jornaisData || jornaisData.length === 0) return [];

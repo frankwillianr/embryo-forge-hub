@@ -1,12 +1,14 @@
-﻿import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Home, Newspaper, Film, Megaphone, Menu, Map as MapIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { ArrowLeft, Home, Newspaper, Film, Megaphone, Menu, Map as MapIcon, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { AloPrefeitura, AloPrefeituraImagem } from "@/types/aloPrefeitura";
 import AloPrefeituraFeedCard from "@/components/aloPrefeitura/AloPrefeituraFeedCard";
 import aloPrefeituraBanner from "@/assets/alo-prefeitura-banner.jpg";
+
+const PAGE_SIZE = 8;
 
 const AloPrefeituraListPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -15,11 +17,16 @@ const AloPrefeituraListPage = () => {
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [globalMuted, setGlobalMuted] = useState(true);
   const [globalAutoplay, setGlobalAutoplay] = useState(true);
+  const [pageOffset, setPageOffset] = useState(0);
+  const [allItems, setAllItems] = useState<AloPrefeitura[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: ["alo-prefeitura-list", slug],
+  // Initial load
+  const { data: initialData, isLoading } = useQuery({
+    queryKey: ["alo-prefeitura-list", slug, 0],
     queryFn: async () => {
-      // Busca cidade
       const { data: cidadeData, error: cidadeError } = await supabase
         .from("cidade")
         .select("id")
@@ -29,18 +36,17 @@ const AloPrefeituraListPage = () => {
       if (cidadeError) throw cidadeError;
       if (!cidadeData) return [];
 
-      // Busca todas as publicações
       const { data: itemsData, error: itemsError } = await supabase
         .from("rel_cidade_alo_prefeitura")
         .select("*")
         .eq("cidade_id", cidadeData.id)
         .eq("status", "aprovado")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, PAGE_SIZE - 1);
 
       if (itemsError) throw itemsError;
       if (!itemsData || itemsData.length === 0) return [];
 
-      // Busca imagens
       const itemIds = itemsData.map((j) => j.id);
       const { data: imagensData } = await supabase
         .from("rel_cidade_alo_prefeitura_imagens")
@@ -54,15 +60,103 @@ const AloPrefeituraListPage = () => {
         return acc;
       }, {} as Record<string, AloPrefeituraImagem[]>);
 
-      return itemsData.map((j) => ({
+      const items = itemsData.map((j) => ({
         ...j,
         imagens: imagensPorItem[j.id] || [],
       })) as AloPrefeitura[];
+
+      return items;
     },
     enabled: !!slug,
   });
 
-  const itemIds = useMemo(() => items.map((item) => item.id), [items]);
+  // Sync initial data to state
+  const initializedRef = useRef(false);
+  useEffect(() => {
+    if (initialData && !initializedRef.current) {
+      initializedRef.current = true;
+      setAllItems(initialData);
+      setPageOffset(PAGE_SIZE);
+      setHasMore(initialData.length >= PAGE_SIZE);
+    }
+  }, [initialData]);
+
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore || !slug) return;
+
+    setIsLoadingMore(true);
+    try {
+      const { data: cidadeData } = await supabase
+        .from("cidade")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      if (!cidadeData) {
+        setHasMore(false);
+        setIsLoadingMore(false);
+        return;
+      }
+
+      const { data: itemsData } = await supabase
+        .from("rel_cidade_alo_prefeitura")
+        .select("*")
+        .eq("cidade_id", cidadeData.id)
+        .eq("status", "aprovado")
+        .order("created_at", { ascending: false })
+        .range(pageOffset, pageOffset + PAGE_SIZE - 1);
+
+      if (!itemsData || itemsData.length === 0) {
+        setHasMore(false);
+        setIsLoadingMore(false);
+        return;
+      }
+
+      const itemIds = itemsData.map((j) => j.id);
+      const { data: imagensData } = await supabase
+        .from("rel_cidade_alo_prefeitura_imagens")
+        .select("*")
+        .in("alo_prefeitura_id", itemIds)
+        .order("ordem");
+
+      const imagensPorItem = (imagensData || []).reduce((acc, img) => {
+        if (!acc[img.alo_prefeitura_id]) acc[img.alo_prefeitura_id] = [];
+        acc[img.alo_prefeitura_id].push(img as AloPrefeituraImagem);
+        return acc;
+      }, {} as Record<string, AloPrefeituraImagem[]>);
+
+      const newItems = itemsData.map((j) => ({
+        ...j,
+        imagens: imagensPorItem[j.id] || [],
+      })) as AloPrefeitura[];
+
+      setAllItems((prev) => [...prev, ...newItems]);
+      setPageOffset((prev) => prev + PAGE_SIZE);
+      setHasMore(newItems.length >= PAGE_SIZE);
+    } catch (err) {
+      console.error("Error loading more items:", err);
+    }
+    setIsLoadingMore(false);
+  }, [isLoadingMore, hasMore, slug, pageOffset]);
+
+  const itemIds = useMemo(() => allItems.map((item) => item.id), [allItems]);
+
+  // Infinite scroll: load more when sentinel becomes visible
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !isLoadingMore) {
+          loadMore();
+        }
+      },
+      { rootMargin: "400px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, loadMore]);
 
   // Scroll automático até a publicação quando há hash na URL
   useEffect(() => {
@@ -121,7 +215,7 @@ const AloPrefeituraListPage = () => {
         }
       },
       {
-        threshold: [0, 0.45, 0.75, 1],
+        threshold: [0, 0.5],
       }
     );
 
@@ -157,7 +251,7 @@ const AloPrefeituraListPage = () => {
             <div className="mt-2 flex items-end justify-between gap-2">
               <h2 className="text-[22px] leading-tight font-black text-white">Voz do Povo</h2>
               <div className="h-8 min-w-8 px-2 rounded-full bg-white/20 border border-white/30 text-xs font-semibold text-white flex items-center justify-center">
-                {items.length}
+                {allItems.length}
               </div>
             </div>
             <p className="mt-1 text-xs text-white/80">Relatos da cidade para acompanhar, apoiar e cobrar soluções.</p>
@@ -185,13 +279,13 @@ const AloPrefeituraListPage = () => {
             </div>
           ))}
         </div>
-      ) : items.length === 0 ? (
+      ) : allItems.length === 0 ? (
         <div className="text-center text-muted-foreground py-12 text-sm">
           Nenhuma publicação ainda
         </div>
       ) : (
         <div>
-          {items.map((item) => (
+          {allItems.map((item) => (
             <AloPrefeituraFeedCard
               key={item.id}
               item={item}
@@ -203,6 +297,13 @@ const AloPrefeituraListPage = () => {
               onGlobalAutoplayChange={setGlobalAutoplay}
             />
           ))}
+
+          {/* Infinite scroll sentinel */}
+          <div ref={loadMoreRef} className="py-8 flex justify-center">
+            {isLoadingMore && (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            )}
+          </div>
         </div>
       )}
 

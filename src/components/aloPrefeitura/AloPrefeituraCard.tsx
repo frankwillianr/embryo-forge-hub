@@ -42,7 +42,7 @@ const AloPrefeituraCard = ({ item, cidadeSlug, isActive = false }: AloPrefeitura
 
   return (
     <div onClick={handleClick} className="flex-shrink-0 w-56 cursor-pointer group">
-      <div className="h-[245px] max-w-full overflow-hidden rounded-2xl bg-muted/50">
+      <div className={`max-w-full overflow-hidden rounded-2xl bg-muted/50 ${primeiraImagem || !item.video_url ? "h-[245px]" : ""}`}>
         {primeiraImagem ? (
           <img
             src={primeiraImagem}
@@ -51,26 +51,26 @@ const AloPrefeituraCard = ({ item, cidadeSlug, isActive = false }: AloPrefeitura
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : item.video_url ? (
-          <div className="relative w-full h-full bg-muted/30">
+          <div className="relative w-full bg-muted/30">
             {videoThumb ? (
               <img
                 src={videoThumb}
                 alt={item.titulo}
                 loading="lazy"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-auto object-contain rounded-2xl"
               />
             ) : (
               <video
                 ref={videoRef}
                 src={item.video_url}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-auto object-contain rounded-2xl"
                 loop
                 muted
                 playsInline
                 preload="metadata"
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent rounded-2xl" />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-12 h-12 rounded-full bg-black/45 backdrop-blur-[1px] flex items-center justify-center">
                 <Play className="h-5 w-5 text-white ml-0.5" />

@@ -19,6 +19,15 @@ interface HomeSectionProps {
   cidadeSlug?: string;
 }
 
+const Separador = () => (
+  <div className="flex items-center justify-center my-2">
+    <div className="flex flex-col gap-2 w-20">
+      <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+      <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+    </div>
+  </div>
+);
+
 const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
   const { data: banners = [], isLoading } = useQuery({
     queryKey: ["banners-hoje", cidadeSlug],
@@ -70,15 +79,6 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
     },
     enabled: !!cidadeSlug,
   });
-
-  const Separador = () => (
-    <div className="flex items-center justify-center my-2">
-      <div className="flex flex-col gap-2 w-20">
-        <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-        <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-      </div>
-    </div>
-  );
 
   return (
     <div className="pb-4">

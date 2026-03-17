@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useCallback, useRef, useLayoutEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Megaphone } from "lucide-react";
 import type { Banner } from "@/types/banner";
@@ -13,7 +13,10 @@ const PEEK_PERCENT = (100 - SLIDE_WIDTH_PERCENT) / 2;
 
 const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
   const isInfinite = banners.length >= 2;
-  const infiniteBanners = isInfinite ? [...banners, ...banners, ...banners] : banners;
+  const infiniteBanners = useMemo(
+    () => (isInfinite ? [...banners, ...banners, ...banners] : banners),
+    [banners, isInfinite]
+  );
   const totalSlides = infiniteBanners.length;
   const middleStart = isInfinite ? banners.length : 0;
 
@@ -195,6 +198,7 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
                 <img
                   src={banner.imagem_url}
                   alt={banner.titulo}
+                  loading="lazy"
                   className="w-full h-full object-cover pointer-events-none"
                   draggable={false}
                 />

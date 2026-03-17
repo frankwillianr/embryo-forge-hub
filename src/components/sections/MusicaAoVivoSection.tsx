@@ -129,7 +129,8 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
 
       const { data: barsData, error: barsError } = await supabase
         .from("bar")
-        .select("id, nome_bar, logo, local, cidade");
+        .select("id, nome_bar, logo, local, cidade")
+        .or(`cidade.ilike.%${cidadeData.nome}%,cidade.ilike.%${cidadeSlug}%`);
       if (barsError) {
         console.warn("[MusicaAoVivoSection] erro ao buscar bares:", barsError.message);
         return [];
@@ -229,6 +230,7 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
                   <img
                     src={normalizarImagem(item.banner_evento) || normalizarImagem(item.cantor?.foto) || ""}
                     alt={item.cantor?.nome || item.bar?.nome_bar || "Show"}
+                    loading="lazy"
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 ) : (
@@ -247,6 +249,7 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
                     <img
                       src={item.bar.logo}
                       alt={item.bar?.nome_bar || "Logo do bar"}
+                      loading="lazy"
                       className="h-full w-full object-cover"
                     />
                   </div>
