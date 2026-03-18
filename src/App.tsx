@@ -73,24 +73,40 @@ import MeusCuponsPage from "@/pages/MeusCuponsPage";
 import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
 import SuportePage from "@/pages/SuportePage";
 
-const QUERY_CACHE_STORAGE_KEY = "gc:offline-query-cache:v1";
+const QUERY_CACHE_STORAGE_KEY = "gc:offline-query-cache:v2";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,
-      gcTime: 1000 * 60 * 60 * 24,
+      staleTime: 1000 * 60 * 2,        // 2 min — dados considerados frescos
+      gcTime: 1000 * 60 * 60 * 4,      // 4h — tempo de vida no cache
       retry: 1,
-      networkMode: "offlineFirst",
-      refetchOnWindowFocus: false,
+      networkMode: "online",            // Sempre tenta buscar da rede
+      refetchOnWindowFocus: true,       // Atualiza ao voltar ao app
+      refetchOnReconnect: true,         // Atualiza ao reconectar internet
     },
   },
 });
+
+const MAX_CACHE_AGE_MS = 1000 * 60 * 60 * 2; // 2h — cache offline máximo
 
 const safeLoadCache = () => {
   try {
     const raw = localStorage.getItem(QUERY_CACHE_STORAGE_KEY);
     if (!raw) return null;
+
+    // Verificar idade do cache
+    const savedAt = localStorage.getItem(QUERY_CACHE_STORAGE_KEY + ":ts");
+    if (savedAt) {
+      const age = Date.now() - Number(savedAt);
+      if (age > MAX_CACHE_AGE_MS) {
+        console.log("[Cache] Cache offline expirado, descartando...");
+        localStorage.removeItem(QUERY_CACHE_STORAGE_KEY);
+        localStorage.removeItem(QUERY_CACHE_STORAGE_KEY + ":ts");
+        return null;
+      }
+    }
+
     return JSON.parse(raw);
   } catch (error) {
     console.error("Erro ao ler cache offline:", error);
@@ -98,24 +114,27 @@ const safeLoadCache = () => {
   }
 };
 
-const safeSaveCache = (state: unknown) => {
-  try {
-    localStorage.setItem(QUERY_CACHE_STORAGE_KEY, JSON.stringify(state));
-  } catch (error) {
-    console.error("Erro ao salvar cache offline:", error);
-  }
-};
+// Limpar cache antigo v1
+localStorage.removeItem("gc:offline-query-cache:v1");
 
 const cachedState = safeLoadCache();
 if (cachedState) {
   hydrate(queryClient, cachedState);
 }
 
+const safeSaveCache = (state: unknown) => {
+  try {
+    localStorage.setItem(QUERY_CACHE_STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(QUERY_CACHE_STORAGE_KEY + ":ts", String(Date.now()));
+  } catch (error) {
+    console.error("Erro ao salvar cache offline:", error);
+  }
+};
+
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 queryClient.getQueryCache().subscribe(() => {
   if (persistTimer) clearTimeout(persistTimer);
 
-  // Debounce para evitar gravações excessivas durante múltiplas queries seguidas.
   persistTimer = setTimeout(() => {
     const dehydratedState = dehydrate(queryClient, {
       shouldDehydrateQuery: (query) => query.state.status === "success",
