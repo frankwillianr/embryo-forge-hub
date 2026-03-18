@@ -1,5 +1,5 @@
-﻿import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+﻿import { useMemo } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign, MessageCircle, Users, Building2, CalendarDays, Rss, Bell, Music2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,11 @@ const tabs = [
 const AdminCidadeDetail = () => {
   const { cidadeId } = useParams<{ cidadeId: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("jornal");
+  const [searchParams] = useSearchParams();
+  const activeTab = useMemo(() => {
+    const requested = searchParams.get("tab") || "jornal";
+    return tabs.some((tab) => tab.id === requested) ? requested : "jornal";
+  }, [searchParams]);
 
   const { data: cidade, isLoading } = useQuery({
     queryKey: ["cidade", cidadeId],
@@ -85,14 +89,6 @@ const AdminCidadeDetail = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate("/admin/cidades")}
-          className="text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
         <div className="flex items-center gap-4">
           {cidade.banner_url && (
             <img
@@ -106,27 +102,6 @@ const AdminCidadeDetail = () => {
             <p className="text-gray-400 text-sm">/{cidade.slug}</p>
           </div>
         </div>
-      </div>
-
-      <div className="flex gap-2 flex-wrap">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                activeTab === tab.id
-                  ? "bg-black text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-100",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          );
-        })}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-6">
@@ -150,3 +125,6 @@ const AdminCidadeDetail = () => {
 };
 
 export default AdminCidadeDetail;
+
+
+

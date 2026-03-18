@@ -1,13 +1,12 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, TrendingUp, Users, CalendarDays, Activity, Clock3, Menu, LocateFixed } from "lucide-react";
+import { MapPin, TrendingUp, Users, CalendarDays, Activity, Clock3, LocateFixed } from "lucide-react";
 import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
 import L from "leaflet";
 import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { supabase } from "@/integrations/supabase/client";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const formatCount = (value: number | null | undefined) => {
@@ -282,16 +281,6 @@ const AdminDashboard = () => {
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Dashboard</h1>
           <p className="mt-1 text-sm text-gray-500">Acessos diarios e picos de uso</p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          className="lg:hidden"
-          onClick={() => window.dispatchEvent(new Event("admin:toggle-sidebar"))}
-          aria-label="Abrir menu admin"
-        >
-          <Menu className="h-4 w-4" />
-        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

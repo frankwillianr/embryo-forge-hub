@@ -43,6 +43,28 @@ interface Usuario {
   comentarios_bloqueados: boolean;
 }
 
+const normalizeFotoUrl = (value?: string | null): string | null => {
+  if (!value) return null;
+  const raw = value.trim();
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw)) return raw;
+
+  const baseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, "");
+  if (!baseUrl) return raw;
+
+  if (raw.startsWith("/storage/v1/object/public/")) {
+    return `${baseUrl}${raw}`;
+  }
+  if (raw.startsWith("storage/v1/object/public/")) {
+    return `${baseUrl}/${raw}`;
+  }
+  if (raw.startsWith("avatars/")) {
+    return `${baseUrl}/storage/v1/object/public/${raw}`;
+  }
+
+  return raw;
+};
+
 const isFunctionParamMismatch = (error: unknown, functionName: string, paramName: string) => {
   const message = (error as { message?: string } | null)?.message?.toLowerCase() || "";
   return (
@@ -191,7 +213,7 @@ const AdminCidadeUsuarios = ({ cidadeId }: AdminCidadeUsuariosProps) => {
           id,
           nome: profile?.nome || meta?.nome || "Sem nome",
           email: profile?.email || meta?.email || "",
-          foto_url: profile?.foto_url || null,
+          foto_url: normalizeFotoUrl(profile?.foto_url),
           created_at: profile?.created_at,
           pagamentos_count: pagamentosCount,
           postagens_count: postagensCount,

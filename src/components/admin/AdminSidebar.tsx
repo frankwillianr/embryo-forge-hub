@@ -1,17 +1,80 @@
-import { LayoutDashboard, MapPin, ArrowLeft } from "lucide-react";
+import {
+  LayoutDashboard,
+  ArrowLeft,
+  Newspaper,
+  Film,
+  Phone,
+  Megaphone,
+  CalendarDays,
+  Music2,
+  Building2,
+  MessageCircle,
+  Users,
+  DollarSign,
+  Rss,
+  Bell,
+  Activity,
+} from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const menuItems = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "Cidades", url: "/admin/cidades", icon: MapPin },
+const cidadeMenuItems = [
+  { id: "jornal", title: "Jornal", icon: Newspaper },
+  { id: "cinema", title: "Cinema", icon: Film },
+  { id: "alo-prefeitura", title: "Voz do Povo", icon: Phone },
+  { id: "banners", title: "Banners", icon: Megaphone },
+  { id: "eventos", title: "Eventos", icon: CalendarDays },
+  { id: "musica-ao-vivo", title: "Musica ao vivo", icon: Music2 },
+  { id: "empresas", title: "Empresas", icon: Building2 },
+  { id: "comentarios", title: "Comentarios", icon: MessageCircle },
+  { id: "usuarios", title: "Usuarios", icon: Users },
+  { id: "admins", title: "Admins", icon: Users },
+  { id: "precificacao", title: "Precificacao", icon: DollarSign },
+  { id: "scraping", title: "Scraping noticias", icon: Rss },
+  { id: "scraping-eventos", title: "Scraping eventos", icon: Rss },
+  { id: "push-notificacao", title: "Push notificacao", icon: Bell },
 ];
 
 const AdminSidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [selectedCidadeId, setSelectedCidadeId] = useState<string>(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem("admin:selectedCidadeId") || "";
+  });
+  const selectedTab = new URLSearchParams(location.search).get("tab") || "jornal";
+
+  const { data: cidades = [] } = useQuery({
+    queryKey: ["admin-sidebar-cidades"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cidade").select("id, nome").order("nome");
+      if (error) throw error;
+      return data as Array<{ id: string; nome: string }>;
+    },
+  });
+
+  useEffect(() => {
+    const match = location.pathname.match(/^\/admin\/cidades\/([^/]+)/);
+    if (match?.[1]) {
+      const cidadeIdFromRoute = match[1];
+      setSelectedCidadeId(cidadeIdFromRoute);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("admin:selectedCidadeId", cidadeIdFromRoute);
+      }
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleToggle = () => setIsOpen((prev) => !prev);
@@ -52,19 +115,82 @@ const AdminSidebar = () => {
         </div>
 
         <nav className="space-y-1 px-3 py-2">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.url}
-              to={item.url}
-              end={item.url === "/admin"}
-              className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
-              activeClassName="bg-white/10 text-white font-medium"
-              onClick={() => setIsOpen(false)}
+          <div className="px-1 pt-1 pb-2">
+            <p className="px-3 pb-2 text-[11px] uppercase tracking-wide text-gray-500">
+              Selecionar cidade
+            </p>
+            <Select
+              value={selectedCidadeId}
+              onValueChange={(cidadeId) => {
+                setSelectedCidadeId(cidadeId);
+                if (typeof window !== "undefined") {
+                  window.localStorage.setItem("admin:selectedCidadeId", cidadeId);
+                }
+                setIsOpen(false);
+                navigate(`/admin/cidades/${cidadeId}`);
+              }}
             >
-              <item.icon className="h-4 w-4" />
-              <span>{item.title}</span>
-            </NavLink>
-          ))}
+              <SelectTrigger className="h-10 border-white/10 bg-white/5 text-sm text-white">
+                <SelectValue placeholder="Escolha uma cidade" />
+              </SelectTrigger>
+              <SelectContent>
+                {cidades.map((cidade) => (
+                  <SelectItem key={cidade.id} value={cidade.id}>
+                    {cidade.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <NavLink
+            to="/admin"
+            end
+            className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+            activeClassName="bg-white/10 text-white font-medium"
+            onClick={() => setIsOpen(false)}
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            <span>Dashboard</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/atividade"
+            className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+            activeClassName="bg-white/10 text-white font-medium"
+            onClick={() => setIsOpen(false)}
+          >
+            <Activity className="h-4 w-4" />
+            <span>Atividade</span>
+          </NavLink>
+
+          {selectedCidadeId && (
+            <div className="pt-2">
+              <p className="px-4 pb-2 text-[11px] uppercase tracking-wide text-gray-500">
+                Menus da cidade
+              </p>
+              <div className="space-y-1">
+                {cidadeMenuItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setIsOpen(false);
+                      navigate(`/admin/cidades/${selectedCidadeId}?tab=${item.id}`);
+                    }}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-left text-sm transition-colors",
+                      selectedTab === item.id && location.pathname === `/admin/cidades/${selectedCidadeId}`
+                        ? "bg-white/10 text-white font-medium"
+                        : "text-gray-400 hover:bg-white/5 hover:text-white",
+                    )}
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <button
             onClick={() => {
