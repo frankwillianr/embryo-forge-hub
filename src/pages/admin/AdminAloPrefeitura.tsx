@@ -29,8 +29,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import type { AloPrefeitura } from "@/types/aloPrefeitura";
+import VideoUpload from "@/components/shared/VideoUpload";
 
 interface Cidade {
   id: string;
@@ -49,6 +60,7 @@ const AdminAloPrefeitura = ({ forcedCidadeId }: AdminAloPrefeituraProps) => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<AloPrefeitura | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<AloPrefeitura | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [formData, setFormData] = useState({
     cidade_id: forcedCidadeId || "",
@@ -145,18 +157,64 @@ const AdminAloPrefeitura = ({ forcedCidadeId }: AdminAloPrefeituraProps) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { data: reacoesRemovidas, error: reacoesError } = await supabase
+        .from("rel_cidade_alo_prefeitura_reacoes")
+        .delete()
+        .eq("alo_prefeitura_id", id)
+        .select("id");
+
+      if (reacoesError) throw reacoesError;
+
+      const { data: comentariosRemovidos, error: comentariosError } = await supabase
+        .from("rel_cidade_alo_prefeitura_comentarios")
+        .delete()
+        .eq("alo_prefeitura_id", id)
+        .select("id");
+
+      if (comentariosError) throw comentariosError;
+
+      const { data: imagensRemovidas, error: imagensError } = await supabase
+        .from("rel_cidade_alo_prefeitura_imagens")
+        .delete()
+        .eq("alo_prefeitura_id", id)
+        .select("id");
+
+      if (imagensError) throw imagensError;
+
+      const { data: publicacoesRemovidas, error } = await supabase
         .from("rel_cidade_alo_prefeitura")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .select("id");
+
       if (error) throw error;
+
+      if ((publicacoesRemovidas?.length || 0) === 0) {
+        throw new Error("Nenhuma linha removida na tabela principal (provavel RLS/policy de DELETE).");
+      }
+
+      return {
+        id,
+        reacoesRemovidas: reacoesRemovidas?.length || 0,
+        comentariosRemovidos: comentariosRemovidos?.length || 0,
+        imagensRemovidas: imagensRemovidas?.length || 0,
+        publicacoesRemovidas: publicacoesRemovidas?.length || 0,
+      };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["admin-alo-prefeitura"] });
-      toast.success("Publicacao removida!");
+      toast.success(
+        `Delete OK | id=${result.id} | pub=${result.publicacoesRemovidas} | imgs=${result.imagensRemovidas} | com=${result.comentariosRemovidos} | rea=${result.reacoesRemovidas}`
+      );
     },
-    onError: () => {
-      toast.error("Erro ao remover");
+    onError: (error: any) => {
+      const details =
+        error?.message ||
+        error?.details ||
+        error?.hint ||
+        JSON.stringify(error) ||
+        "falha desconhecida";
+      toast.error(`Delete ERRO | ${details}`);
     },
   });
 
@@ -238,19 +296,6 @@ const AdminAloPrefeitura = ({ forcedCidadeId }: AdminAloPrefeituraProps) => {
       return <Badge variant="destructive">Recusada</Badge>;
     }
     return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Aguardando</Badge>;
-  };
-
-  const getYouTubeEmbedUrl = (url?: string | null) => {
-    if (!url) return null;
-    const match = url.match(
-      /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
-    );
-    return match?.[1] ? `https://www.youtube.com/embed/${match[1]}?rel=0` : null;
-  };
-
-  const isDirectVideoFile = (url?: string | null) => {
-    if (!url) return false;
-    return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(url);
   };
 
   return (
@@ -342,7 +387,11 @@ const AdminAloPrefeitura = ({ forcedCidadeId }: AdminAloPrefeituraProps) => {
                       <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(item.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setItemToDelete(item)}
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -417,36 +466,17 @@ const AdminAloPrefeitura = ({ forcedCidadeId }: AdminAloPrefeituraProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label>Video URL (YouTube)</Label>
-              <Input
-                value={formData.video_url}
-                onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                placeholder="https://youtube.com/watch?v=..."
+              <Label>Video (upload)</Label>
+              <VideoUpload
+                videoUrl={formData.video_url || null}
+                onChange={(url) => setFormData({ ...formData, video_url: url || "" })}
+                bucket="alo-prefeitura"
+                folder={`admin/${formData.cidade_id || "geral"}`}
+                maxSizeMB={50}
               />
-              {formData.video_url ? (
-                <div className="overflow-hidden rounded-md border bg-muted/20">
-                  {getYouTubeEmbedUrl(formData.video_url) ? (
-                    <iframe
-                      src={getYouTubeEmbedUrl(formData.video_url) || ""}
-                      title="Preview do video"
-                      className="w-full aspect-video"
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    />
-                  ) : isDirectVideoFile(formData.video_url) ? (
-                    <video
-                      src={formData.video_url}
-                      className="w-full aspect-video"
-                      controls
-                      preload="metadata"
-                    />
-                  ) : (
-                    <p className="p-3 text-xs text-muted-foreground">
-                      Link informado nao suporta preview automatico.
-                    </p>
-                  )}
-                </div>
-              ) : null}
+              <p className="text-xs text-muted-foreground">
+                Para substituir o video, remova o atual e faca um novo upload.
+              </p>
             </div>
 
             {editingItem && (editingItem.imagens?.length || 0) > 0 && (
@@ -477,6 +507,32 @@ const AdminAloPrefeitura = ({ forcedCidadeId }: AdminAloPrefeituraProps) => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir publicação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. A publicação "{itemToDelete?.titulo}" será removida.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (!itemToDelete) return;
+                deleteMutation.mutate(itemToDelete.id, {
+                  onSettled: () => setItemToDelete(null),
+                });
+              }}
+            >
+              {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

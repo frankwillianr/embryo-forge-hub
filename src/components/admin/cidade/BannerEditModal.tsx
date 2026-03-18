@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -19,6 +19,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -31,10 +38,11 @@ import { cn } from "@/lib/utils";
 import { fetchBannerGallery, replaceBannerGallery } from "@/lib/bannerGallery";
 
 const formSchema = z.object({
-  titulo: z.string().min(1, "Título é obrigatório").max(100),
+  titulo: z.string().min(1, "Titulo e obrigatorio").max(100),
   descricao: z.string().max(500).optional(),
-  imagem_url: z.string().url("URL inválida").optional().or(z.literal("")),
-  video_youtube_url: z.string().url("URL inválida").optional().or(z.literal("")),
+  imagem_url: z.string().url("URL invalida").optional().or(z.literal("")),
+  video_youtube_url: z.string().url("URL invalida").optional().or(z.literal("")),
+  status: z.enum(["rascunho", "aguardando_pagamento", "pendente", "ativo", "inativo", "expirado"]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -67,6 +75,7 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
       descricao: "",
       imagem_url: "",
       video_youtube_url: "",
+      status: "pendente",
     },
   });
 
@@ -78,6 +87,7 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
         descricao: banner.descricao || "",
         imagem_url: banner.imagem_url || "",
         video_youtube_url: banner.video_youtube_url || "",
+        status: banner.status || "pendente",
       });
 
       // Buscar os dias do banner
@@ -173,6 +183,12 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
           descricao: values.descricao || null,
           imagem_url: values.imagem_url || null,
           video_youtube_url: values.video_youtube_url || null,
+          status: values.status,
+          ...(values.status === "ativo"
+            ? { ativo: true }
+            : values.status === "inativo"
+              ? { ativo: false }
+              : {}),
         })
         .eq("id", banner.id);
 
@@ -352,6 +368,35 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="rascunho">Rascunho</SelectItem>
+                      <SelectItem value="aguardando_pagamento">Aguardando pagamento</SelectItem>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="ativo">Ativo</SelectItem>
+                      <SelectItem value="inativo">Inativo</SelectItem>
+                      <SelectItem value="expirado">Expirado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Status atual: {banner?.status || "pendente"}
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="space-y-3">
               <FormLabel className="flex items-center gap-2">
                 <Image className="h-4 w-4" />
@@ -518,3 +563,7 @@ const BannerEditModal = ({ banner, cidadeId, open, onOpenChange }: BannerEditMod
 };
 
 export default BannerEditModal;
+
+
+
+
