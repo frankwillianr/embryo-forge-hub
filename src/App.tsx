@@ -122,11 +122,19 @@ if (cachedState) {
   hydrate(queryClient, cachedState);
 }
 
+const safeSaveCache = (state: unknown) => {
+  try {
+    localStorage.setItem(QUERY_CACHE_STORAGE_KEY, JSON.stringify(state));
+    localStorage.setItem(QUERY_CACHE_STORAGE_KEY + ":ts", String(Date.now()));
+  } catch (error) {
+    console.error("Erro ao salvar cache offline:", error);
+  }
+};
+
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 queryClient.getQueryCache().subscribe(() => {
   if (persistTimer) clearTimeout(persistTimer);
 
-  // Debounce para evitar gravações excessivas durante múltiplas queries seguidas.
   persistTimer = setTimeout(() => {
     const dehydratedState = dehydrate(queryClient, {
       shouldDehydrateQuery: (query) => query.state.status === "success",
