@@ -234,7 +234,7 @@ const AdminAloPrefeitura = ({ forcedCidadeId }: AdminAloPrefeituraProps) => {
     const normalizedEditStatus: FormStatus =
       item.status === "aprovado"
         ? "aprovado"
-        : item.status === "rejeitado" || item.status === "recusado" || item.status === "recusada"
+        : (item.status as string) === "rejeitado" || (item.status as string) === "recusado" || (item.status as string) === "recusada"
           ? "rejeitado"
           : "pendente";
 
