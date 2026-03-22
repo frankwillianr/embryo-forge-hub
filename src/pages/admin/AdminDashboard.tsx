@@ -41,6 +41,23 @@ type AccessGeoResponse = {
   };
 };
 
+type ReturningUsersAnalytics = {
+  available: boolean;
+  summary: {
+    unique_users: number;
+    new_users: number;
+    returning_users: number;
+    returning_rate: number;
+    avg_sessions_per_user: number;
+  };
+  daily: Array<{
+    date: string;
+    new_users: number;
+    returning_users: number;
+    unique_users: number;
+  }>;
+};
+
 const periodLabelMap: Record<string, string> = {
   manha: "Manha",
   tarde: "Tarde",
@@ -210,6 +227,48 @@ const AdminDashboard = () => {
     refetchOnReconnect: "always",
   });
 
+  const {
+    data: returningUsers,
+    isLoading: returningLoading,
+    isError: returningError,
+  } = useQuery({
+    queryKey: ["admin-returning-users-kpis", 30],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_returning_users_kpis", { p_days: 30 });
+      // Compatibilidade com bancos sem migration aplicada.
+      if (error?.code === "PGRST202") {
+        return {
+          available: false,
+          summary: {
+            unique_users: 0,
+            new_users: 0,
+            returning_users: 0,
+            returning_rate: 0,
+            avg_sessions_per_user: 0,
+          },
+          daily: [],
+        } satisfies ReturningUsersAnalytics;
+      }
+      if (error) throw error;
+
+      const payload = (data || {}) as Partial<ReturningUsersAnalytics>;
+      return {
+        available: true,
+        summary: payload.summary || {
+          unique_users: 0,
+          new_users: 0,
+          returning_users: 0,
+          returning_rate: 0,
+          avg_sessions_per_user: 0,
+        },
+        daily: Array.isArray(payload.daily) ? payload.daily : [],
+      } satisfies ReturningUsersAnalytics;
+    },
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+  });
+
   const chartData = useMemo(
     () =>
       (accessAnalytics?.daily || []).map((item) => ({
@@ -218,6 +277,16 @@ const AdminDashboard = () => {
         users: Number(item.users || 0),
       })),
     [accessAnalytics?.daily],
+  );
+  const returningChartData = useMemo(
+    () =>
+      (returningUsers?.daily || []).map((item) => ({
+        date: item.date,
+        label: formatDayLabel(item.date),
+        newUsers: Number(item.new_users || 0),
+        returningUsers: Number(item.returning_users || 0),
+      })),
+    [returningUsers?.daily],
   );
   const geoMaxUsers = useMemo(
     () => Math.max(...(accessGeo?.points.map((point) => point.users) || [1])),
@@ -273,6 +342,36 @@ const AdminDashboard = () => {
   ];
 
   const peakLabel = periodLabelMap[accessAnalytics?.peak.period || "-"] || "-";
+  const recurringCards = [
+    {
+      title: "Usuarios unicos (30 dias)",
+      value: returningLoading ? "..." : returningError ? "-" : formatCount(returningUsers?.summary.unique_users),
+      description: "Total de pessoas diferentes no periodo",
+    },
+    {
+      title: "Entraram 1 vez",
+      value: returningLoading ? "..." : returningError ? "-" : formatCount(returningUsers?.summary.new_users),
+      description: "Usuarios com apenas um acesso no periodo",
+    },
+    {
+      title: "Entraram mais de 1 vez",
+      value: returningLoading ? "..." : returningError ? "-" : formatCount(returningUsers?.summary.returning_users),
+      description: "Usuarios recorrentes no periodo",
+    },
+    {
+      title: "Taxa de recorrencia",
+      value:
+        returningLoading || returningError
+          ? "-"
+          : `${Number(returningUsers?.summary.returning_rate || 0).toFixed(1).replace(".", ",")}%`,
+      description: "Percentual de usuarios recorrentes",
+    },
+  ];
+  const returningAvailable = !!returningUsers?.available;
+  const recurringCardsWithAvailability = recurringCards.map((card) => ({
+    ...card,
+    value: returningLoading ? "..." : !returningAvailable || returningError ? "-" : card.value,
+  }));
 
   return (
     <div className="space-y-6">
@@ -333,6 +432,77 @@ const AdminDashboard = () => {
             />
           </LineChart>
         </ChartContainer>
+      </div>
+
+      <div className="rounded-xl bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Recorrencia de usuarios (30 dias)</h2>
+            <p className="text-xs text-gray-500">Quem entrou uma unica vez vs quem voltou ao app</p>
+          </div>
+        </div>
+
+        <div className="mb-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {recurringCardsWithAvailability.map((card) => (
+            <div key={card.title} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+              <p className="text-xs font-medium text-gray-500">{card.title}</p>
+              <p className="mt-2 text-2xl font-semibold text-gray-900">{card.value}</p>
+              <p className="mt-1 text-[11px] text-gray-500">{card.description}</p>
+            </div>
+          ))}
+        </div>
+
+        <ChartContainer
+          className="h-[260px] w-full"
+          config={{
+            newUsers: {
+              label: "Entraram 1 vez",
+              color: "hsl(214 84% 56%)",
+            },
+            returningUsers: {
+              label: "Entraram mais de 1 vez",
+              color: "hsl(142 71% 45%)",
+            },
+          }}
+        >
+          <LineChart data={returningChartData}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              minTickGap={22}
+              tickMargin={8}
+            />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Line
+              type="monotone"
+              dataKey="newUsers"
+              stroke="var(--color-newUsers)"
+              strokeWidth={2.2}
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="returningUsers"
+              stroke="var(--color-returningUsers)"
+              strokeWidth={2.2}
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+          </LineChart>
+        </ChartContainer>
+
+        {!returningLoading && !returningAvailable && (
+          <p className="mt-3 text-xs text-amber-700">
+            KPI de recorrencia indisponivel neste banco. Aplique a migration
+            {" "}
+            <code>20260322113000_admin_returning_users_kpis.sql</code>
+            {" "}
+            no Supabase para habilitar os dados.
+          </p>
+        )}
       </div>
 
       <div className="rounded-xl bg-white p-5 shadow-sm">
@@ -444,7 +614,7 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {(statsError || analyticsError || onlineError) && (
+      {(statsError || analyticsError || onlineError || returningError) && (
         <p className="text-sm text-red-600">
           Nao foi possivel carregar as metricas. Confirme se as migrations de dashboard e analytics foram aplicadas.
         </p>

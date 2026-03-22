@@ -266,7 +266,13 @@ const CidadePage = () => {
         slug={slug}
         active={bottomNavActive}
         onHomeClick={handleHomeClick}
-        onCinemaClick={() => switchTab("cinema")}
+        onCinemaClick={() => {
+          scrollPositions.current[activeTab] = window.scrollY;
+          setActiveTab("cinema");
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: "instant" });
+          }, 0);
+        }}
       />
     </IonPage>
   );

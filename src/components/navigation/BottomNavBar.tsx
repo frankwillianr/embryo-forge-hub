@@ -17,6 +17,19 @@ const baseItemClass = "mx-1 my-1 flex flex-col items-center justify-center gap-1
 const activeClass = "bg-white/10 text-white";
 const inactiveClass = "text-gray-400 hover:bg-white/5 hover:text-white";
 
+const forceScrollTop = () => {
+  window.scrollTo({ top: 0, behavior: "auto" });
+
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>("*"));
+  candidates.forEach((el) => {
+    const canScroll = el.scrollHeight > el.clientHeight + 10 || el.scrollWidth > el.clientWidth + 10;
+    if (canScroll) {
+      el.scrollTop = 0;
+      el.scrollLeft = 0;
+    }
+  });
+};
+
 const BottomNavBar = ({
   slug,
   active,
@@ -35,12 +48,18 @@ const BottomNavBar = ({
 
   const goJornal = () => {
     if (onJornalClick) return onJornalClick();
-    navigate(`/cidade/${slug}/jornal`);
+    forceScrollTop();
+    navigate(`/cidade/${slug}/jornal`, { state: { scrollToTop: true } });
+    requestAnimationFrame(forceScrollTop);
+    setTimeout(forceScrollTop, 120);
   };
 
   const goCinema = () => {
     if (onCinemaClick) return onCinemaClick();
+    forceScrollTop();
     navigate(`/cidade/${slug}?tab=cinema`);
+    requestAnimationFrame(forceScrollTop);
+    setTimeout(forceScrollTop, 120);
   };
 
   const goServicos = () => {
