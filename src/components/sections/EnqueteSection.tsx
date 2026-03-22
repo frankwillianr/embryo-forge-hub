@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Clock3, Vote, TrendingUp, Search } from "lucide-react";
+import { Vote, TrendingUp, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,16 +41,13 @@ type ResultadoOpcao = {
   percentual: number;
 };
 
-const formatTimeLeft = (ms: number) => {
-  if (ms <= 0) return "Encerrando...";
-  const totalSeconds = Math.floor(ms / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
-  return `${hours}h ${minutes}m ${seconds}s`;
+const formatRemainingCompact = (ms: number) => {
+  if (ms <= 0) return "Encerrando hoje";
+  const totalMinutes = Math.floor(ms / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  return `${days}d ${hours}h ${minutes}m`;
 };
 
 const normalizeText = (value: string) =>
@@ -250,33 +247,24 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
 
   return (
     <section className="px-4 py-2">
-      <div className="px-0 py-0">
+      <div className="rounded-2xl border border-border/60 bg-muted/30 px-3 py-3">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-background/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#1a1a2e]/90 px-3 py-1 text-[11px] font-semibold text-white">
             <Vote className="h-3.5 w-3.5" />
             Enquete da semana
-          </div>
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
-            <Clock3 className="h-3.5 w-3.5" />
-            {formatTimeLeft(timeLeftMs)}
-          </div>
-        </div>
-
-        <h3 className="text-base font-semibold leading-snug text-foreground">{enquete.pergunta}</h3>
-
-        <div className="mt-3 flex items-center justify-between gap-3">
-          <div className="text-xs text-muted-foreground">
-            {totalVotos} {totalVotos === 1 ? "voto" : "votos"} registrados
           </div>
           <Button
             size="sm"
             disabled={!canVote || voteMutation.isPending}
             onClick={handleOpenVoteModal}
-            className="rounded-full px-4"
+            variant="outline"
+            className="h-8 rounded-full border-border/70 bg-transparent px-3 text-xs font-medium text-foreground shadow-none hover:bg-muted/50"
           >
             {votedOptionId ? "Alterar voto" : "Votar"}
           </Button>
         </div>
+
+        <h3 className="text-base font-semibold leading-snug text-foreground">{enquete.pergunta}</h3>
 
         <div className="mt-4 space-y-2.5">
           <div className="flex items-center justify-between gap-2">
@@ -288,7 +276,7 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-xs"
+              className="h-7 px-1.5 text-xs font-normal text-muted-foreground hover:bg-transparent hover:text-foreground"
               onClick={() => setFullRankingModalOpen(true)}
             >
               Ver votacao completa
@@ -317,6 +305,13 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
               </div>
             );
           })}
+
+          <div className="pt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+            <span>
+              {totalVotos} {totalVotos === 1 ? "voto" : "votos"}
+            </span>
+            <span>{formatRemainingCompact(timeLeftMs)}</span>
+          </div>
         </div>
       </div>
 

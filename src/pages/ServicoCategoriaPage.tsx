@@ -26,7 +26,7 @@ const ServicoCategoriaPage = () => {
 
   const categoriaMeta = CATEGORIAS_SERVICO_META[categoriaId || ""] || {
     nome: categoriaId || "Serviço",
-    icone: "ðŸ“¦",
+    icone: "📦",
   };
 
   // Buscar cidade

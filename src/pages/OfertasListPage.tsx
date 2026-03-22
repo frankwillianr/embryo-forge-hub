@@ -170,13 +170,13 @@ const OfertasListPage = () => {
 
       <main className="flex-1 p-4 pb-24">
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="aspect-[3/4] rounded-2xl bg-muted animate-pulse" />
             ))}
           </div>
         ) : ofertasFiltradas.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             {ofertasFiltradas.map((oferta) => {
               const meta = categoriasMeta[oferta.categoria] || { nome: oferta.categoria, icone: "📦" };
               return (
@@ -185,8 +185,8 @@ const OfertasListPage = () => {
                   onClick={() => navigate(`/cidade/${slug}/servicos/${oferta.categoria}/${oferta.id}`)}
                   className="flex flex-col rounded-2xl overflow-hidden bg-card border border-border/50 shadow-sm hover:shadow-lg transition-all active:scale-[0.97] text-left"
                 >
-                  <div className="relative aspect-[4/3] w-full">
-                    <img src={oferta.banner_oferta_url!} alt={oferta.nome} className="w-full h-full object-cover" />
+                  <div className="relative w-full">
+                    <img src={oferta.banner_oferta_url!} alt={oferta.nome} className="w-full h-auto object-contain" />
                     <div className="absolute top-2 left-2 flex items-center gap-1 bg-background/85 backdrop-blur-sm px-2 py-0.5 rounded-full">
                       <span className="text-xs">{meta.icone}</span>
                       <span className="text-[10px] font-medium text-foreground">{meta.nome}</span>

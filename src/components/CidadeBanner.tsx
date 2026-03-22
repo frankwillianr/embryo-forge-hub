@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Sun, Moon, Sunrise, Sunset, Cloud, CloudRain, Loader2, MapPin } from "lucide-react";
+import { Sun, Moon, Sunrise, Sunset, Cloud, CloudRain, Loader2, MapPin, Menu } from "lucide-react";
 
 interface WeatherData {
   temperature: number;
@@ -62,9 +62,10 @@ interface CidadeBannerProps {
   bannerUrl?: string | null;
   cidadeNome?: string;
   userName?: string;
+  onMenuClick?: () => void;
 }
 
-const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) => {
+const CidadeBanner = ({ bannerUrl, cidadeNome, userName, onMenuClick }: CidadeBannerProps) => {
   const displayName = userName || "Visitante";
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay());
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -184,11 +185,22 @@ const CidadeBanner = ({ bannerUrl, cidadeNome, userName }: CidadeBannerProps) =>
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col justify-end p-6 text-white">
-        <div className="flex items-center gap-2 mb-2">
-          <TimeIcon className="h-5 w-5" />
-          <span className="text-sm font-medium opacity-90 my-0">
-            {getGreeting(timeOfDay)}
-          </span>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <TimeIcon className="h-5 w-5" />
+            <span className="text-sm font-medium opacity-90 my-0">
+              {getGreeting(timeOfDay)}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/35 bg-black/25 px-2.5 py-1 text-[11px] font-medium text-white/95 backdrop-blur-sm"
+          >
+            <Menu className="h-3.5 w-3.5" />
+            Menu
+          </button>
         </div>
 
         <p className="text-lg font-medium mb-3">

@@ -273,7 +273,7 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [categoriaSelecionada, setCategoriaSelecionada] = useState("beleza");
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState("bares");
   const gridScrollRef = useRef<HTMLDivElement>(null);
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const tabRefsRef = useRef<(HTMLButtonElement | null)[]>([]);

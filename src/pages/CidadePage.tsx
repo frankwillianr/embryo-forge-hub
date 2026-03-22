@@ -239,6 +239,7 @@ const CidadePage = () => {
             bannerUrl={cidade?.banner_url}
             cidadeNome={cidade?.nome}
             userName={firstName}
+            onMenuClick={() => switchTab("menu")}
           />
         ) : activeTab !== "maps" ? (
           <header className="flex items-center gap-3 p-4 pt-safe border-b border-border bg-card">
@@ -266,7 +267,6 @@ const CidadePage = () => {
         active={bottomNavActive}
         onHomeClick={handleHomeClick}
         onCinemaClick={() => switchTab("cinema")}
-        onMenuClick={() => switchTab("menu")}
       />
     </IonPage>
   );

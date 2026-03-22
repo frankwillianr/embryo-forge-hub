@@ -1,7 +1,7 @@
 ﻿import { useNavigate } from "react-router-dom";
-import { Home, Newspaper, Film, Briefcase, BadgePercent, Menu } from "lucide-react";
+import { Home, Newspaper, Film, Briefcase, BadgePercent } from "lucide-react";
 
-type BottomNavTab = "home" | "jornal" | "cinema" | "servicos" | "ofertas" | "menu";
+type BottomNavTab = "home" | "jornal" | "cinema" | "servicos" | "ofertas";
 
 interface BottomNavBarProps {
   slug?: string;
@@ -11,12 +11,11 @@ interface BottomNavBarProps {
   onCinemaClick?: () => void;
   onServicosClick?: () => void;
   onOfertasClick?: () => void;
-  onMenuClick?: () => void;
 }
 
-const baseItemClass = "flex flex-col items-center justify-center gap-1.5 py-2 transition-colors";
-const activeClass = "text-primary";
-const inactiveClass = "text-gray-400 hover:text-white";
+const baseItemClass = "mx-1 my-1 flex flex-col items-center justify-center gap-1.5 rounded-xl py-2 transition-all";
+const activeClass = "bg-white/10 text-white";
+const inactiveClass = "text-gray-400 hover:bg-white/5 hover:text-white";
 
 const BottomNavBar = ({
   slug,
@@ -26,7 +25,6 @@ const BottomNavBar = ({
   onCinemaClick,
   onServicosClick,
   onOfertasClick,
-  onMenuClick,
 }: BottomNavBarProps) => {
   const navigate = useNavigate();
 
@@ -55,24 +53,15 @@ const BottomNavBar = ({
     navigate(`/cidade/${slug}/ofertas`);
   };
 
-  const goMenu = () => {
-    if (onMenuClick) return onMenuClick();
-    navigate(`/cidade/${slug}?tab=menu`);
-  };
-
   return (
     <nav className="fixed bottom-[20px] left-[2px] right-[2px] z-50 w-auto bg-[#1a1a2e]/95 border border-white/8 rounded-2xl shadow-2xl backdrop-blur-sm">
-      <div className="grid grid-cols-6 items-center w-full">
-        <button onClick={goHome} className={`${baseItemClass} ${active === "home" ? activeClass : inactiveClass}`}>
-          <Home className="h-5 w-5" />
-          <span className="text-[8px] font-medium">Home</span>
-        </button>
+      <div className="grid grid-cols-5 items-center w-full">
         <button
           onClick={goJornal}
           className={`${baseItemClass} ${active === "jornal" ? activeClass : inactiveClass}`}
         >
-          <Newspaper className="h-5 w-5" />
-          <span className="text-[8px] font-medium leading-[1.05] text-center">
+          <Newspaper className="h-5 w-5 text-sky-400" />
+          <span className="text-[9px] font-medium leading-[1.05] text-center">
             Jornal da
             <br />
             cidade
@@ -82,15 +71,23 @@ const BottomNavBar = ({
           onClick={goCinema}
           className={`${baseItemClass} ${active === "cinema" ? activeClass : inactiveClass}`}
         >
-          <Film className="h-5 w-5" />
-          <span className="text-[8px] font-medium">Cinema</span>
+          <Film className="h-5 w-5 text-amber-400" />
+          <span className="text-[9px] font-medium leading-[1.05] text-center">
+            Filmes em
+            <br />
+            cartaz
+          </span>
+        </button>
+        <button onClick={goHome} className={`${baseItemClass} ${active === "home" ? activeClass : inactiveClass}`}>
+          <Home className="h-5 w-5 text-emerald-400" />
+          <span className="text-[9px] font-medium">Home</span>
         </button>
         <button
           onClick={goServicos}
           className={`${baseItemClass} ${active === "servicos" ? activeClass : inactiveClass}`}
         >
-          <Briefcase className="h-5 w-5" />
-          <span className="text-[8px] font-medium leading-[1.05] text-center">
+          <Briefcase className="h-5 w-5 text-violet-400" />
+          <span className="text-[9px] font-medium leading-[1.05] text-center">
             Onde ir &
             <br />
             Serviços
@@ -100,19 +97,12 @@ const BottomNavBar = ({
           onClick={goOfertas}
           className={`${baseItemClass} ${active === "ofertas" ? activeClass : inactiveClass}`}
         >
-          <BadgePercent className="h-5 w-5" />
-          <span className="text-[8px] font-medium leading-[1.05] text-center">
+          <BadgePercent className="h-5 w-5 text-red-400" />
+          <span className="text-[9px] font-medium leading-[1.05] text-center">
             Mural de
             <br />
             ofertas
           </span>
-        </button>
-        <button
-          onClick={goMenu}
-          className={`${baseItemClass} ${active === "menu" ? activeClass : inactiveClass}`}
-        >
-          <Menu className="h-5 w-5" />
-          <span className="text-[8px] font-medium">Menu</span>
         </button>
       </div>
     </nav>

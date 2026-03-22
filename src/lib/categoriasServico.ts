@@ -3,6 +3,8 @@
  * Usado em: ServicoCategoriaPage, NovaEmpresaPage, listagens de empresa.
  */
 export const CATEGORIAS_SERVICO: Record<string, string> = {
+  geral: "Geral",
+
   // Bares e restaurantes
   bares: "Bares",
   bar: "Bar",
@@ -99,6 +101,8 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
 
 /** Nome + ícone (emoji) para exibição em headers/cards */
 export const CATEGORIAS_SERVICO_META: Record<string, { nome: string; icone: string }> = {
+  geral: { nome: "Geral", icone: "📦" },
+
   // Bares e restaurantes
   bares: { nome: "Bares", icone: "🍻" },
   bar: { nome: "Bar", icone: "🍺" },

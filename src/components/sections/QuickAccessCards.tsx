@@ -127,7 +127,14 @@ const QuickAccessCards = ({ cidadeSlug, onMapClick }: QuickAccessCardsProps) => 
         ))}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-border bg-card p-3">
+      <div className="mt-5 mb-3 flex items-center justify-center">
+        <div className="flex w-20 flex-col gap-2">
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+          <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        </div>
+      </div>
+
+      <div className="mt-4 rounded-2xl bg-card p-3">
         <div className="flex items-center gap-2 mb-2">
           <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
             <Lightbulb className="h-4 w-4 text-primary" />
