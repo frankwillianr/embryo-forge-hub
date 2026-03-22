@@ -61,7 +61,7 @@ const BottomNavBar = ({
   };
 
   return (
-    <nav className="fixed bottom-[2px] left-[2px] right-[2px] z-50 w-auto bg-[#1a1a2e]/95 border border-white/8 rounded-2xl pb-safe shadow-2xl backdrop-blur-sm">
+    <nav className="fixed bottom-[20px] left-[2px] right-[2px] z-50 w-auto bg-[#1a1a2e]/95 border border-white/8 rounded-2xl shadow-2xl backdrop-blur-sm">
       <div className="grid grid-cols-6 items-center w-full">
         <button onClick={goHome} className={`${baseItemClass} ${active === "home" ? activeClass : inactiveClass}`}>
           <Home className="h-5 w-5" />
