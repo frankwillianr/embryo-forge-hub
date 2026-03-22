@@ -15,6 +15,7 @@ type LikeItem = {
   sourceLabel: string;
   itemTitle: string;
   actor: string;
+  actorLabel: string;
   createdAt: string;
 };
 
@@ -41,26 +42,15 @@ const addDays = (date: Date, days: number) => {
   return next;
 };
 
-const parseMinutes = (hhmm: string) => {
-  const [h, m] = hhmm.split(":").map(Number);
-  return (h || 0) * 60 + (m || 0);
-};
-
-const isWithinHourRange = (iso: string, startHour: string, endHour: string) => {
-  const dt = new Date(iso);
-  const currentMinutes = dt.getHours() * 60 + dt.getMinutes();
-  const start = parseMinutes(startHour);
-  const end = parseMinutes(endHour);
-
-  if (start <= end) return currentMinutes >= start && currentMinutes <= end;
-  return currentMinutes >= start || currentMinutes <= end;
+const shortFingerprint = (value?: string | null) => {
+  const v = (value || "").trim();
+  if (!v) return "visitante";
+  return v.length > 10 ? `${v.slice(0, 4)}...${v.slice(-4)}` : v;
 };
 
 const AdminAtividade = () => {
   const navigate = useNavigate();
-  const [period, setPeriod] = useState<PeriodFilter>("today");
-  const [startHour, setStartHour] = useState("00:00");
-  const [endHour, setEndHour] = useState("23:59");
+  const [period, setPeriod] = useState<PeriodFilter>("30d");
 
   const today = useMemo(() => toIsoDate(new Date()), []);
   const [customStartDate, setCustomStartDate] = useState(today);
@@ -105,8 +95,6 @@ const AdminAtividade = () => {
       selectedCidadeId,
       dateRange.startDate,
       dateRange.endDate,
-      startHour,
-      endHour,
     ],
     queryFn: async () => {
       if (!selectedCidadeId) {
@@ -191,14 +179,14 @@ const AdminAtividade = () => {
         ),
       );
 
-      const profilesMap = new Map<string, { nome: string | null }>();
+      const profilesMap = new Map<string, { nome: string | null; email: string | null }>();
       if (allUserIds.length) {
         const { data: profiles, error: profilesError } = await supabase
           .from("profiles")
-          .select("id, nome")
+          .select("id, nome, email")
           .in("id", allUserIds);
         if (profilesError) throw profilesError;
-        (profiles || []).forEach((p) => profilesMap.set(p.id, { nome: p.nome }));
+        (profiles || []).forEach((p) => profilesMap.set(p.id, { nome: p.nome, email: p.email }));
       }
 
       const likes: LikeItem[] = [
@@ -208,6 +196,7 @@ const AdminAtividade = () => {
           sourceLabel: "Jornal",
           itemTitle: jornalTitleMap.get(r.jornal_id) || "Jornal",
           actor: r.user_fingerprint || "-",
+          actorLabel: `Visitante (${shortFingerprint(r.user_fingerprint)})`,
           createdAt: r.created_at,
         })),
         ...(arRes.data || []).map((r: any) => ({
@@ -216,10 +205,10 @@ const AdminAtividade = () => {
           sourceLabel: "Voz do Povo",
           itemTitle: aloTitleMap.get(r.alo_prefeitura_id) || "Voz do Povo",
           actor: r.user_fingerprint || "-",
+          actorLabel: `Visitante (${shortFingerprint(r.user_fingerprint)})`,
           createdAt: r.created_at,
         })),
       ]
-        .filter((item) => isWithinHourRange(item.createdAt, startHour, endHour))
         .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
 
       const comments: CommentItem[] = [
@@ -228,7 +217,10 @@ const AdminAtividade = () => {
           source: "jornal" as const,
           sourceLabel: "Jornal",
           itemTitle: jornalTitleMap.get(c.jornal_id) || "Jornal",
-          authorName: profilesMap.get(c.user_id)?.nome || "Usuario",
+          authorName:
+            profilesMap.get(c.user_id)?.nome ||
+            profilesMap.get(c.user_id)?.email ||
+            `Usuario (${String(c.user_id || "").slice(0, 8)})`,
           comment: c.comentario || "",
           createdAt: c.created_at,
         })),
@@ -237,12 +229,14 @@ const AdminAtividade = () => {
           source: "voz_do_povo" as const,
           sourceLabel: "Voz do Povo",
           itemTitle: aloTitleMap.get(c.alo_prefeitura_id) || "Voz do Povo",
-          authorName: profilesMap.get(c.user_id)?.nome || "Usuario",
+          authorName:
+            profilesMap.get(c.user_id)?.nome ||
+            profilesMap.get(c.user_id)?.email ||
+            `Usuario (${String(c.user_id || "").slice(0, 8)})`,
           comment: c.comentario || "",
           createdAt: c.created_at,
         })),
       ]
-        .filter((item) => isWithinHourRange(item.createdAt, startHour, endHour))
         .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
 
       return { likes, comments };
@@ -298,9 +292,9 @@ const AdminAtividade = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="today">Hoje</SelectItem>
-                <SelectItem value="7d">Ultimos 7 dias</SelectItem>
-                <SelectItem value="30d">Ultimos 30 dias</SelectItem>
-                <SelectItem value="custom">Personalizado</SelectItem>
+                <SelectItem value="7d">7 dias</SelectItem>
+                <SelectItem value="30d">30 dias</SelectItem>
+                <SelectItem value="custom">Outro periodo</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -317,16 +311,6 @@ const AdminAtividade = () => {
               </div>
             </>
           )}
-
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Horario inicio</label>
-            <Input type="time" value={startHour} onChange={(e) => setStartHour(e.target.value)} />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-gray-500">Horario fim</label>
-            <Input type="time" value={endHour} onChange={(e) => setEndHour(e.target.value)} />
-          </div>
         </div>
       </div>
 
@@ -361,7 +345,7 @@ const AdminAtividade = () => {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl bg-white p-5 shadow-sm">
           <h2 className="mb-3 text-base font-semibold text-gray-900">Ultimas curtidas</h2>
           {isLoading ? (
@@ -376,7 +360,7 @@ const AdminAtividade = () => {
                 <div key={item.id} className="rounded-lg border p-3">
                   <p className="text-sm font-medium text-gray-900">{item.itemTitle}</p>
                   <p className="text-xs text-gray-500">
-                    {item.sourceLabel} • {new Date(item.createdAt).toLocaleString("pt-BR")}
+                    {item.sourceLabel} - {item.actorLabel} - {new Date(item.createdAt).toLocaleString("pt-BR")}
                   </p>
                 </div>
               ))}
@@ -398,7 +382,7 @@ const AdminAtividade = () => {
                 <div key={item.id} className="rounded-lg border p-3">
                   <p className="text-sm font-medium text-gray-900">{item.itemTitle}</p>
                   <p className="text-xs text-gray-500">
-                    {item.sourceLabel} • {item.authorName} • {new Date(item.createdAt).toLocaleString("pt-BR")}
+                    {item.sourceLabel} - {item.authorName} - {new Date(item.createdAt).toLocaleString("pt-BR")}
                   </p>
                   <p className="mt-1 text-sm text-gray-700">{item.comment}</p>
                 </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,12 +16,15 @@ import obrasIcon from "@/assets/icons/obras.png";
 
 interface ServicosSectionProps {
   cidadeSlug?: string;
+  showHighlights?: boolean;
+  onlyHighlights?: boolean;
 }
 
 type Servico = { id: string; nome: string; icon?: string; emoji?: string };
 
-// Mapeamento: categoria do app → categorias no banco
+// Mapeamento: categoria do app -> categorias no banco
 const categoriaBancoMap: Record<string, string[]> = {
+  bares: ["bares", "bar", "restaurantes", "lanchonete", "pizzaria", "hamburgueria", "sushi", "cafeteria"],
   beleza: ["salao", "barbeiro", "manicure", "estetica", "maquiagem", "sobrancelha", "depilacao", "cosmeticos"],
   servicos: ["reparos", "eletricista", "encanador", "obras", "limpeza", "dedetizacao", "chaveiro", "pintor", "marceneiro", "serralheria", "vidraceiro", "ar-condicionado", "jardinagem", "mudancas", "diarista", "costura"],
   profissionais: ["advogado", "contador", "despachante", "engenheiro", "arquiteto", "corretor", "fotografo", "aulas", "idiomas", "informatica", "eventos"],
@@ -33,6 +36,21 @@ const categoriaBancoMap: Record<string, string[]> = {
 
 // Categorias de serviços
 const categorias: Array<{ id: string; titulo: string; emoji: string; servicos: Servico[] }> = [
+  {
+    id: "bares",
+    titulo: "Bares e Restaurantes",
+    emoji: "🍽️",
+    servicos: [
+      { id: "restaurantes", nome: "Restaurantes", emoji: "🍽️" },
+      { id: "bares", nome: "Bares", emoji: "🍻" },
+      { id: "lanchonete", nome: "Lanchonete", emoji: "🍔" },
+      { id: "pizzaria", nome: "Pizzaria", emoji: "🍕" },
+      { id: "hamburgueria", nome: "Hamburgueria", emoji: "🍟" },
+      { id: "sushi", nome: "Sushi", emoji: "🍣" },
+      { id: "cafeteria", nome: "Cafeteria", emoji: "☕" },
+      { id: "doceria", nome: "Doceria", emoji: "🍰" },
+    ],
+  },
   {
     id: "beleza",
     titulo: "Beleza",
@@ -142,15 +160,22 @@ const categorias: Array<{ id: string; titulo: string; emoji: string; servicos: S
       { id: "veterinario", nome: "Veterinário", emoji: "🩺" },
       { id: "pet", nome: "Banho e Tosa", icon: petIcon },
       { id: "petshop", nome: "Pet Shop", emoji: "🐾" },
-      { id: "adestrador", nome: "Adestrador", emoji: "🦮" },
+      { id: "adestrador", nome: "Adestrador", emoji: "🐕" },
       { id: "hotel-pet", nome: "Hotel Pet", emoji: "🏨" },
-      { id: "passeador", nome: "Passeador", emoji: "🦮" },
+      { id: "passeador", nome: "Passeador", emoji: "🐕" },
     ],
   },
 ];
 
 // Lista completa para autocomplete
 const todosServicosAutocomplete = [
+  { id: "restaurantes", nome: "Restaurantes" },
+  { id: "bares", nome: "Bares" },
+  { id: "lanchonete", nome: "Lanchonete" },
+  { id: "pizzaria", nome: "Pizzaria" },
+  { id: "hamburgueria", nome: "Hamburgueria" },
+  { id: "sushi", nome: "Sushi" },
+  { id: "cafeteria", nome: "Cafeteria" },
   { id: "veiculos", nome: "Veículos" },
   { id: "desapega", nome: "Marketplace local" },
   { id: "influenciadores", nome: "Influenciadores" },
@@ -244,7 +269,7 @@ const BannerCarousel = ({
   );
 };
 
-const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
+const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = false }: ServicosSectionProps) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -253,8 +278,6 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const tabRefsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const isScrollingByUserRef = useRef(false);
-  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const userInteractedRef = useRef(false);
 
   const categoriaAtual = categorias.find((c) => c.id === categoriaSelecionada) || categorias[0];
 
@@ -326,6 +349,45 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
     handleClick(servicoId);
   };
 
+  const highlightsBlock = showHighlights ? (
+    <div className="px-5 mb-[15px]">
+      <div className="grid grid-cols-3" style={{ gap: "15px" }}>
+        <button
+          onClick={() => handleClick("veiculos")}
+          className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-600 p-3.5 min-h-[112px] flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
+        >
+          <div className="absolute -right-2 -bottom-2 opacity-15">
+            <Car className="w-12 h-12" strokeWidth={1} />
+          </div>
+          <Car className="w-5 h-5 text-white/80" />
+          <span className="text-[11px] font-semibold relative z-10">Veículos</span>
+        </button>
+
+        <button
+          onClick={() => handleClick("desapega")}
+          className="rounded-2xl bg-gradient-to-br from-pink-500 to-rose-400 p-3.5 min-h-[112px] flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
+        >
+          <div className="absolute -right-2 -bottom-2 opacity-15">
+            <ShoppingBag className="w-12 h-12" strokeWidth={1} />
+          </div>
+          <ShoppingBag className="w-5 h-5 text-white/80" />
+          <span className="text-[11px] font-semibold relative z-10">Marketplace local</span>
+        </button>
+
+        <button
+          onClick={() => handleClick("doacoes")}
+          className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 p-3.5 min-h-[112px] flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
+        >
+          <div className="absolute -right-2 -bottom-2 opacity-15">
+            <Gift className="w-12 h-12" strokeWidth={1} />
+          </div>
+          <Gift className="w-5 h-5 text-white/80" />
+          <span className="text-[11px] font-semibold relative z-10">Doações</span>
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   const handleGridScroll = useCallback(() => {
     const el = gridScrollRef.current;
     if (!el || isScrollingByUserRef.current) return;
@@ -347,9 +409,6 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
       el.scrollTo({ left: index * el.offsetWidth, behavior: "smooth" });
       setTimeout(() => { isScrollingByUserRef.current = false; }, 400);
     }
-    // Pausa autoplay por 10s após interação manual
-    userInteractedRef.current = true;
-    setTimeout(() => { userInteractedRef.current = false; }, 10_000);
   }, []);
 
   useEffect(() => {
@@ -359,7 +418,11 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
     return () => el.removeEventListener("scroll", handleGridScroll);
   }, [handleGridScroll]);
 
-  // Ao mudar a categoria, centraliza a aba no container SEM rolar a página
+  if (onlyHighlights) {
+    return <div className="pt-2 pb-1">{highlightsBlock}</div>;
+  }
+
+  // Ao mudar a categoria, centraliza a aba no container SEM rolar a pÃ¡gina
   useEffect(() => {
     const index = categorias.findIndex((c) => c.id === categoriaSelecionada);
     const tabEl = tabRefsRef.current[index];
@@ -371,30 +434,6 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
     const targetScroll = tabLeft - containerWidth / 2 + tabWidth / 2;
     container.scrollTo({ left: targetScroll, behavior: "smooth" });
   }, [categoriaSelecionada]);
-
-  // Auto-avança categoria a cada 5s infinitamente; pausa 10s após interação do usuário
-  useEffect(() => {
-    const start = () => {
-      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
-      autoPlayRef.current = setInterval(() => {
-        if (userInteractedRef.current) return;
-        setCategoriaSelecionada((prev) => {
-          const idx = categorias.findIndex((c) => c.id === prev);
-          const next = (idx + 1) % categorias.length;
-          const nextId = categorias[next].id;
-          const el = gridScrollRef.current;
-          if (el) {
-            isScrollingByUserRef.current = true;
-            el.scrollTo({ left: next * el.offsetWidth, behavior: "smooth" });
-            setTimeout(() => { isScrollingByUserRef.current = false; }, 600);
-          }
-          return nextId;
-        });
-      }, 5000);
-    };
-    start();
-    return () => { if (autoPlayRef.current) clearInterval(autoPlayRef.current); };
-  }, []);
 
   return (
     <div className="pt-6 pb-2">
@@ -443,45 +482,9 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
         </div>
       </div>
 
-      {/* Destaques */}
-      <div className="px-5 mb-[15px]">
-        <div className="grid grid-cols-3" style={{ gap: "15px" }}>
-          <button
-            onClick={() => handleClick("veiculos")}
-            className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-600 p-3 flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
-          >
-            <div className="absolute -right-2 -bottom-2 opacity-15">
-              <Car className="w-12 h-12" strokeWidth={1} />
-            </div>
-            <Car className="w-5 h-5 text-white/80" />
-            <span className="text-[11px] font-semibold relative z-10">Veículos</span>
-          </button>
+      {highlightsBlock}
 
-          <button
-            onClick={() => handleClick("desapega")}
-            className="rounded-2xl bg-gradient-to-br from-pink-500 to-rose-400 p-3 flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
-          >
-            <div className="absolute -right-2 -bottom-2 opacity-15">
-              <ShoppingBag className="w-12 h-12" strokeWidth={1} />
-            </div>
-            <ShoppingBag className="w-5 h-5 text-white/80" />
-            <span className="text-[11px] font-semibold relative z-10">Marketplace local</span>
-          </button>
-
-          <button
-            onClick={() => handleClick("doacoes")}
-            className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 p-3 flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
-          >
-            <div className="absolute -right-2 -bottom-2 opacity-15">
-              <Gift className="w-12 h-12" strokeWidth={1} />
-            </div>
-            <Gift className="w-5 h-5 text-white/80" />
-            <span className="text-[11px] font-semibold relative z-10">Doações</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Categorias - Tabs + banner + grid (sempre visíveis) */}
+      {/* Categorias - Tabs + banner + grid (sempre visÃ­veis) */}
       <div ref={tabsScrollRef} className="overflow-x-auto scrollbar-hide mt-[15px] mb-[15px] scroll-smooth">
         <div className="flex px-5 border-b border-border/30" style={{ gap: "15px" }}>
           {categorias.map((cat, index) => (
@@ -556,3 +559,4 @@ const ServicosSection = ({ cidadeSlug }: ServicosSectionProps) => {
 };
 
 export default ServicosSection;
+

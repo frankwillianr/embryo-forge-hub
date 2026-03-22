@@ -1,4 +1,4 @@
-import {
+﻿import {
   LayoutDashboard,
   ArrowLeft,
   Newspaper,
@@ -164,6 +164,16 @@ const AdminSidebar = () => {
             <span>Atividade</span>
           </NavLink>
 
+          <NavLink
+            to="/admin/enquete"
+            className="flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm text-gray-400 transition-colors hover:bg-white/5 hover:text-white"
+            activeClassName="bg-white/10 text-white font-medium"
+            onClick={() => setIsOpen(false)}
+          >
+            <MessageCircle className="h-4 w-4" />
+            <span>Enquete</span>
+          </NavLink>
+
           {selectedCidadeId && (
             <div className="pt-2">
               <p className="px-4 pb-2 text-[11px] uppercase tracking-wide text-gray-500">
@@ -209,3 +219,4 @@ const AdminSidebar = () => {
 };
 
 export default AdminSidebar;
+

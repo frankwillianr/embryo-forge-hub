@@ -1,8 +1,19 @@
-/**
+﻿/**
  * Categorias de serviço alinhadas com a home (ServicosSection).
  * Usado em: ServicoCategoriaPage, NovaEmpresaPage, listagens de empresa.
  */
 export const CATEGORIAS_SERVICO: Record<string, string> = {
+  // Bares e restaurantes
+  bares: "Bares",
+  bar: "Bar",
+  restaurantes: "Restaurantes",
+  lanchonete: "Lanchonete",
+  pizzaria: "Pizzaria",
+  hamburgueria: "Hamburgueria",
+  sushi: "Sushi",
+  cafeteria: "Cafeteria",
+  doceria: "Doceria",
+
   // Beleza
   salao: "Salão de Beleza",
   barbeiro: "Barbeiro",
@@ -12,6 +23,7 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
   sobrancelha: "Sobrancelha",
   depilacao: "Depilação",
   cosmeticos: "Cosméticos",
+
   // Serviços
   reparos: "Reparos",
   eletricista: "Eletricista",
@@ -29,6 +41,7 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
   mudancas: "Mudanças",
   diarista: "Diarista",
   costura: "Costura",
+
   // Profissionais
   advogado: "Advogado",
   contador: "Contador",
@@ -41,6 +54,7 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
   idiomas: "Idiomas",
   informatica: "Informática",
   eventos: "Eventos",
+
   // Saúde
   clinica: "Clínica",
   dentista: "Dentista",
@@ -51,14 +65,15 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
   academia: "Academia",
   massagista: "Massagista",
   farmacia: "Farmácia",
+
   // Comércio
   desapega: "Marketplace local",
   lojas: "Lojas",
   promocoes: "Promoções",
-  restaurantes: "Restaurantes",
   entregador: "Delivery",
   moda: "Moda",
   eletronicos: "Eletrônicos",
+
   // Veículos
   mecanico: "Mecânico",
   "lava-jato": "Lava Jato",
@@ -68,6 +83,7 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
   borracharia: "Borracharia",
   vistoria: "Vistoria",
   motorista: "Motorista",
+
   // Pets
   veterinario: "Veterinário",
   pet: "Banho e Tosa",
@@ -75,6 +91,7 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
   adestrador: "Adestrador",
   "hotel-pet": "Hotel Pet",
   passeador: "Passeador",
+
   // Outros
   influenciadores: "Influenciadores",
   outros: "Outros",
@@ -82,6 +99,18 @@ export const CATEGORIAS_SERVICO: Record<string, string> = {
 
 /** Nome + ícone (emoji) para exibição em headers/cards */
 export const CATEGORIAS_SERVICO_META: Record<string, { nome: string; icone: string }> = {
+  // Bares e restaurantes
+  bares: { nome: "Bares", icone: "🍻" },
+  bar: { nome: "Bar", icone: "🍺" },
+  restaurantes: { nome: "Restaurantes", icone: "🍽️" },
+  lanchonete: { nome: "Lanchonete", icone: "🍔" },
+  pizzaria: { nome: "Pizzaria", icone: "🍕" },
+  hamburgueria: { nome: "Hamburgueria", icone: "🍟" },
+  sushi: { nome: "Sushi", icone: "🍣" },
+  cafeteria: { nome: "Cafeteria", icone: "☕" },
+  doceria: { nome: "Doceria", icone: "🍰" },
+
+  // Beleza
   salao: { nome: "Salão de Beleza", icone: "💇" },
   barbeiro: { nome: "Barbeiro", icone: "💈" },
   manicure: { nome: "Manicure", icone: "💅" },
@@ -90,6 +119,8 @@ export const CATEGORIAS_SERVICO_META: Record<string, { nome: string; icone: stri
   sobrancelha: { nome: "Sobrancelha", icone: "🪮" },
   depilacao: { nome: "Depilação", icone: "🌸" },
   cosmeticos: { nome: "Cosméticos", icone: "💄" },
+
+  // Serviços
   reparos: { nome: "Reparos", icone: "🔧" },
   eletricista: { nome: "Eletricista", icone: "⚡" },
   encanador: { nome: "Encanador", icone: "🚿" },
@@ -106,6 +137,8 @@ export const CATEGORIAS_SERVICO_META: Record<string, { nome: string; icone: stri
   mudancas: { nome: "Mudanças", icone: "🚚" },
   diarista: { nome: "Diarista", icone: "🏠" },
   costura: { nome: "Costura", icone: "🧵" },
+
+  // Profissionais
   advogado: { nome: "Advogado", icone: "⚖️" },
   contador: { nome: "Contador", icone: "📊" },
   despachante: { nome: "Despachante", icone: "📄" },
@@ -117,6 +150,8 @@ export const CATEGORIAS_SERVICO_META: Record<string, { nome: string; icone: stri
   idiomas: { nome: "Idiomas", icone: "🌎" },
   informatica: { nome: "Informática", icone: "💻" },
   eventos: { nome: "Eventos", icone: "🎉" },
+
+  // Saúde
   clinica: { nome: "Clínica", icone: "🏥" },
   dentista: { nome: "Dentista", icone: "🦷" },
   psicologo: { nome: "Psicólogo", icone: "🧠" },
@@ -126,27 +161,34 @@ export const CATEGORIAS_SERVICO_META: Record<string, { nome: string; icone: stri
   academia: { nome: "Academia", icone: "💪" },
   massagista: { nome: "Massagista", icone: "💆" },
   farmacia: { nome: "Farmácia", icone: "💊" },
+
+  // Comércio
   desapega: { nome: "Marketplace local", icone: "🛍️" },
   lojas: { nome: "Lojas", icone: "🏪" },
   promocoes: { nome: "Promoções", icone: "🏷️" },
-  restaurantes: { nome: "Restaurantes", icone: "🍽️" },
-  entregador: { nome: "Delivery", icone: "🚴" },
+  entregador: { nome: "Delivery", icone: "🛵" },
   moda: { nome: "Moda", icone: "👗" },
   eletronicos: { nome: "Eletrônicos", icone: "📱" },
+
+  // Veículos
   mecanico: { nome: "Mecânico", icone: "🔧" },
   "lava-jato": { nome: "Lava Jato", icone: "🚿" },
   "auto-pecas": { nome: "Auto Peças", icone: "⚙️" },
-  guincho: { nome: "Guincho", icone: "🚗" },
+  guincho: { nome: "Guincho", icone: "🚚" },
   funilaria: { nome: "Funilaria", icone: "🔨" },
   borracharia: { nome: "Borracharia", icone: "🔄" },
   vistoria: { nome: "Vistoria", icone: "📋" },
   motorista: { nome: "Motorista", icone: "🚙" },
+
+  // Pets
   veterinario: { nome: "Veterinário", icone: "🩺" },
   pet: { nome: "Banho e Tosa", icone: "🐕" },
   petshop: { nome: "Pet Shop", icone: "🐾" },
-  adestrador: { nome: "Adestrador", icone: "🦮" },
+  adestrador: { nome: "Adestrador", icone: "🐕" },
   "hotel-pet": { nome: "Hotel Pet", icone: "🏨" },
-  passeador: { nome: "Passeador", icone: "🦮" },
+  passeador: { nome: "Passeador", icone: "🐕" },
+
+  // Outros
   influenciadores: { nome: "Influenciadores", icone: "📱" },
   outros: { nome: "Outros", icone: "📦" },
 };

@@ -1,22 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import BannerCarousel from "@/components/BannerCarousel";
+import EnqueteSection from "@/components/sections/EnqueteSection";
 import MusicaAoVivoSection from "@/components/sections/MusicaAoVivoSection";
-import JornalHorizontalList from "@/components/jornal/JornalHorizontalList";
 import CuponsSection from "@/components/sections/CuponsSection";
 import SolicitarOrcamentoSection from "@/components/sections/SolicitarOrcamentoSection";
-import AloPrefeituraHorizontalList from "@/components/aloPrefeitura/AloPrefeituraHorizontalList";
 import ServicosSection from "@/components/servicos/ServicosSection";
-import OfertasSection from "@/components/ofertas/OfertasSection";
 import QuickAccessCards from "@/components/sections/QuickAccessCards";
 import EventosSection from "@/components/eventos/EventosSection";
-import CinemaHorizontalList from "@/components/cinema/CinemaHorizontalList";
 import OnibusHorizontalList from "@/components/onibus/OnibusHorizontalList";
 import LazySection from "@/components/LazySection";
 import type { Banner } from "@/types/banner";
 
 interface HomeSectionProps {
   cidadeSlug?: string;
+  onMapClick?: () => void;
 }
 
 const Separador = () => (
@@ -28,7 +26,7 @@ const Separador = () => (
   </div>
 );
 
-const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
+const HomeSection = ({ cidadeSlug, onMapClick }: HomeSectionProps) => {
   const { data: banners = [], isLoading } = useQuery({
     queryKey: ["banners-hoje", cidadeSlug],
     queryFn: async () => {
@@ -88,39 +86,23 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
         <BannerCarousel banners={banners} cidadeSlug={cidadeSlug} />
       ) : null}
 
+      <LazySection minHeight="220px">
+        <EnqueteSection cidadeSlug={cidadeSlug} />
+      </LazySection>
+
+      <Separador />
+
+      <LazySection minHeight="100px">
+        <ServicosSection cidadeSlug={cidadeSlug} onlyHighlights />
+      </LazySection>
+
+      <Separador />
+
       <MusicaAoVivoSection cidadeSlug={cidadeSlug} />
 
       <Separador />
 
-      <JornalHorizontalList cidadeSlug={cidadeSlug} />
-
-      <Separador />
-
       <EventosSection cidadeSlug={cidadeSlug} />
-
-      <Separador />
-
-      <LazySection minHeight="200px">
-        <OfertasSection cidadeSlug={cidadeSlug} />
-      </LazySection>
-
-      <Separador />
-
-      <LazySection minHeight="200px">
-        <ServicosSection cidadeSlug={cidadeSlug} />
-      </LazySection>
-
-      <Separador />
-
-      <LazySection minHeight="240px">
-        <AloPrefeituraHorizontalList cidadeSlug={cidadeSlug} />
-      </LazySection>
-
-      <Separador />
-
-      <LazySection minHeight="200px">
-        <CinemaHorizontalList cidadeSlug={cidadeSlug} />
-      </LazySection>
 
       <Separador />
 
@@ -131,7 +113,7 @@ const HomeSection = ({ cidadeSlug }: HomeSectionProps) => {
       <Separador />
 
       <LazySection minHeight="160px">
-        <QuickAccessCards cidadeSlug={cidadeSlug} />
+        <QuickAccessCards cidadeSlug={cidadeSlug} onMapClick={onMapClick} />
         <OnibusHorizontalList cidadeSlug={cidadeSlug} />
       </LazySection>
     </div>

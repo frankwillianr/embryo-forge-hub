@@ -13,9 +13,10 @@ import type { Cinema } from "@/types/cinema";
 interface CinemaCardProps {
   cinema: Cinema;
   showHorarios?: boolean;
+  onOpenDetails?: () => void;
 }
 
-const CinemaCard = ({ cinema, showHorarios = true }: CinemaCardProps) => {
+const CinemaCard = ({ cinema, showHorarios = true, onOpenDetails }: CinemaCardProps) => {
   const [trailerOpen, setTrailerOpen] = useState(false);
 
   const getYouTubeEmbedUrl = (url: string) => {
@@ -24,6 +25,14 @@ const CinemaCard = ({ cinema, showHorarios = true }: CinemaCardProps) => {
   };
 
   const embedUrl = cinema.trailer_url ? getYouTubeEmbedUrl(cinema.trailer_url) : null;
+  const handleTrailerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onOpenDetails) {
+      onOpenDetails();
+      return;
+    }
+    setTrailerOpen(true);
+  };
 
   return (
     <>
@@ -43,7 +52,7 @@ const CinemaCard = ({ cinema, showHorarios = true }: CinemaCardProps) => {
           )}
           {embedUrl && (
             <button
-              onClick={() => setTrailerOpen(true)}
+              onClick={handleTrailerClick}
               className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
@@ -119,7 +128,7 @@ const CinemaCard = ({ cinema, showHorarios = true }: CinemaCardProps) => {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setTrailerOpen(true)}
+              onClick={handleTrailerClick}
               className="mt-2 h-7 text-[11px] gap-1.5 w-fit"
             >
               <Play className="h-3 w-3" />

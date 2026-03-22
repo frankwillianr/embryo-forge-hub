@@ -58,6 +58,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
 
   const [showCommentSheet, setShowCommentSheet] = useState(false);
   const [comentario, setComentario] = useState("");
+  const [isDescricaoExpanded, setIsDescricaoExpanded] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
@@ -408,6 +409,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   };
 
   const descricao = (jornal.descricao || "").replace(/\\n/g, '\n');
+  const shouldShowDescricaoToggle = descricao.length > 120;
 
   const dataExibicao = jornal.data_noticia
     ? new Date(`${jornal.data_noticia}T00:00:00`)
@@ -585,7 +587,33 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
           </p>
           {descricao && (
             <div className="text-[13px] text-muted-foreground leading-relaxed mt-1">
-              <p className="whitespace-pre-line">{descricao}</p>
+              <p
+                className="whitespace-pre-line"
+                style={
+                  isDescricaoExpanded
+                    ? undefined
+                    : {
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }
+                }
+              >
+                {descricao}
+              </p>
+              {shouldShowDescricaoToggle && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsDescricaoExpanded((prev) => !prev);
+                  }}
+                  className="mt-1 text-[12px] font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  {isDescricaoExpanded ? "Ver menos" : "Ver mais"}
+                </button>
+              )}
             </div>
           )}
         </div>

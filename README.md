@@ -36,6 +36,24 @@ npm i
 npm run dev
 ```
 
+## Rodar no celular (mesma rede Wi-Fi)
+
+1. No computador, inicie com:
+
+```sh
+npm run dev:mobile
+```
+
+2. No celular, abra:
+
+```txt
+http://SEU_IP_LOCAL:8080
+```
+
+Exemplo de IP local (desta máquina): `192.168.1.70`, então ficaria `http://192.168.1.70:8080`.
+
+3. Se não abrir, libere a porta 8080 no firewall do Windows para rede privada e confirme que PC e celular estão na mesma rede.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

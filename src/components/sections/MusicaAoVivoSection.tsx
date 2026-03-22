@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Music2, MapPin, UserRound, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ interface EventoMusicalItem {
 }
 
 const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
+  const navigate = useNavigate();
   const [eventoSelecionado, setEventoSelecionado] = useState<EventoMusicalItem | null>(null);
 
   const normalizarImagem = (value?: string | null) => {
@@ -92,11 +94,15 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
   const formatarDataBadge = (dataEvento: string) => {
     const d = new Date(`${dataEvento}T00:00:00`);
     const dia = new Intl.DateTimeFormat("pt-BR", { day: "2-digit" }).format(d);
+    const diaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "short" })
+      .format(d)
+      .replace(".", "")
+      .toLowerCase();
     const mes = new Intl.DateTimeFormat("pt-BR", { month: "short" })
       .format(d)
       .replace(".", "")
       .toLowerCase();
-    return { dia, mes };
+    return { dia, diaSemana, mes };
   };
 
   const getMapaEmbedUrl = (item: EventoMusicalItem) => {
@@ -211,6 +217,13 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
           <Music2 className="h-4 w-4 text-primary" />
           Musica ao vivo
         </h2>
+        <button
+          type="button"
+          onClick={() => cidadeSlug && navigate(`/cidade/${cidadeSlug}/musica-ao-vivo`)}
+          className="text-xs font-medium text-primary"
+        >
+          Ver todos
+        </button>
       </div>
       <p className="text-[12px] text-muted-foreground/70 px-5 mb-3">
         Confira os proximos shows nos bares da cidade
@@ -266,6 +279,7 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
 
                 <div className="absolute bottom-3 right-3 rounded-2xl bg-blue-600/90 border border-blue-300/30 px-2 py-1.5 text-center min-w-[50px]">
                   <p className="text-[14px] font-bold text-white leading-none">{formatarDataBadge(item.data_evento).dia}</p>
+                  <p className="text-[10px] font-semibold uppercase text-white/95 leading-none mt-1">{formatarDataBadge(item.data_evento).diaSemana}</p>
                   <p className="text-[10px] font-medium text-white/95 leading-none mt-1">{formatarDataBadge(item.data_evento).mes}</p>
                 </div>
               </div>
@@ -370,3 +384,6 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
 };
 
 export default MusicaAoVivoSection;
+
+
+

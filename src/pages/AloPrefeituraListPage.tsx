@@ -2,14 +2,15 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
-import { ArrowLeft, Home, Newspaper, Film, Megaphone, Menu, Map as MapIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, Megaphone, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import type { AloPrefeitura, AloPrefeituraImagem } from "@/types/aloPrefeitura";
 import AloPrefeituraFeedCard from "@/components/aloPrefeitura/AloPrefeituraFeedCard";
+import BottomNavBar from "@/components/navigation/BottomNavBar";
 import aloPrefeituraBanner from "@/assets/alo-prefeitura-banner.jpg";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 3;
 
 const AloPrefeituraListPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -309,53 +310,7 @@ const AloPrefeituraListPage = () => {
         </div>
       )}
 
-      <nav className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4 pb-safe">
-        <div className="relative flex items-center">
-          <button
-            onClick={() => navigate(`/cidade/${slug}`)}
-            className="absolute -left-6 z-10 flex items-center justify-center w-14 h-14 rounded-full shadow-xl bg-white"
-            style={{ boxShadow: "0 4px 20px -4px rgba(0,0,0,0.15)" }}
-          >
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-muted">
-              <Home className="h-4 w-4 text-muted-foreground" />
-            </div>
-          </button>
-          <div className="flex items-center gap-2 bg-[#1a1a2e] rounded-full py-2 px-5 pl-12 shadow-2xl">
-            <button
-              onClick={() => navigate(`/cidade/${slug}/jornal`)}
-              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-gray-400 hover:text-white"
-            >
-              <Newspaper className="h-5 w-5" />
-              <span className="text-[9px] font-medium">Jornal</span>
-            </button>
-            <button
-              onClick={() => navigate(`/cidade/${slug}`, { state: { tab: "cinema" } })}
-              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-gray-400 hover:text-white"
-            >
-              <Film className="h-5 w-5" />
-              <span className="text-[9px] font-medium">Cinema</span>
-            </button>
-            <button className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-primary">
-              <Megaphone className="h-5 w-5" />
-              <span className="text-[9px] font-medium">Voz</span>
-            </button>
-            <button
-              onClick={() => navigate(`/cidade/${slug}`, { state: { tab: "maps" } })}
-              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-gray-400 hover:text-white"
-            >
-              <MapIcon className="h-5 w-5" />
-              <span className="text-[9px] font-medium">Maps</span>
-            </button>
-            <button
-              onClick={() => navigate(`/cidade/${slug}`, { state: { tab: "menu" } })}
-              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-gray-400 hover:text-white"
-            >
-              <Menu className="h-5 w-5" />
-              <span className="text-[9px] font-medium">Menu</span>
-            </button>
-          </div>
-        </div>
-      </nav>
+      <BottomNavBar slug={slug} />
     </div>
   );
 };

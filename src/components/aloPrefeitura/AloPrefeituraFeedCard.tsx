@@ -48,6 +48,11 @@ const getYouTubeThumb = (url?: string | null) => {
   return match?.[1] ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
 };
 
+const isYouTubeShortUrl = (url?: string | null) => {
+  if (!url) return false;
+  return /youtube\.com\/shorts\//.test(url);
+};
+
 interface AloPrefeituraFeedCardProps {
   item: AloPrefeitura;
   cidadeSlug?: string;
@@ -74,12 +79,15 @@ const AloPrefeituraFeedCard = ({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showCommentSheet, setShowCommentSheet] = useState(false);
   const [comentario, setComentario] = useState("");
+  const [isDescricaoExpanded, setIsDescricaoExpanded] = useState(false);
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const [comentarioToDelete, setComentarioToDelete] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [translateX, setTranslateX] = useState(0);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [primaryVideoAspect, setPrimaryVideoAspect] = useState<number | null>(null);
+  const [secondaryVideoAspect, setSecondaryVideoAspect] = useState<number | null>(null);
   const primaryVideoRef = useRef<HTMLVideoElement | null>(null);
   const secondaryVideoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -94,6 +102,8 @@ const AloPrefeituraFeedCard = ({
     return match?.[1] ? `https://www.youtube.com/embed/${match[1]}?rel=0` : null;
   };
   const embedUrl = getYouTubeEmbedUrl(item.video_url);
+  const isYouTubeShort = isYouTubeShortUrl(item.video_url);
+  const youtubeAspect = isYouTubeShort ? "9 / 16" : "16 / 9";
   const youtubeThumb = getYouTubeThumb(item.video_url);
 
   // iOS keyboard detection
@@ -355,6 +365,7 @@ const AloPrefeituraFeedCard = ({
   };
 
   const descricao = item.descricao || "";
+  const shouldShowDescricaoToggle = descricao.length > 120;
 
   useEffect(() => {
     const syncPlayback = (videoEl: HTMLVideoElement | null) => {
@@ -444,10 +455,10 @@ const AloPrefeituraFeedCard = ({
             )}
           </>
         ) : item.video_url ? (
-          <div className="relative w-full bg-muted/50">
+          <div className="relative w-full bg-transparent">
             {embedUrl ? (
               isVideoActive ? (
-                <div className="aspect-video">
+                <div style={{ aspectRatio: youtubeAspect }}>
                   <iframe
                     src={`${embedUrl}&autoplay=${globalAutoplay ? "1" : "0"}&mute=${globalMuted ? "1" : "0"}&controls=1&playsinline=1`}
                     title={item.titulo}
@@ -464,18 +475,29 @@ const AloPrefeituraFeedCard = ({
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full aspect-video bg-gradient-to-br from-muted/40 to-muted/80" />
+                <div className="w-full bg-gradient-to-br from-muted/40 to-muted/80" style={{ aspectRatio: youtubeAspect }} />
               )
             ) : (
               <>
-                <video
-                  ref={primaryVideoRef}
-                  src={item.video_url}
-                  className="w-full h-auto"
-                  loop
-                  playsInline
-                  preload={isVideoActive ? "metadata" : "none"}
-                />
+                <div
+                  className="w-full overflow-hidden"
+                  style={{ aspectRatio: primaryVideoAspect ? `${primaryVideoAspect}` : "16 / 9" }}
+                >
+                  <video
+                    ref={primaryVideoRef}
+                    src={item.video_url}
+                    className="w-full h-full object-cover bg-transparent"
+                    loop
+                    playsInline
+                    preload={isVideoActive ? "metadata" : "none"}
+                    onLoadedMetadata={(e) => {
+                      const { videoWidth, videoHeight } = e.currentTarget;
+                      if (videoWidth > 0 && videoHeight > 0) {
+                        setPrimaryVideoAspect(videoWidth / videoHeight);
+                      }
+                    }}
+                  />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent pointer-events-none" />
               </>
             )}
@@ -533,14 +555,25 @@ const AloPrefeituraFeedCard = ({
       {/* VÃ­deo (quando tem imagens E vÃ­deo) */}
       {imagens.length > 0 && item.video_url && (
         <div className="px-3 pt-2">
-          <video
-            ref={secondaryVideoRef}
-            src={item.video_url}
-            className="w-full rounded-xl aspect-video object-contain bg-black"
-            loop
-            playsInline
-            preload={isVideoActive ? "metadata" : "none"}
-          />
+          <div
+            className="w-full rounded-xl overflow-hidden"
+            style={{ aspectRatio: secondaryVideoAspect ? `${secondaryVideoAspect}` : "16 / 9" }}
+          >
+            <video
+              ref={secondaryVideoRef}
+              src={item.video_url}
+              className="w-full h-full object-cover bg-transparent"
+              loop
+              playsInline
+              preload={isVideoActive ? "metadata" : "none"}
+              onLoadedMetadata={(e) => {
+                const { videoWidth, videoHeight } = e.currentTarget;
+                if (videoWidth > 0 && videoHeight > 0) {
+                  setSecondaryVideoAspect(videoWidth / videoHeight);
+                }
+              }}
+            />
+          </div>
           <div className="mt-2 flex justify-end gap-2">
             <button
               type="button"
@@ -601,7 +634,33 @@ const AloPrefeituraFeedCard = ({
           </p>
           {descricao && (
             <div className="text-[13px] text-muted-foreground leading-relaxed mt-1">
-              <p className="whitespace-pre-line">{descricao}</p>
+              <p
+                className="whitespace-pre-line"
+                style={
+                  isDescricaoExpanded
+                    ? undefined
+                    : {
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }
+                }
+              >
+                {descricao}
+              </p>
+              {shouldShowDescricaoToggle && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsDescricaoExpanded((prev) => !prev);
+                  }}
+                  className="mt-1 text-[12px] font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  {isDescricaoExpanded ? "Ver menos" : "Ver mais"}
+                </button>
+              )}
             </div>
           )}
         </div>

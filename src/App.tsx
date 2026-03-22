@@ -1,4 +1,4 @@
-import { Toaster } from "@/components/ui/toaster";
+﻿import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import UpdateAvailableBanner from "@/components/app/UpdateAvailableBanner";
@@ -16,6 +16,7 @@ import AdminCinema from "@/pages/admin/AdminCinema";
 import AdminAloPrefeitura from "@/pages/admin/AdminAloPrefeitura";
 import AdminScraping from "@/pages/admin/AdminScraping";
 import AdminAtividade from "@/pages/admin/AdminAtividade";
+import AdminEnquete from "@/pages/admin/AdminEnquete";
 import MobileLayout from "@/components/MobileLayout";
 import AnimatedRoutes from "@/components/navigation/AnimatedRoutes";
 import AndroidBackButtonHandler from "@/components/navigation/AndroidBackButtonHandler";
@@ -35,6 +36,7 @@ import DesapegaDetailPage from "@/pages/DesapegaDetailPage";
 import DoacoesListPage from "@/pages/DoacoesListPage";
 import NovaDoacaoPage from "@/pages/NovaDoacaoPage";
 import DoacaoDetailPage from "@/pages/DoacaoDetailPage";
+import ServicosListPage from "@/pages/ServicosListPage";
 
 import ServicoCategoriaPage from "@/pages/ServicoCategoriaPage";
 import NovaEmpresaPage from "@/pages/NovaEmpresaPage";
@@ -68,6 +70,7 @@ import NotFound from "@/pages/NotFound";
 import EventoDetailPage from "@/pages/EventoDetailPage";
 import EventosListPage from "@/pages/EventosListPage";
 import OnibusListPage from "@/pages/OnibusListPage";
+import MusicaAoVivoListPage from "@/pages/MusicaAoVivoListPage";
 import CuponsListPage from "@/pages/CuponsListPage";
 import MeusCuponsPage from "@/pages/MeusCuponsPage";
 import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
@@ -173,6 +176,7 @@ const App = () => (
               <Route path="/cidade/:slug/doacoes" element={<DoacoesListPage />} />
               <Route path="/cidade/:slug/doacoes/novo" element={<NovaDoacaoPage />} />
               <Route path="/cidade/:slug/doacoes/:anuncioId" element={<DoacaoDetailPage />} />
+              <Route path="/cidade/:slug/servicos" element={<ServicosListPage />} />
               <Route path="/cidade/:slug/servicos/:categoriaId" element={<ServicoCategoriaPage />} />
               <Route path="/cidade/:slug/servicos/:categoriaId/novo" element={<NovaEmpresaPage />} />
               <Route path="/cidade/:slug/servicos/:categoriaId/:empresaId" element={<ServicoEmpresaDetailPage />} />
@@ -203,6 +207,7 @@ const App = () => (
               <Route path="/cidade/:slug/minhas-vagas" element={<MinhasVagasPage />} />
               <Route path="/cidade/:slug/eventos" element={<EventosListPage />} />
               <Route path="/cidade/:slug/eventos/:eventoId" element={<EventoDetailPage />} />
+              <Route path="/cidade/:slug/musica-ao-vivo" element={<MusicaAoVivoListPage />} />
               <Route path="/cidade/:slug/onibus" element={<OnibusListPage />} />
               <Route path="/cidade/:slug/cupons" element={<CuponsListPage />} />
               <Route path="/cidade/:slug/meus-cupons" element={<MeusCuponsPage />} />
@@ -224,6 +229,7 @@ const App = () => (
             <Route path="/admin/alo-prefeitura" element={<AdminRouteGuard><AdminLayout><AdminAloPrefeitura /></AdminLayout></AdminRouteGuard>} />
             <Route path="/admin/scraping" element={<AdminRouteGuard><AdminLayout><AdminScraping /></AdminLayout></AdminRouteGuard>} />
             <Route path="/admin/atividade" element={<AdminRouteGuard><AdminLayout><AdminAtividade /></AdminLayout></AdminRouteGuard>} />
+            <Route path="/admin/enquete" element={<AdminRouteGuard><AdminLayout><AdminEnquete /></AdminLayout></AdminRouteGuard>} />
 
             <Route path="*" element={<NotFound />} />
             </Routes>
@@ -236,3 +242,4 @@ const App = () => (
 );
 
 export default App;
+

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
@@ -26,7 +26,7 @@ const ServicoCategoriaPage = () => {
 
   const categoriaMeta = CATEGORIAS_SERVICO_META[categoriaId || ""] || {
     nome: categoriaId || "Serviço",
-    icone: "📦",
+    icone: "ðŸ“¦",
   };
 
   // Buscar cidade
@@ -216,3 +216,4 @@ const ServicoCategoriaPage = () => {
 };
 
 export default ServicoCategoriaPage;
+

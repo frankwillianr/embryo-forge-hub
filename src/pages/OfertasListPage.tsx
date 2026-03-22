@@ -6,6 +6,7 @@ import { ArrowLeft, Search, BadgePercent } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import BottomNavBar from "@/components/navigation/BottomNavBar";
 import ofertasBanner from "@/assets/ofertas-banner.jpg";
 
 const TODAS_CATEGORIAS = [
@@ -167,7 +168,7 @@ const OfertasListPage = () => {
         </div>
       </div>
 
-      <main className="flex-1 p-4">
+      <main className="flex-1 p-4 pb-24">
         {isLoading ? (
           <div className="grid grid-cols-2 gap-3">
             {[1, 2, 3, 4].map((i) => (
@@ -213,6 +214,8 @@ const OfertasListPage = () => {
           </div>
         )}
       </main>
+
+      <BottomNavBar slug={slug} active="ofertas" />
     </div>
   );
 };
