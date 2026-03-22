@@ -17,6 +17,7 @@ import AdminAloPrefeitura from "@/pages/admin/AdminAloPrefeitura";
 import AdminScraping from "@/pages/admin/AdminScraping";
 import AdminAtividade from "@/pages/admin/AdminAtividade";
 import AdminEnquete from "@/pages/admin/AdminEnquete";
+import AdminSugestoes from "@/pages/admin/AdminSugestoes";
 import MobileLayout from "@/components/MobileLayout";
 import AnimatedRoutes from "@/components/navigation/AnimatedRoutes";
 import AndroidBackButtonHandler from "@/components/navigation/AndroidBackButtonHandler";
@@ -230,6 +231,7 @@ const App = () => (
             <Route path="/admin/scraping" element={<AdminRouteGuard><AdminLayout><AdminScraping /></AdminLayout></AdminRouteGuard>} />
             <Route path="/admin/atividade" element={<AdminRouteGuard><AdminLayout><AdminAtividade /></AdminLayout></AdminRouteGuard>} />
             <Route path="/admin/enquete" element={<AdminRouteGuard><AdminLayout><AdminEnquete /></AdminLayout></AdminRouteGuard>} />
+            <Route path="/admin/sugestoes" element={<AdminRouteGuard><AdminLayout><AdminSugestoes /></AdminLayout></AdminRouteGuard>} />
 
             <Route path="*" element={<NotFound />} />
             </Routes>

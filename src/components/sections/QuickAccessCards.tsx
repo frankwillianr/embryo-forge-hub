@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +50,7 @@ const QuickAccessCards = ({ cidadeSlug, onMapClick }: QuickAccessCardsProps) => 
   const { user } = useAuth();
   const [sugestao, setSugestao] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleClick = (id: string) => {
     if (id === "vagas") {
@@ -68,7 +71,7 @@ const QuickAccessCards = ({ cidadeSlug, onMapClick }: QuickAccessCardsProps) => 
     navigate(`/cidade/${cidadeSlug}?tab=maps`);
   };
 
-  const handleEnviarSugestao = () => {
+  const handleEnviarSugestao = async () => {
     const texto = sugestao.trim();
     if (!texto) return;
 
@@ -78,8 +81,39 @@ const QuickAccessCards = ({ cidadeSlug, onMapClick }: QuickAccessCardsProps) => 
       return;
     }
 
-    setSugestao("");
-    setConfirmOpen(true);
+    try {
+      setIsSubmitting(true);
+
+      const { data: cidadeData, error: cidadeError } = await supabase
+        .from("cidade")
+        .select("id")
+        .eq("slug", cidadeSlug)
+        .maybeSingle();
+
+      if (cidadeError) throw cidadeError;
+      if (!cidadeData?.id) {
+        toast.error("Nao foi possivel identificar a cidade para enviar a sugestao.");
+        return;
+      }
+
+      const { error } = await supabase.from("rel_cidade_dica_sugestao").insert({
+        cidade_id: cidadeData.id,
+        user_id: user.id,
+        mensagem: texto,
+        status: "nova",
+      });
+
+      if (error) throw error;
+
+      setSugestao("");
+      setConfirmOpen(true);
+    } catch (error) {
+      console.error("[QuickAccessCards] erro ao enviar sugestao", error);
+      const message = error instanceof Error ? error.message : "Erro inesperado";
+      toast.error(`Erro ao enviar sugestao: ${message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -155,8 +189,8 @@ const QuickAccessCards = ({ cidadeSlug, onMapClick }: QuickAccessCardsProps) => 
 
         <div className="mt-2 flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground">{sugestao.length}/600</span>
-          <Button size="sm" onClick={handleEnviarSugestao} disabled={!sugestao.trim()}>
-            Enviar
+          <Button size="sm" onClick={handleEnviarSugestao} disabled={!sugestao.trim() || isSubmitting}>
+            {isSubmitting ? "Enviando..." : "Enviar"}
           </Button>
         </div>
       </div>

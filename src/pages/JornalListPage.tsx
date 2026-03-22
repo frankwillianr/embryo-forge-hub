@@ -28,7 +28,6 @@ const JornalListPage = () => {
   useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
   const location = useLocation();
   const [categoriaAtiva, setCategoriaAtiva] = useState(FILTER_ALL);
-  const [hasUserScrolled, setHasUserScrolled] = useState(false);
   const [activeAloId, setActiveAloId] = useState<string | null>(null);
   const [globalMuted, setGlobalMuted] = useState(true);
   const [globalAutoplay, setGlobalAutoplay] = useState(true);
@@ -187,6 +186,41 @@ const JornalListPage = () => {
     enabled: !!cidadeData?.id,
   });
 
+  const { data: totalFeedCount } = useQuery({
+    queryKey: ["feed-jornal-voz-total", slug, cidadeData?.id, categoriaAtiva],
+    queryFn: async () => {
+      const jornalCountPromise = shouldFetchJornal
+        ? (() => {
+            const baseQuery = supabase
+              .from("rel_cidade_jornal")
+              .select("*", { count: "exact", head: true })
+              .eq("cidade_id", cidadeData!.id)
+              .eq("ativo", true)
+              .not("titulo", "like", "%{{%");
+
+            return isJornalCategory ? baseQuery.eq("categoria", categoriaAtiva) : baseQuery;
+          })()
+        : Promise.resolve({ count: 0, error: null } as const);
+
+      const vozCountPromise = shouldFetchVoz
+        ? supabase
+            .from("rel_cidade_alo_prefeitura")
+            .select("*", { count: "exact", head: true })
+            .eq("cidade_id", cidadeData!.id)
+            .eq("status", "aprovado")
+        : Promise.resolve({ count: 0, error: null } as const);
+
+      const [{ count: jornalCount, error: jornalCountError }, { count: vozCount, error: vozCountError }] =
+        await Promise.all([jornalCountPromise, vozCountPromise]);
+
+      if (jornalCountError) throw jornalCountError;
+      if (vozCountError) throw vozCountError;
+
+      return (jornalCount || 0) + (vozCount || 0);
+    },
+    enabled: !!cidadeData?.id,
+  });
+
   const feedItems = useMemo(
     () => feedPages?.pages.flatMap((page) => page.items) ?? [],
     [feedPages]
@@ -237,17 +271,6 @@ const JornalListPage = () => {
   ]);
 
   useEffect(() => {
-    const onScroll = () => {
-      if (window.scrollY > 40) {
-        setHasUserScrolled(true);
-      }
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
     if (isLoading || !hasNextPage || isFetchingNextPage) return;
 
     const target = loadMoreRef.current;
@@ -255,7 +278,7 @@ const JornalListPage = () => {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && hasUserScrolled) {
+        if (entries[0]?.isIntersecting) {
           fetchNextPage();
         }
       },
@@ -265,7 +288,7 @@ const JornalListPage = () => {
     observer.observe(target);
 
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, hasUserScrolled, isFetchingNextPage, isLoading]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, isLoading]);
 
   useEffect(() => {
     if (isLoading || aloItemIds.length === 0) return;
@@ -347,7 +370,7 @@ const JornalListPage = () => {
             <div className="mt-2 flex items-end justify-between gap-2">
               <h2 className="text-[22px] leading-tight font-black text-white">Jornal da Cidade</h2>
               <div className="h-8 min-w-8 px-2 rounded-full bg-white/20 border border-white/30 text-xs font-semibold text-white flex items-center justify-center">
-                {feedItems.length}
+                {totalFeedCount ?? feedItems.length}
               </div>
             </div>
             <p className="mt-1 text-xs text-white/80">Atualizações locais em tempo real para você.</p>
