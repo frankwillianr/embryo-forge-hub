@@ -8,6 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import ImageUpload from "@/components/shared/ImageUpload";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +23,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 interface AdminCidadeEventosProps {
@@ -36,10 +54,86 @@ const emptyForm = {
   ativo: true,
 };
 
+const nullableText = (value?: string | null) => {
+  const v = String(value ?? "").trim();
+  return v.length > 0 ? v : null;
+};
+
+const normalizeHorario = (value?: string | null) => {
+  const v = String(value ?? "").trim();
+  if (!v) return null;
+  const match = v.match(/^([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/);
+  if (!match) {
+    throw new Error("Horario invalido. Use HH:mm (ex.: 20:00).");
+  }
+  return `${match[1]}:${match[2]}:${match[3] ?? "00"}`;
+};
+
+const normalizePreco = (value?: string | null) => {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+  if (/^gratuito$/i.test(raw)) return 0;
+
+  const cleaned = raw
+    .replace(/r\$\s*/gi, "")
+    .replace(/\s+/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+
+  const parsed = Number(cleaned);
+  if (!Number.isFinite(parsed)) {
+    throw new Error("Preco invalido. Use valor numerico (ex.: 50 ou 50,00).");
+  }
+  return parsed;
+};
+
+const buildEventoPayload = (form: typeof emptyForm) => {
+  const titulo = String(form.titulo ?? "").trim();
+  if (!titulo) throw new Error("Titulo e obrigatorio.");
+
+  const dataEvento = String(form.data_evento ?? "").trim().slice(0, 10);
+  if (!dataEvento) throw new Error("Data e obrigatoria.");
+
+  return {
+    titulo,
+    descricao: nullableText(form.descricao),
+    imagem_url: nullableText(form.imagem_url),
+    data_evento: dataEvento,
+    horario: normalizeHorario(form.horario),
+    local_nome: nullableText(form.local_nome),
+    local_endereco: nullableText(form.local_endereco),
+    categoria: nullableText(form.categoria) ?? "show",
+    preco: normalizePreco(form.preco),
+    link_ingresso: nullableText(form.link_ingresso),
+    destaque: Boolean(form.destaque),
+    ativo: Boolean(form.ativo),
+  };
+};
+
+const EVENT_CATEGORIES = [
+  "show",
+  "festival",
+  "teatro",
+  "stand-up",
+  "festa",
+  "esporte",
+  "infantil",
+  "gastronomia",
+  "cultura",
+  "outros",
+];
+
+const maskHorario = (value: string) => {
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+};
+
 const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [eventoToDelete, setEventoToDelete] = useState<any>(null);
   const [form, setForm] = useState(emptyForm);
 
   const queryKey = ["admin-cidade-eventos", cidadeId];
@@ -77,19 +171,28 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
       toast.success(editing ? "Evento atualizado!" : "Evento criado!");
       closeDialog();
     },
-    onError: () => toast.error("Erro ao salvar evento"),
+    onError: (error: any) => toast.error(error?.message || "Erro ao salvar evento"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("rel_cidade_eventos").delete().eq("id", id);
+      const { error, count } = await supabase
+        .from("rel_cidade_eventos")
+        .delete({ count: "exact" })
+        .eq("id", id);
       if (error) throw error;
+      if (!count || count < 1) {
+        throw new Error("Nenhum evento foi removido. Verifique permissao de DELETE (RLS).");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       toast.success("Evento removido!");
+      setEventoToDelete(null);
     },
-    onError: () => toast.error("Erro ao remover"),
+    onError: (error: any) => {
+      toast.error(error?.message || "Erro ao remover");
+    },
   });
 
   const toggleMutation = useMutation({
@@ -126,7 +229,7 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
       local_nome: item.local_nome || "",
       local_endereco: item.local_endereco || "",
       categoria: item.categoria || "show",
-      preco: item.preco || "",
+      preco: item.preco ?? "",
       link_ingresso: item.link_ingresso || "",
       destaque: item.destaque || false,
       ativo: item.ativo ?? true,
@@ -135,12 +238,12 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
   };
 
   const handleSave = () => {
-    if (!form.titulo || !form.data_evento) {
-      toast.error("Título e data são obrigatórios");
-      return;
+    try {
+      const payload = buildEventoPayload(form);
+      saveMutation.mutate(payload);
+    } catch (error: any) {
+      toast.error(error?.message || "Dados invalidos no formulario");
     }
-    const { ...payload } = form;
-    saveMutation.mutate(payload);
   };
 
   if (isLoading) {
@@ -234,9 +337,7 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
                   size="sm"
                   variant="destructive"
                   className="h-8 gap-1.5"
-                  onClick={() => {
-                    if (confirm("Remover este evento?")) deleteMutation.mutate(item.id);
-                  }}
+                  onClick={() => setEventoToDelete(item)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Remover
@@ -263,8 +364,14 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
               <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={3} />
             </div>
             <div className="space-y-2">
-              <Label>URL da Imagem</Label>
-              <Input value={form.imagem_url} onChange={(e) => setForm({ ...form, imagem_url: e.target.value })} placeholder="https://..." />
+              <Label>Imagem do Evento</Label>
+              <ImageUpload
+                images={form.imagem_url ? [form.imagem_url] : []}
+                onChange={(images) => setForm({ ...form, imagem_url: images[0] || "" })}
+                maxImages={1}
+                bucket="avatars"
+                folder={`eventos/${cidadeId}`}
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -273,7 +380,13 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
               </div>
               <div className="space-y-2">
                 <Label>Horário</Label>
-                <Input value={form.horario} onChange={(e) => setForm({ ...form, horario: e.target.value })} placeholder="20:00" />
+                <Input
+                  value={form.horario}
+                  onChange={(e) => setForm({ ...form, horario: maskHorario(e.target.value) })}
+                  placeholder="20:00"
+                  inputMode="numeric"
+                  maxLength={5}
+                />
               </div>
             </div>
             <div className="space-y-2">
@@ -287,7 +400,18 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Categoria</Label>
-                <Input value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} placeholder="show, festival, teatro..." />
+                <Select value={form.categoria} onValueChange={(value) => setForm({ ...form, categoria: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EVENT_CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Preço</Label>
@@ -315,6 +439,31 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!eventoToDelete} onOpenChange={(open) => !open && setEventoToDelete(null)}>
+        <AlertDialogContent className="w-[calc(100%-20px)] max-w-lg rounded-[10px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir evento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acao remove o evento permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                if (!eventoToDelete?.id) return;
+                deleteMutation.mutate(eventoToDelete.id);
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Removendo..." : "Remover"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

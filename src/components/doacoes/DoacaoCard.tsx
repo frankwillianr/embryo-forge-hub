@@ -64,6 +64,7 @@ const DoacaoCard = ({ anuncio, cidadeSlug }: DoacaoCardProps) => {
   const [titulo, setTitulo] = useState(anuncio.titulo ?? "");
   const [descricao, setDescricao] = useState(anuncio.descricao ?? "");
   const [categoriaId, setCategoriaId] = useState(anuncio.categoria_id ?? "");
+  const [status, setStatus] = useState(anuncio.status === "doado" ? "doado" : "ativo");
   const [condicao, setCondicao] = useState(anuncio.condicao ?? "usado");
   const [whatsapp, setWhatsapp] = useState(anuncio.whatsapp ?? "");
   const [imagens, setImagens] = useState<string[]>(
@@ -102,6 +103,7 @@ const DoacaoCard = ({ anuncio, cidadeSlug }: DoacaoCardProps) => {
     setTitulo(anuncio.titulo ?? "");
     setDescricao(anuncio.descricao ?? "");
     setCategoriaId(anuncio.categoria_id ?? "");
+    setStatus(anuncio.status === "doado" ? "doado" : "ativo");
     setCondicao(anuncio.condicao ?? "usado");
     setWhatsapp(anuncio.whatsapp ?? "");
     setImagens(
@@ -175,6 +177,7 @@ const DoacaoCard = ({ anuncio, cidadeSlug }: DoacaoCardProps) => {
           titulo: titulo.trim(),
           descricao: descricao.trim() || null,
           categoria_id: categoriaIdValida,
+          status,
           condicao,
           whatsapp: cleanWhatsapp,
         })
@@ -384,6 +387,19 @@ const DoacaoCard = ({ anuncio, cidadeSlug }: DoacaoCardProps) => {
                   <SelectItem value="novo">Novo</SelectItem>
                   <SelectItem value="seminovo">Seminovo</SelectItem>
                   <SelectItem value="usado">Usado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="doado">Doado</SelectItem>
                 </SelectContent>
               </Select>
             </div>

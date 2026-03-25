@@ -59,6 +59,7 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
   const [descricao, setDescricao] = useState(anuncio.descricao ?? "");
   const [preco, setPreco] = useState("");
   const [categoriaId, setCategoriaId] = useState(anuncio.categoria_id ?? "");
+  const [status, setStatus] = useState(anuncio.status === "vendido" ? "vendido" : "ativo");
   const [condicao, setCondicao] = useState(anuncio.condicao ?? "usado");
   const [whatsapp, setWhatsapp] = useState(anuncio.whatsapp ?? "");
   const [imagens, setImagens] = useState<string[]>(
@@ -97,6 +98,7 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
       }).format(Number(anuncio.preco) || 0),
     );
     setCategoriaId(anuncio.categoria_id ?? "");
+    setStatus(anuncio.status === "vendido" ? "vendido" : "ativo");
     setCondicao(anuncio.condicao ?? "usado");
     setWhatsapp(anuncio.whatsapp ?? "");
     setImagens(
@@ -188,6 +190,7 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
           descricao: descricao.trim() || null,
           preco: cleanPreco,
           categoria_id: categoriaId || null,
+          status,
           condicao,
           whatsapp: cleanWhatsapp,
         })
@@ -401,6 +404,19 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
                   <SelectItem value="novo">Novo</SelectItem>
                   <SelectItem value="seminovo">Seminovo</SelectItem>
                   <SelectItem value="usado">Usado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="vendido">Vendido</SelectItem>
                 </SelectContent>
               </Select>
             </div>
