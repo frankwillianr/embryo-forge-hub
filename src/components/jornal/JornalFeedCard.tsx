@@ -411,9 +411,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const descricao = (jornal.descricao || "").replace(/\\n/g, '\n');
   const shouldShowDescricaoToggle = descricao.length > 120;
 
-  const dataExibicao = jornal.data_noticia
-    ? new Date(`${jornal.data_noticia}T00:00:00`)
-    : new Date(jornal.created_at);
+  const dataExibicao = new Date(jornal.created_at);
 
   return (
     <article id={`jornal-${jornal.id}`} className="border-b border-border/50 relative mb-6 scroll-mt-16">

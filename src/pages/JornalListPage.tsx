@@ -184,6 +184,11 @@ const JornalListPage = () => {
       return lastPage.nextOffset;
     },
     enabled: !!cidadeData?.id,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 
   const { data: totalFeedCount } = useQuery({
@@ -219,6 +224,11 @@ const JornalListPage = () => {
       return (jornalCount || 0) + (vozCount || 0);
     },
     enabled: !!cidadeData?.id,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 
   const feedItems = useMemo(

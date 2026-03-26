@@ -39,6 +39,8 @@ interface AdminCidadeEventosProps {
   cidadeId: string;
 }
 
+type EventosPeriodoFiltro = "proximos" | "passados";
+
 const emptyForm = {
   titulo: "",
   descricao: "",
@@ -134,6 +136,7 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
   const [dialog, setDialog] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [eventoToDelete, setEventoToDelete] = useState<any>(null);
+  const [periodoFiltro, setPeriodoFiltro] = useState<EventosPeriodoFiltro>("proximos");
   const [form, setForm] = useState(emptyForm);
 
   const queryKey = ["admin-cidade-eventos", cidadeId];
@@ -154,11 +157,15 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
   const saveMutation = useMutation({
     mutationFn: async (payload: any) => {
       if (editing) {
-        const { error } = await supabase
+        const { error, count } = await supabase
           .from("rel_cidade_eventos")
-          .update(payload)
-          .eq("id", editing.id);
+          .update(payload, { count: "exact" })
+          .eq("id", editing.id)
+          .eq("cidade_id", cidadeId);
         if (error) throw error;
+        if (!count || count < 1) {
+          throw new Error("Nenhum evento foi atualizado. Verifique permissao de UPDATE (RLS).");
+        }
       } else {
         const { error } = await supabase
           .from("rel_cidade_eventos")
@@ -197,12 +204,22 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
-      const { error } = await supabase.from("rel_cidade_eventos").update({ ativo }).eq("id", id);
+      const { error, count } = await supabase
+        .from("rel_cidade_eventos")
+        .update({ ativo }, { count: "exact" })
+        .eq("id", id)
+        .eq("cidade_id", cidadeId);
       if (error) throw error;
+      if (!count || count < 1) {
+        throw new Error("Nenhum evento foi atualizado. Verifique permissao de UPDATE (RLS).");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       toast.success("Status atualizado!");
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Erro ao atualizar status");
     },
   });
 
@@ -250,15 +267,45 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
     return <div className="text-center py-8 text-muted-foreground">Carregando...</div>;
   }
 
+  const hojeDate = new Date();
+  hojeDate.setHours(0, 0, 0, 0);
+  const hoje = `${hojeDate.getFullYear()}-${String(hojeDate.getMonth() + 1).padStart(2, "0")}-${String(hojeDate.getDate()).padStart(2, "0")}`;
+  const filteredEventos = (eventos ?? []).filter((item: any) =>
+    periodoFiltro === "proximos" ? item.data_evento >= hoje : item.data_evento < hoje
+  );
+  const periodoLabel = periodoFiltro === "proximos" ? "proximos" : "passados";
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h3 className="font-semibold text-foreground">Shows e Eventos</h3>
-        <Button size="sm" className="gap-1.5" onClick={openNew}>
-          <Plus className="h-4 w-4" />
-          Novo Evento
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border border-border p-1 bg-background">
+            <Button
+              type="button"
+              size="sm"
+              variant={periodoFiltro === "proximos" ? "default" : "ghost"}
+              className="h-7 px-3"
+              onClick={() => setPeriodoFiltro("proximos")}
+            >
+              Proximos
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={periodoFiltro === "passados" ? "default" : "ghost"}
+              className="h-7 px-3"
+              onClick={() => setPeriodoFiltro("passados")}
+            >
+              Passados
+            </Button>
+          </div>
+          <Button size="sm" className="gap-1.5" onClick={openNew}>
+            <Plus className="h-4 w-4" />
+            Novo Evento
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -288,9 +335,15 @@ const AdminCidadeEventos = ({ cidadeId }: AdminCidadeEventosProps) => {
           <h3 className="font-medium text-foreground mb-1">Nenhum evento</h3>
           <p className="text-muted-foreground text-sm">Adicione o primeiro evento desta cidade.</p>
         </div>
+      ) : filteredEventos.length === 0 ? (
+        <div className="text-center py-12">
+          <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+          <h3 className="font-medium text-foreground mb-1">Nenhum evento {periodoLabel}</h3>
+          <p className="text-muted-foreground text-sm">Troque o filtro para visualizar outros eventos.</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {eventos.map((item: any) => (
+          {filteredEventos.map((item: any) => (
             <div key={item.id} className="p-4 bg-muted rounded-xl space-y-3">
               <div className="flex items-start gap-3">
                 {item.imagem_url && (

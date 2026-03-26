@@ -191,9 +191,7 @@ const JornalCard = ({ jornal, cidadeSlug }: JornalCardProps) => {
     }
   };
 
-  const dataExibicao = jornal.data_noticia
-    ? new Date(`${jornal.data_noticia}T00:00:00`)
-    : new Date(jornal.created_at);
+  const dataExibicao = new Date(jornal.created_at);
 
   return (
     <div onClick={handleClick} className="flex-shrink-0 w-64 cursor-pointer group">

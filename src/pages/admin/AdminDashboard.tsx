@@ -76,6 +76,34 @@ const getTodayLocalIsoDate = () => {
   return local.toISOString().slice(0, 10);
 };
 
+const normalizeDateRange = (start: string, end: string) => {
+  if (!start && !end) {
+    const today = getTodayLocalIsoDate();
+    return { start: today, end: today };
+  }
+  if (!start) return { start: end, end };
+  if (!end) return { start, end: start };
+  if (start <= end) return { start, end };
+  return { start: end, end: start };
+};
+
+const getDateRangeDays = (start: string, end: string) => {
+  const out: string[] = [];
+  const startDate = new Date(`${start}T00:00:00`);
+  const endDate = new Date(`${end}T00:00:00`);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return out;
+
+  for (let cursor = new Date(startDate); cursor <= endDate; cursor.setDate(cursor.getDate() + 1)) {
+    const year = cursor.getFullYear();
+    const month = String(cursor.getMonth() + 1).padStart(2, "0");
+    const day = String(cursor.getDate()).padStart(2, "0");
+    out.push(`${year}-${month}-${day}`);
+  }
+
+  return out;
+};
+
 const AccessMapBounds = ({ points }: { points: AccessGeoPoint[] }) => {
   const map = useMap();
 
@@ -108,8 +136,13 @@ const RegisterAccessMap = ({ onReady }: { onReady: (map: L.Map) => void }) => {
 };
 
 const AdminDashboard = () => {
-  const [selectedMapDate, setSelectedMapDate] = useState(getTodayLocalIsoDate());
+  const [selectedMapStartDate, setSelectedMapStartDate] = useState(getTodayLocalIsoDate());
+  const [selectedMapEndDate, setSelectedMapEndDate] = useState(getTodayLocalIsoDate());
   const [accessMap, setAccessMap] = useState<L.Map | null>(null);
+  const mapDateRange = useMemo(
+    () => normalizeDateRange(selectedMapStartDate, selectedMapEndDate),
+    [selectedMapStartDate, selectedMapEndDate],
+  );
 
   const {
     data: dashboardStats,
@@ -177,18 +210,53 @@ const AdminDashboard = () => {
     isLoading: geoLoading,
     isError: geoError,
   } = useQuery({
-    queryKey: ["admin-access-geo-daily", selectedMapDate],
+    queryKey: ["admin-access-geo-range", mapDateRange.start, mapDateRange.end],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("admin_access_geo_daily", {
-        p_day: selectedMapDate,
+      const { data, error } = await supabase.rpc("admin_access_geo_range", {
+        p_start_day: mapDateRange.start,
+        p_end_day: mapDateRange.end,
         p_cidade_slug: DASHBOARD_CITY_SLUG,
       });
-      // Compatibilidade com bancos sem a migration do mapa aplicada.
+
+      // Compatibilidade com bancos sem a migration de range aplicada.
       if (error?.code === "PGRST202") {
-        return {
-          points: [],
-          totals: { users: 0, events: 0 },
-        } satisfies AccessGeoResponse;
+        const days = getDateRangeDays(mapDateRange.start, mapDateRange.end);
+        const responses = await Promise.all(
+          days.map((day) =>
+            supabase.rpc("admin_access_geo_daily", {
+              p_day: day,
+              p_cidade_slug: DASHBOARD_CITY_SLUG,
+            }),
+          ),
+        );
+
+        const aggregated = new Map<string, AccessGeoPoint>();
+        for (const response of responses) {
+          if (response.error) continue;
+          const rows = Array.isArray(response.data) ? (response.data as Array<Record<string, unknown>>) : [];
+          rows.forEach((row) => {
+            const latitude = Number(row.latitude ?? 0);
+            const longitude = Number(row.longitude ?? 0);
+            const users = Number(row.users ?? 0);
+            const events = Number(row.events ?? 0);
+            if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || users <= 0) return;
+            const key = `${latitude}:${longitude}`;
+            const prev = aggregated.get(key);
+            if (prev) {
+              prev.users += users;
+              prev.events += events;
+            } else {
+              aggregated.set(key, { latitude, longitude, users, events });
+            }
+          });
+        }
+
+        const points = [...aggregated.values()].sort((a, b) => b.users - a.users || b.events - a.events);
+        const totals = points.reduce(
+          (acc, item) => ({ users: acc.users + item.users, events: acc.events + item.events }),
+          { users: 0, events: 0 },
+        );
+        return { points, totals } satisfies AccessGeoResponse;
       }
       if (error) throw error;
 
@@ -509,32 +577,47 @@ const AdminDashboard = () => {
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-base font-semibold text-gray-900">Mapa de origem dos acessos</h2>
-            <p className="text-xs text-gray-500">Usuarios unicos por regiao em Governador Valadares no dia selecionado</p>
+            <p className="text-xs text-gray-500">Usuarios por regiao em Governador Valadares no periodo selecionado</p>
           </div>
-          <div className="w-full max-w-[220px]">
-            <label htmlFor="dashboard-map-date" className="mb-1 block text-xs font-medium text-gray-500">
-              Dia
-            </label>
-            <Input
-              id="dashboard-map-date"
-              type="date"
-              value={selectedMapDate}
-              max={getTodayLocalIsoDate()}
-              onChange={(event) => setSelectedMapDate(event.target.value)}
-              className="h-9 bg-white"
-            />
+          <div className="grid w-full max-w-[420px] grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label htmlFor="dashboard-map-date-start" className="mb-1 block text-xs font-medium text-gray-500">
+                De
+              </label>
+              <Input
+                id="dashboard-map-date-start"
+                type="date"
+                value={selectedMapStartDate}
+                max={getTodayLocalIsoDate()}
+                onChange={(event) => setSelectedMapStartDate(event.target.value)}
+                className="h-9 bg-white"
+              />
+            </div>
+            <div>
+              <label htmlFor="dashboard-map-date-end" className="mb-1 block text-xs font-medium text-gray-500">
+                Ate
+              </label>
+              <Input
+                id="dashboard-map-date-end"
+                type="date"
+                value={selectedMapEndDate}
+                max={getTodayLocalIsoDate()}
+                onChange={(event) => setSelectedMapEndDate(event.target.value)}
+                className="h-9 bg-white"
+              />
+            </div>
           </div>
         </div>
 
         <div className="mb-3 text-sm text-gray-600">
           {geoLoading || geoError
             ? "Carregando distribuicao geografia..."
-            : `${formatCount(accessGeo?.totals.users)} usuarios unicos em ${formatCount(accessGeo?.totals.events)} eventos`}
+            : `${formatCount(accessGeo?.totals.users)} usuarios em ${formatCount(accessGeo?.totals.events)} eventos (${mapDateRange.start} ate ${mapDateRange.end})`}
         </div>
 
-        <div className="h-[520px] overflow-hidden rounded-lg border border-gray-200">
-          <div className="relative h-full w-full">
-            <MapContainer center={GV_CENTER} zoom={GV_DEFAULT_ZOOM} className="h-full w-full" scrollWheelZoom>
+        <div className="overflow-hidden rounded-lg border border-gray-200">
+          <div className="relative w-full" style={{ height: "1000px" }}>
+            <MapContainer center={GV_CENTER} zoom={GV_DEFAULT_ZOOM} className="w-full" style={{ height: "1000px" }} scrollWheelZoom>
               <RegisterAccessMap onReady={setAccessMap} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -585,7 +668,7 @@ const AdminDashboard = () => {
 
         {!geoLoading && !geoError && (accessGeo?.points.length || 0) === 0 && (
           <p className="mt-3 text-xs text-gray-500">
-            Sem localizacao para este dia. Novos pontos aparecem apos os proximos acessos com permissao de geolocalizacao.
+            Sem localizacao para este periodo. Novos pontos aparecem apos os proximos acessos com permissao de geolocalizacao.
           </p>
         )}
       </div>
