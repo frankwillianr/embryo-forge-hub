@@ -170,13 +170,13 @@ const OfertasListPage = () => {
 
       <main className="flex-1 p-4 pb-24">
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="aspect-[3/4] rounded-2xl bg-muted animate-pulse" />
             ))}
           </div>
         ) : ofertasFiltradas.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {ofertasFiltradas.map((oferta) => {
               const meta = categoriasMeta[oferta.categoria] || { nome: oferta.categoria, icone: "📦" };
               return (

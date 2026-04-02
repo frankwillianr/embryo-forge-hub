@@ -29,7 +29,7 @@ const JornalListPage = () => {
   const location = useLocation();
   const [categoriaAtiva, setCategoriaAtiva] = useState(FILTER_ALL);
   const [activeAloId, setActiveAloId] = useState<string | null>(null);
-  const [globalMuted, setGlobalMuted] = useState(true);
+  const [globalMuted, setGlobalMuted] = useState(false);
   const [globalAutoplay, setGlobalAutoplay] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);

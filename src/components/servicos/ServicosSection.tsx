@@ -354,34 +354,34 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
       <div className="grid grid-cols-3" style={{ gap: "15px" }}>
         <button
           onClick={() => handleClick("veiculos")}
-          className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-600 p-3.5 min-h-[112px] flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
+          className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-600 p-2.5 min-h-[90px] flex flex-col gap-1.5 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
         >
           <div className="absolute -right-2 -bottom-2 opacity-15">
-            <Car className="w-12 h-12" strokeWidth={1} />
+            <Car className="w-10 h-10" strokeWidth={1} />
           </div>
-          <Car className="w-5 h-5 text-white/80" />
+          <Car className="w-4 h-4 text-white/80" />
           <span className="text-[11px] font-semibold relative z-10">Veículos</span>
         </button>
 
         <button
           onClick={() => handleClick("desapega")}
-          className="rounded-2xl bg-gradient-to-br from-pink-500 to-rose-400 p-3.5 min-h-[112px] flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
+          className="rounded-2xl bg-gradient-to-br from-pink-500 to-rose-400 p-2.5 min-h-[90px] flex flex-col gap-1.5 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
         >
           <div className="absolute -right-2 -bottom-2 opacity-15">
-            <ShoppingBag className="w-12 h-12" strokeWidth={1} />
+            <ShoppingBag className="w-10 h-10" strokeWidth={1} />
           </div>
-          <ShoppingBag className="w-5 h-5 text-white/80" />
+          <ShoppingBag className="w-4 h-4 text-white/80" />
           <span className="text-[11px] font-semibold relative z-10">Marketplace local</span>
         </button>
 
         <button
           onClick={() => handleClick("doacoes")}
-          className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 p-3.5 min-h-[112px] flex flex-col gap-2 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
+          className="rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 p-2.5 min-h-[90px] flex flex-col gap-1.5 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
         >
           <div className="absolute -right-2 -bottom-2 opacity-15">
-            <Gift className="w-12 h-12" strokeWidth={1} />
+            <Gift className="w-10 h-10" strokeWidth={1} />
           </div>
-          <Gift className="w-5 h-5 text-white/80" />
+          <Gift className="w-4 h-4 text-white/80" />
           <span className="text-[11px] font-semibold relative z-10">Doações</span>
         </button>
       </div>

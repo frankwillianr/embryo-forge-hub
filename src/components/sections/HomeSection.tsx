@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import BannerCarousel from "@/components/BannerCarousel";
 import EnqueteSection from "@/components/sections/EnqueteSection";
 import MusicaAoVivoSection from "@/components/sections/MusicaAoVivoSection";
+import OfertasSection from "@/components/ofertas/OfertasSection";
 import CuponsSection from "@/components/sections/CuponsSection";
 import SolicitarOrcamentoSection from "@/components/sections/SolicitarOrcamentoSection";
 import ServicosSection from "@/components/servicos/ServicosSection";
@@ -94,6 +95,12 @@ const HomeSection = ({ cidadeSlug, onMapClick }: HomeSectionProps) => {
 
       <LazySection minHeight="100px">
         <ServicosSection cidadeSlug={cidadeSlug} onlyHighlights />
+      </LazySection>
+
+      <Separador />
+
+      <LazySection minHeight="210px">
+        <OfertasSection cidadeSlug={cidadeSlug} />
       </LazySection>
 
       <Separador />

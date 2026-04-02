@@ -150,7 +150,9 @@ const CidadePage = () => {
     scrollPositions.current[activeTab] = window.scrollY;
     setActiveTab(tab as TabType);
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [location.search, activeTab]);
+    // Consome o query param apenas uma vez para nao "prender" na aba via URL.
+    navigate(`/cidade/${slug}`, { replace: true });
+  }, [location.search, activeTab, navigate, slug]);
 
   // Função temporÃ¡ria para testar push
   const handleTestPush = async () => {

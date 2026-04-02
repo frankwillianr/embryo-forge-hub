@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BadgePercent, Heart } from "lucide-react";
+import { BadgePercent } from "lucide-react";
 
 interface OfertasSectionProps {
   cidadeSlug?: string;
@@ -62,14 +62,21 @@ const parseCategoriasAdicionais = (value: unknown): string[] => {
   return [];
 };
 
+const shuffleArray = <T,>(items: T[]): T[] => {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+};
+
 const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
   const navigate = useNavigate();
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
-  const [likedOfertas, setLikedOfertas] = useState<Set<string>>(new Set());
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const tabRefsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const ofertasScrollRef = useRef<HTMLDivElement>(null);
-  const likeStorageKey = `ofertas-liked-${cidadeSlug || "global"}`;
 
   const { data: cidade } = useQuery({
     queryKey: ["cidade-id", cidadeSlug],
@@ -104,11 +111,11 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
 
   const ofertasFiltradas = useMemo(() => {
     if (!ofertas) return [];
-    if (categoriaAtiva === "todas") return ofertas;
+    if (categoriaAtiva === "todas") return shuffleArray(ofertas);
     const dbCats = (CATEGORIA_MAP[categoriaAtiva] || []).map(normalizeCategoria);
     const dbSet = new Set(dbCats);
 
-    return ofertas.filter((o) => {
+    const filtradas = ofertas.filter((o) => {
       const categoriasEmpresa = [
         o.categoria,
         ...parseCategoriasAdicionais(o.categorias_adicionais),
@@ -123,6 +130,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
 
       return false;
     });
+    return shuffleArray(filtradas);
   }, [ofertas, categoriaAtiva]);
 
   // Centraliza aba sem rolar a página
@@ -159,35 +167,6 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
 
     return () => window.clearInterval(intervalId);
   }, [categoriaAtiva, ofertasFiltradas.length]);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(likeStorageKey);
-      if (!raw) return;
-      const ids = JSON.parse(raw);
-      if (Array.isArray(ids)) {
-        setLikedOfertas(new Set(ids.map((id) => String(id))));
-      }
-    } catch {
-      // noop
-    }
-  }, [likeStorageKey]);
-
-  useEffect(() => {
-    localStorage.setItem(likeStorageKey, JSON.stringify(Array.from(likedOfertas)));
-  }, [likeStorageKey, likedOfertas]);
-
-  const toggleLikeOferta = (ofertaId: string) => {
-    setLikedOfertas((prev) => {
-      const next = new Set(prev);
-      if (next.has(ofertaId)) {
-        next.delete(ofertaId);
-      } else {
-        next.add(ofertaId);
-      }
-      return next;
-    });
-  };
 
   if (isLoading) {
     return (
@@ -284,23 +263,6 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
                   <div className="w-full h-full bg-gradient-to-br from-muted to-muted/60" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                <button
-                  type="button"
-                  aria-label={likedOfertas.has(oferta.id) ? "Descurtir oferta" : "Curtir oferta"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleLikeOferta(oferta.id);
-                  }}
-                  className="absolute top-2 right-2 z-10 h-9 w-9 rounded-full bg-white/95 border border-white shadow-lg flex items-center justify-center"
-                >
-                  <Heart
-                    className={`h-4 w-4 transition-colors ${
-                      likedOfertas.has(oferta.id)
-                        ? "text-red-500 fill-red-500"
-                        : "text-red-500"
-                    }`}
-                  />
-                </button>
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <p className="text-white text-sm font-semibold truncate">{oferta.nome}</p>
                 </div>
@@ -323,4 +285,3 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
 };
 
 export default OfertasSection;
-

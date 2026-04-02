@@ -10,6 +10,10 @@ interface BannerCarouselProps {
 
 const SLIDE_WIDTH_PERCENT = 78;
 const PEEK_PERCENT = (100 - SLIDE_WIDTH_PERCENT) / 2;
+const CITY_WHATSAPP_BY_SLUG: Record<string, string> = {
+  gv: "553397305519",
+  "governador-valadares": "553397305519",
+};
 
 const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
   const isInfinite = banners.length >= 2;
@@ -151,6 +155,7 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
 
   const logicalIndex = currentIndex % banners.length;
   const currentBanner = banners[logicalIndex];
+  const cityWhatsApp = cidadeSlug ? CITY_WHATSAPP_BY_SLUG[cidadeSlug] : undefined;
 
   const handleBannerClick = (bannerId: string) => {
     if (Math.abs(translateX) < 10) {
@@ -247,7 +252,16 @@ const BannerCarousel = ({ banners, cidadeSlug }: BannerCarouselProps) => {
           <span />
         )}
         <button
-          onClick={() => navigate(`/cidade/${cidadeSlug}/banner/novo`)}
+          onClick={() => {
+            if (cityWhatsApp) {
+              const msg = encodeURIComponent(
+                `Olá! Quero anunciar no Guia Cidades (${cidadeSlug || "minha cidade"}).`
+              );
+              window.open(`https://wa.me/${cityWhatsApp}?text=${msg}`, "_blank");
+              return;
+            }
+            navigate(`/cidade/${cidadeSlug}/banner/novo`);
+          }}
           className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
         >
           <Megaphone className="h-3.5 w-3.5" />

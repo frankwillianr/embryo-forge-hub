@@ -76,6 +76,7 @@ import CuponsListPage from "@/pages/CuponsListPage";
 import MeusCuponsPage from "@/pages/MeusCuponsPage";
 import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
 import SuportePage from "@/pages/SuportePage";
+import EnquetesHistoricoPage from "@/pages/EnquetesHistoricoPage";
 
 const QUERY_CACHE_STORAGE_KEY = "gc:offline-query-cache:v2";
 
@@ -161,7 +162,7 @@ const App = () => (
             <Routes>
             {/* Public routes with mobile max-width */}
             <Route element={<MobileLayout />}>
-              <Route path="/" element={<Navigate to="/cidade/governador-valadares" replace />} />
+              <Route path="/" element={<Navigate to="/cidade/gv" replace />} />
               <Route path="/cidade/:slug" element={<CidadePage />} />
               <Route path="/cidade/:slug/banner/:id" element={<BannerDetailPage />} />
               <Route path="/cidade/:slug/jornal" element={<JornalListPage />} />
@@ -210,6 +211,7 @@ const App = () => (
               <Route path="/cidade/:slug/eventos/:eventoId" element={<EventoDetailPage />} />
               <Route path="/cidade/:slug/musica-ao-vivo" element={<MusicaAoVivoListPage />} />
               <Route path="/cidade/:slug/onibus" element={<OnibusListPage />} />
+              <Route path="/cidade/:slug/enquetes" element={<EnquetesHistoricoPage />} />
               <Route path="/cidade/:slug/cupons" element={<CuponsListPage />} />
               <Route path="/cidade/:slug/meus-cupons" element={<MeusCuponsPage />} />
               <Route path="/cidade/:slug/auth" element={<AuthPage />} />

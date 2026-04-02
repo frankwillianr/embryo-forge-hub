@@ -93,6 +93,11 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
 
   const formatarDataBadge = (dataEvento: string) => {
     const d = new Date(`${dataEvento}T00:00:00`);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const amanha = new Date(hoje);
+    amanha.setDate(hoje.getDate() + 1);
+
     const dia = new Intl.DateTimeFormat("pt-BR", { day: "2-digit" }).format(d);
     const diaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "short" })
       .format(d)
@@ -102,7 +107,13 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
       .format(d)
       .replace(".", "")
       .toLowerCase();
-    return { dia, diaSemana, mes };
+
+    const dKey = new Date(d);
+    dKey.setHours(0, 0, 0, 0);
+
+    const destaque = dKey.getTime() === hoje.getTime() ? "Hoje" : dKey.getTime() === amanha.getTime() ? "Amanha" : null;
+
+    return { dia, diaSemana, mes, destaque };
   };
 
   const getMapaEmbedUrl = (item: EventoMusicalItem) => {
@@ -232,6 +243,9 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
       <div className="overflow-x-auto scrollbar-hide">
         <div className="flex gap-4 px-5 pb-2">
           {eventos.map((item) => (
+            (() => {
+              const badge = formatarDataBadge(item.data_evento);
+              return (
             <button
               key={item.id}
               type="button"
@@ -277,13 +291,34 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
                   </p>
                 </div>
 
-                <div className="absolute bottom-3 right-3 rounded-2xl bg-blue-600/90 border border-blue-300/30 px-2 py-1.5 text-center min-w-[50px]">
-                  <p className="text-[14px] font-bold text-white leading-none">{formatarDataBadge(item.data_evento).dia}</p>
-                  <p className="text-[10px] font-semibold uppercase text-white/95 leading-none mt-1">{formatarDataBadge(item.data_evento).diaSemana}</p>
-                  <p className="text-[10px] font-medium text-white/95 leading-none mt-1">{formatarDataBadge(item.data_evento).mes}</p>
+                <div
+                  className={`absolute bottom-3 right-3 rounded-2xl px-2 py-1.5 text-center min-w-[56px] border ${
+                    badge.destaque === "Hoje"
+                      ? "bg-emerald-600/90 border-emerald-300/30"
+                      : badge.destaque === "Amanha"
+                        ? "bg-amber-500/90 border-amber-200/35"
+                        : "bg-blue-600/90 border-blue-300/30"
+                  }`}
+                >
+                  {badge.destaque ? (
+                    <>
+                      <p className="text-[11px] font-extrabold uppercase text-white leading-none">{badge.destaque}</p>
+                      <p className="text-[10px] font-medium text-white/95 leading-none mt-1">
+                        {badge.dia}/{badge.mes}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[14px] font-bold text-white leading-none">{badge.dia}</p>
+                      <p className="text-[10px] font-semibold uppercase text-white/95 leading-none mt-1">{badge.diaSemana}</p>
+                      <p className="text-[10px] font-medium text-white/95 leading-none mt-1">{badge.mes}</p>
+                    </>
+                  )}
                 </div>
               </div>
             </button>
+              );
+            })()
           ))}
         </div>
       </div>
