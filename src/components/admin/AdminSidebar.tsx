@@ -48,6 +48,7 @@ const cidadeMenuItems = [
   { id: "admins", title: "Admins", icon: Users },
   { id: "precificacao", title: "Precificacao", icon: DollarSign },
   { id: "scraping", title: "Scraping noticias", icon: Rss },
+  { id: "scraping-noticias-v2", title: "Scraping noticias V2", icon: Rss },
   { id: "scraping-eventos", title: "Scraping eventos", icon: Rss },
   { id: "push-notificacao", title: "Push notificacao", icon: Bell },
 ];

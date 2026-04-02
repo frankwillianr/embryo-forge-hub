@@ -15,6 +15,7 @@ import AdminCidadeUsuarios from "@/components/admin/cidade/AdminCidadeUsuarios";
 import AdminCidadeEmpresas from "@/components/admin/cidade/AdminCidadeEmpresas";
 import AdminCidadeEventos from "@/components/admin/cidade/AdminCidadeEventos";
 import AdminCidadeScraping from "@/components/admin/cidade/AdminCidadeScraping";
+import AdminCidadeScrapingNoticiasV2 from "@/components/admin/cidade/AdminCidadeScrapingNoticiasV2";
 import AdminCidadeScrapingEventos from "@/components/admin/cidade/AdminCidadeScrapingEventos";
 import AdminCidadePushNotifications from "@/components/admin/cidade/AdminCidadePushNotifications";
 import AdminCidadeAdmins from "@/components/admin/cidade/AdminCidadeAdmins";
@@ -34,6 +35,7 @@ const tabs = [
   { id: "admins", label: "Admins", icon: Users },
   { id: "precificacao", label: "Precificacao", icon: DollarSign },
   { id: "scraping", label: "scarpping de noticas", icon: Rss },
+  { id: "scraping-noticias-v2", label: "scraping de noticias v2", icon: Rss },
   { id: "scraping-eventos", label: "scraping de eventos", icon: Rss },
   { id: "push-notificacao", label: "Push notificação", icon: Bell },
 ];
@@ -117,6 +119,7 @@ const AdminCidadeDetail = () => {
         {activeTab === "admins" && <AdminCidadeAdmins cidadeId={cidadeId!} />}
         {activeTab === "precificacao" && <AdminCidadePrecificacao cidadeId={cidadeId!} />}
         {activeTab === "scraping" && <AdminCidadeScraping cidadeId={cidadeId!} />}
+        {activeTab === "scraping-noticias-v2" && <AdminCidadeScrapingNoticiasV2 cidadeId={cidadeId!} />}
         {activeTab === "scraping-eventos" && <AdminCidadeScrapingEventos cidadeId={cidadeId!} />}
         {activeTab === "push-notificacao" && <AdminCidadePushNotifications cidadeId={cidadeId!} />}
       </div>
