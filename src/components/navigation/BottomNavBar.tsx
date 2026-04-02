@@ -99,7 +99,11 @@ const BottomNavBar = ({
         </button>
         <button onClick={goHome} className={`${baseItemClass} ${active === "home" ? activeClass : inactiveClass}`}>
           <Home className="h-5 w-5 text-emerald-400" />
-          <span className="text-[9px] font-medium">Home</span>
+          <span className="text-[9px] font-medium leading-[1.05] text-center">
+            Pagina
+            <br />
+            inicial
+          </span>
         </button>
         <button
           onClick={goServicos}

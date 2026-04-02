@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Briefcase, Dog, Bus, MapPin, ChevronRight, Lightbulb } from "lucide-react";
+import { Briefcase, Bus, MapPin, Lightbulb } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,19 +20,19 @@ interface QuickAccessCardsProps {
 
 const cards = [
   {
+    id: "mapa",
+    title: "Mapa",
+    subtitle: "Explorar cidade",
+    icon: MapPin,
+    gradient: "from-sky-600 to-cyan-500",
+    bgPattern: "bg-gradient-to-br",
+  },
+  {
     id: "vagas",
     title: "Vagas de Emprego",
     subtitle: "Encontre oportunidades",
     icon: Briefcase,
     gradient: "from-orange-500 to-amber-400",
-    bgPattern: "bg-gradient-to-br",
-  },
-  {
-    id: "pets",
-    title: "Pets Perdidos",
-    subtitle: "Ajude a encontrar",
-    icon: Dog,
-    gradient: "from-pink-500 to-rose-400",
     bgPattern: "bg-gradient-to-br",
   },
   {
@@ -53,10 +53,10 @@ const QuickAccessCards = ({ cidadeSlug, onMapClick }: QuickAccessCardsProps) => 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleClick = (id: string) => {
-    if (id === "vagas") {
+    if (id === "mapa") {
+      goCityMap();
+    } else if (id === "vagas") {
       navigate(`/cidade/${cidadeSlug}/vagas`);
-    } else if (id === "pets") {
-      navigate(`/cidade/${cidadeSlug}/pets`);
     } else if (id === "onibus") {
       navigate(`/cidade/${cidadeSlug}/onibus`);
     }
@@ -118,26 +118,6 @@ const QuickAccessCards = ({ cidadeSlug, onMapClick }: QuickAccessCardsProps) => 
 
   return (
     <section className="px-4 py-4">
-      <button
-        onClick={goCityMap}
-        className="w-full mb-3 rounded-2xl border border-sky-300/35 bg-gradient-to-r from-sky-900/70 via-cyan-900/65 to-blue-900/70 p-3 text-left relative overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_45%)]" />
-        <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full bg-cyan-200/20 blur-xl" />
-        <div className="relative flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center border border-white/30">
-              <MapPin className="w-4.5 h-4.5 text-white" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-[12px] font-semibold text-white leading-tight">Mapa da cidade</h3>
-              <p className="text-[10px] text-slate-100/90 leading-tight">Explore locais e servicos no mapa</p>
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-white shrink-0" />
-        </div>
-      </button>
-
       <div className="grid grid-cols-3 gap-2">
         {cards.map((card) => (
           <button
