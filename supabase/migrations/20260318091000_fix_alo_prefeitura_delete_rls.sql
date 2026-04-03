@@ -1,4 +1,4 @@
-﻿-- Permite exclusão de itens do Voz do Povo por usuários autenticados (fluxo admin)
+-- Permite exclusão de itens do Voz do Povo por usuários autenticados (fluxo admin)
 -- e de imagens relacionadas.
 
 ALTER TABLE IF EXISTS public.rel_cidade_alo_prefeitura ENABLE ROW LEVEL SECURITY;
