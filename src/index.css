@@ -206,45 +206,45 @@ All colors MUST be HSL.
 /* Ken Burns effect — zoom + pan suave */
 @keyframes kenburns-1 {
   0%   { transform: scale(1.0) translate(0, 0); }
-  33%  { transform: scale(1.12) translate(-2%, -1%); }
-  66%  { transform: scale(1.06) translate(2%, 0.5%); }
+  33%  { transform: scale(1.01) translate(-0.2%, -0.1%); }
+  66%  { transform: scale(1.008) translate(0.15%, 0.05%); }
   100% { transform: scale(1.0) translate(0, 0); }
 }
 @keyframes kenburns-2 {
-  0%   { transform: scale(1.05) translate(1.5%, 0); }
-  25%  { transform: scale(1.1) translate(-1%, -1.5%); }
-  50%  { transform: scale(1.14) translate(-2.5%, 0.5%); }
-  75%  { transform: scale(1.08) translate(1%, 1%); }
-  100% { transform: scale(1.05) translate(1.5%, 0); }
+  0%   { transform: scale(1.003) translate(0.1%, 0); }
+  25%  { transform: scale(1.01) translate(-0.1%, -0.12%); }
+  50%  { transform: scale(1.012) translate(-0.2%, 0.04%); }
+  75%  { transform: scale(1.008) translate(0.1%, 0.08%); }
+  100%   { transform: scale(1.003) translate(0.1%, 0); }
 }
 @keyframes kenburns-3 {
-  0%   { transform: scale(1.08) translate(-1%, 1%); }
-  30%  { transform: scale(1.02) translate(2.5%, -0.5%); }
-  60%  { transform: scale(1.12) translate(-1.5%, -1.5%); }
-  100% { transform: scale(1.08) translate(-1%, 1%); }
+  0%   { transform: scale(1.006) translate(-0.08%, 0.1%); }
+  30%  { transform: scale(1.004) translate(0.15%, -0.04%); }
+  60%  { transform: scale(1.011) translate(-0.1%, -0.1%); }
+  100%   { transform: scale(1.006) translate(-0.08%, 0.1%); }
 }
 @keyframes kenburns-4 {
   0%   { transform: scale(1.0) translate(0, 0); }
-  20%  { transform: scale(1.08) translate(2%, 1%); }
-  50%  { transform: scale(1.14) translate(-1%, -2%); }
-  80%  { transform: scale(1.06) translate(-2%, 1.5%); }
+  20%  { transform: scale(1.009) translate(0.12%, 0.08%); }
+  50%  { transform: scale(1.012) translate(-0.1%, -0.15%); }
+  80%  { transform: scale(1.007) translate(-0.14%, 0.1%); }
   100% { transform: scale(1.0) translate(0, 0); }
 }
 
 .kenburns-img {
-  animation: kenburns-1 14s ease-in-out infinite;
+  animation: kenburns-1 42s ease-in-out infinite;
 }
 .kenburns-img:nth-child(2n) {
   animation-name: kenburns-2;
-  animation-duration: 18s;
+  animation-duration: 48s;
 }
 .kenburns-img:nth-child(3n) {
   animation-name: kenburns-3;
-  animation-duration: 16s;
+  animation-duration: 45s;
 }
 .kenburns-img:nth-child(4n+1) {
   animation-name: kenburns-4;
-  animation-duration: 20s;
+  animation-duration: 52s;
 }
 
 /* Animação de like no estilo Instagram */
@@ -300,3 +300,4 @@ All colors MUST be HSL.
   border-color: hsl(var(--primary) / 0.45);
   background: hsl(var(--primary) / 0.22);
 }
+

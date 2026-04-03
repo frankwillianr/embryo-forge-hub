@@ -93,8 +93,8 @@ const JornalListPage = () => {
               .eq("cidade_id", cidadeData!.id)
               .eq("ativo", true)
               .not("titulo", "like", "%{{%")
-              .order("data_noticia", { ascending: false, nullsFirst: false })
               .order("created_at", { ascending: false })
+              .order("data_noticia", { ascending: false, nullsFirst: false })
               .range(pageParam, pageParam + PAGE_SIZE - 1);
 
             return isJornalCategory ? baseQuery.eq("categoria", categoriaAtiva) : baseQuery;
@@ -152,7 +152,7 @@ const JornalListPage = () => {
       const items: FeedItem[] = [
         ...jornais.map((item) => ({
           source: "jornal" as const,
-          sortDate: item.data_noticia ? `${item.data_noticia}T00:00:00` : item.created_at,
+          sortDate: item.created_at,
           data: item,
         })),
         ...vozItems.map((item) => ({

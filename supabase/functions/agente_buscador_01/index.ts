@@ -41,14 +41,15 @@ const BROWSER_HEADERS = {
 const FETCH_TIMEOUT_MS = 14_000;
 const ARTICLE_FETCH_TIMEOUT_MS = 10_000;
 const CONCURRENCY = 8; // artigos enriquecidos em paralelo
-const MAX_ARTICLES_DEFAULT = 60;
+const MAX_ARTICLES_DEFAULT = 120;
 const LOOKBACK_DAYS_DEFAULT = 3;
 const MAX_IMAGES_PER_ARTICLE = 5;
+const ARTICLE_READ_MAX_BYTES = 260_000;
 
 // ─── Image blocklist (logos, ícones, tracking, social, etc.) ─────────────────
 
 const BLOCKED_IMG_RE =
-  /(\/logo[s]?\/|\/icon[s]?\/|\/favicon|avatar|whatsapp[-_.]|telegram[-_.]|instagram[-_.]|facebook[-_.]|twitter[-_.]|tiktok[-_.]|youtube[-_.]|linkedin[-_.]|pinterest[-_.]|pixel|tracking|badge|social[-_]|share[-_]|\/ads\/|advertisement|placeholder|default[-_]img|spinner|loading|widget|banner[-_]lateral)/i;
+  /(\/logo[s]?\/|\/icon[s]?\/|\/favicon|avatar|telegram[-_.]|instagram[-_.]|facebook[-_.]|twitter[-_.]|tiktok[-_.]|youtube[-_.]|linkedin[-_.]|pinterest[-_.]|pixel|tracking|badge|social[-_]|share[-_]|\/ads\/|advertisement|placeholder|default[-_]img|spinner|loading|widget|banner[-_]lateral|i\.imgur\.com)/i;
 
 const BLOCKED_IMG_EXT_RE = /\.(gif|svg|ico)(\?.*)?$/i;
 const VIDEO_THUMB_RE = /video\.glbimg\.com\/(?:.*\/)?x\d{2,4}\//i;
@@ -85,6 +86,12 @@ interface ArtigoFinal {
   lista_imagens: string[];
   data_publicacao: string | null;
   status: "coletado";
+}
+
+interface CidadeRef {
+  id: string;
+  nome: string;
+  slug: string | null;
 }
 
 // ─── Fetch helpers ────────────────────────────────────────────────────────────
@@ -149,6 +156,154 @@ function cleanTitle(raw: string): string {
 }
 
 // ─── 1. JSON-LD extraction (mais confiável para portais de notícia) ───────────
+
+function normalizeText(raw: string): string {
+  return (raw || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function normalizePhrase(raw: string): string {
+  return normalizeText(raw).trim();
+}
+
+function hasPhrase(textNorm: string, phraseNorm: string): boolean {
+  if (!phraseNorm) return false;
+  return (` ${textNorm} `).includes(` ${phraseNorm} `);
+}
+
+function buildTargetTokens(cityName: string): string[] {
+  return normalizeText(cityName)
+    .split(" ")
+    .filter((t) => t.length >= 4);
+}
+
+function getHostnameSafe(raw: string): string {
+  try {
+    return new URL(raw).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+const NON_ARTICLE_SEGMENTS = new Set([
+  "feed", "rss", "category", "categoria", "tag", "tags",
+  "author", "autor", "arquivo", "arquivos", "search", "busca",
+  "page", "pagina", "wp-admin", "wp-content", "wp-includes", "wp-json",
+  "videos", "video", "canais", "impressos", "colunas", "coluna",
+  "colunista", "colunistas",
+]);
+const NON_ARTICLE_PATH_RE =
+  /(^|\/)(feed|rss|category|categoria|tag|tags|author|autor|arquivo|arquivos|search|busca|page|pagina|wp-admin|wp-content|wp-includes|wp-json|videos?|canais|impressos|colunas?|coluna|colunistas?)(\/|-|$)/i;
+
+function isLikelyArticleUrl(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    const pathname = url.pathname.toLowerCase().replace(/\/+$/, "");
+    if (!pathname || pathname === "/") return false;
+    if (/\.(css|js|png|jpg|jpeg|gif|svg|ico|pdf|mp4|webp|xml)(\?.*)?$/i.test(pathname)) return false;
+    if (NON_ARTICLE_PATH_RE.test(pathname)) return false;
+
+    const segments = pathname.split("/").filter(Boolean);
+    if (!segments.length) return false;
+    if (segments.some((s) => NON_ARTICLE_SEGMENTS.has(s))) return false;
+
+    const last = segments[segments.length - 1].replace(/\.(html?)$/i, "");
+    if (!last || /^\d+$/.test(last)) return false;
+    if (last.length < 8) return false;
+    if (last.split("-").filter(Boolean).length < 2) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function buildSourceHostAllowlist(fontes: FonteRow[]): Set<string> {
+  const hosts = new Set<string>();
+  for (const f of fontes) {
+    const host = getHostnameSafe(f.url);
+    if (!host) continue;
+    hosts.add(host);
+    // Permite subdomínios da mesma origem editorial
+    if (host.startsWith("www.")) hosts.add(host.replace(/^www\./, ""));
+  }
+  return hosts;
+}
+
+function isFromTrustedSource(articleUrl: string, sourceHostAllowlist: Set<string>): boolean {
+  const host = getHostnameSafe(articleUrl);
+  if (!host) return false;
+  if (sourceHostAllowlist.has(host)) return true;
+  if (host.startsWith("www.") && sourceHostAllowlist.has(host.replace(/^www\./, ""))) return true;
+  return false;
+}
+
+function listOtherCityPhrases(cidades: CidadeRef[], targetCidadeId: string): string[] {
+  const out = new Set<string>();
+  for (const c of cidades) {
+    if (c.id === targetCidadeId) continue;
+    const nome = normalizePhrase(c.nome);
+    const slug = normalizePhrase((c.slug ?? "").replace(/-/g, " "));
+    if (nome.length >= 5) out.add(nome);
+    if (slug.length >= 5) out.add(slug);
+  }
+  return [...out];
+}
+
+function isRelevantToCidade(
+  artigo: ArtigoFinal,
+  cidadeNome: string,
+  cidadeSlug: string | null,
+  otherCityPhrases: string[],
+  sourceHostAllowlist: Set<string>
+): { ok: boolean; reason: string } {
+  if (!isLikelyArticleUrl(artigo.url)) {
+    return { ok: false, reason: "url-nao-artigo" };
+  }
+
+  const corpus = normalizeText(
+    `${artigo.url} ${artigo.fonte_nome} ${artigo.titulo ?? ""} ${artigo.descricao ?? ""}`
+  );
+
+  const targetName = normalizePhrase(cidadeNome);
+  const targetSlug = normalizePhrase((cidadeSlug ?? "").replace(/-/g, " "));
+  const hasTargetName = hasPhrase(corpus, targetName);
+  const hasTargetSlug = targetSlug ? hasPhrase(corpus, targetSlug) : false;
+
+  const targetTokens = buildTargetTokens(cidadeNome);
+  const tokenHits = targetTokens.filter((t) => hasPhrase(corpus, t)).length;
+  const hasTargetTokenSignal = tokenHits >= 1;
+  const hasOtherCityMention = otherCityPhrases.some((p) => hasPhrase(corpus, p));
+  const trustedSource = isFromTrustedSource(artigo.url, sourceHostAllowlist);
+  const titleNorm = normalizeText(artigo.titulo ?? "");
+  if (/^arquivo(s)?\b/.test(titleNorm)) {
+    return { ok: false, reason: "titulo-arquivo" };
+  }
+
+  const hasStrongTargetSignal = hasTargetName || hasTargetSlug || hasTargetTokenSignal;
+  if (hasStrongTargetSignal) {
+    if (hasOtherCityMention && !(hasTargetName || hasTargetSlug)) {
+      return { ok: false, reason: "mencao-outra-cidade" };
+    }
+    return { ok: true, reason: "ok-sinal-forte" };
+  }
+
+  // Fallback: se for fonte local confiável e não houver menção de outra cidade, aceita.
+  if (trustedSource && tokenHits >= 1 && !hasOtherCityMention) {
+    return { ok: true, reason: "ok-fonte-confiavel-com-token" };
+  }
+
+  if (hasOtherCityMention) {
+    return { ok: false, reason: "mencao-outra-cidade" };
+  }
+
+  return { ok: false, reason: "sem-mencao-cidade" };
+}
 
 interface JsonLdArticle {
   "@type"?: string;
@@ -280,6 +435,33 @@ function extractArticleImages(html: string, baseUrl: string): string[] {
   return [...new Set(imgs)];
 }
 
+function rankAndSelectImages(
+  articleUrl: string,
+  dataPublicacao: string | null,
+  images: string[]
+): string[] {
+  const articleHost = getHostnameSafe(articleUrl);
+  const [year = "", month = ""] = (dataPublicacao ?? "").split("-");
+  const yearMonth = year && month ? `${year}/${month}` : "";
+
+  const scored = images.map((url, idx) => {
+    let score = 0;
+    const host = getHostnameSafe(url);
+    const lower = url.toLowerCase();
+
+    if (host && articleHost && (host === articleHost || host === `www.${articleHost}` || articleHost === `www.${host}`)) score += 4;
+    if (/(\/wp-content\/uploads\/|\/uploads\/)/i.test(lower)) score += 3;
+    if (yearMonth && lower.includes(yearMonth)) score += 2;
+    // pequeno desempate para manter estabilidade na ordem original
+    score += Math.max(0, 0.5 - idx * 0.01);
+
+    return { url, score, idx };
+  });
+
+  scored.sort((a, b) => b.score - a.score || a.idx - b.idx);
+  return scored.map((s) => s.url);
+}
+
 // ─── 3. Full article enrichment ───────────────────────────────────────────────
 
 async function enrichArtigo(
@@ -301,7 +483,7 @@ async function enrichArtigo(
   const res = await fetchSafe(candidato.url, ARTICLE_FETCH_TIMEOUT_MS);
   if (!res?.ok) return fallback;
 
-  const html = await readPartial(res, 80_000);
+  const html = await readPartial(res, ARTICLE_READ_MAX_BYTES);
 
   // — JSON-LD (primeira prioridade) —
   const ld = parseJsonLd(html);
@@ -342,8 +524,9 @@ async function enrichArtigo(
   const ogImage = getMeta(html, "og:image");
   const bodyImages = extractArticleImages(html, candidato.url);
 
+  const ogPrincipal = ogImage && !isBlockedImage(ogImage) ? ogImage : null;
   const allImages = [
-    ...(ogImage && !isBlockedImage(ogImage) ? [ogImage] : []),
+    ...(ogPrincipal ? [ogPrincipal] : []),
     ...ldImages.filter((u) => !isBlockedImage(u)),
     ...bodyImages,
     ...(candidato.imagem_rss && !isBlockedImage(candidato.imagem_rss)
@@ -351,7 +534,12 @@ async function enrichArtigo(
       : []),
   ];
 
-  const listaImagens = [...new Set(allImages)].slice(0, MAX_IMAGES_PER_ARTICLE);
+  const dedup = [...new Set(allImages)];
+  const ranked = rankAndSelectImages(candidato.url, dataPublicacao, dedup);
+  const listaImagens = [
+    ...(ogPrincipal ? [ogPrincipal] : []),
+    ...ranked.filter((u) => !ogPrincipal || u !== ogPrincipal),
+  ].slice(0, MAX_IMAGES_PER_ARTICLE);
 
   return {
     cidade_id: cidadeId,
@@ -389,6 +577,7 @@ async function coletarRSS(fonte: FonteRow): Promise<Candidato[]> {
       chunk.match(/href=["'](https?:\/\/[^"']+)["']/i)?.[1]?.trim() ||
       null;
     if (!link) continue;
+    if (!isLikelyArticleUrl(link)) continue;
 
     const titulo =
       (chunk.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/i)?.[1] ||
@@ -435,6 +624,26 @@ async function coletarHTML(fonte: FonteRow): Promise<Candidato[]> {
   if (!res?.ok) throw new Error(`HTTP ${res?.status ?? "timeout"} em ${fonte.url}`);
   const html = await readPartial(res, 100_000);
   const base = new URL(fonte.url);
+  const candidatos: Candidato[] = [];
+
+  // Se a página expõe RSS alternativo, aproveita para coletar links de notícia com mais precisão.
+  const rssHref =
+    html.match(/<link[^>]+type=["']application\/(?:rss|atom)\+xml["'][^>]+href=["']([^"']+)["'][^>]*>/i)?.[1] ||
+    html.match(/<link[^>]+href=["']([^"']+)["'][^>]+type=["']application\/(?:rss|atom)\+xml["'][^>]*>/i)?.[1] ||
+    "";
+
+  if (rssHref) {
+    try {
+      const rssUrl = new URL(rssHref, base).href;
+      const rssHost = new URL(rssUrl).hostname;
+      if (rssHost === base.hostname) {
+        const rssCandidates = await coletarRSS({ ...fonte, url: rssUrl, tipo: "rss" });
+        candidatos.push(...rssCandidates);
+      }
+    } catch {
+      // ignore RSS fallback errors
+    }
+  }
 
   const links = new Set<string>();
   const hrefRe = /href=["']([^"']{10,})["']/gi;
@@ -449,7 +658,8 @@ async function coletarHTML(fonte: FonteRow): Promise<Candidato[]> {
       // same domain, path > 1 segment, not a static asset or category root
       if (
         u.hostname === base.hostname &&
-        u.pathname.split("/").filter(Boolean).length >= 2 &&
+        u.pathname.split("/").filter(Boolean).length >= 1 &&
+        isLikelyArticleUrl(href) &&
         !/\.(css|js|png|jpg|jpeg|gif|svg|ico|pdf|mp4|webp)(\?.*)?$/i.test(u.pathname)
       ) {
         links.add(href.split("?")[0].split("#")[0]);
@@ -459,11 +669,19 @@ async function coletarHTML(fonte: FonteRow): Promise<Candidato[]> {
     }
   }
 
-  return [...links].map((url) => ({
-    url,
-    fonte_id: fonte.id,
-    fonte_nome: fonte.nome,
-  }));
+  candidatos.push(
+    ...[...links].map((url) => ({
+      url,
+      fonte_id: fonte.id,
+      fonte_nome: fonte.nome,
+    }))
+  );
+
+  const uniq = new Map<string, Candidato>();
+  for (const c of candidatos) {
+    if (!uniq.has(c.url)) uniq.set(c.url, c);
+  }
+  return [...uniq.values()];
 }
 
 // ─── Concurrency limiter ──────────────────────────────────────────────────────
@@ -518,7 +736,7 @@ Deno.serve(async (req) => {
     // ── 1. Carregar nome da cidade ────────────────────────────────────────────
     const { data: cidadeRow, error: cidadeErr } = await supabase
       .from("cidade")
-      .select("nome")
+      .select("id, nome, slug")
       .eq("id", cidade_id)
       .maybeSingle();
 
@@ -531,6 +749,12 @@ Deno.serve(async (req) => {
     }
 
     logs.push(`Cidade: "${cidadeRow.nome}"`);
+
+    const { data: cidadesRef, error: cidadesRefErr } = await supabase
+      .from("cidade")
+      .select("id, nome, slug");
+    if (cidadesRefErr) throw cidadesRefErr;
+    const otherCityPhrases = listOtherCityPhrases((cidadesRef ?? []) as CidadeRef[], cidade_id);
 
     // ── 2. Carregar fontes dinâmicas ─────────────────────────────────────────
     const { data: fontes, error: fontesErr } = await supabase
@@ -549,6 +773,7 @@ Deno.serve(async (req) => {
     }
 
     logs.push(`Fontes ativas: ${fontes.length}`);
+    const sourceHostAllowlist = buildSourceHostAllowlist(fontes as FonteRow[]);
 
     // ── 3. Coletar candidatos de todas as fontes ──────────────────────────────
     const todosOsCandidatos: Candidato[] = [];
@@ -587,7 +812,7 @@ Deno.serve(async (req) => {
 
     const filtrados = unicos.filter((c) =>
       !c.data_publicacao || c.data_publicacao >= minDate
-    ).slice(0, max_articles);
+    );
 
     logs.push(`Candidatos únicos: ${unicos.length} → após filtro de data: ${filtrados.length}`);
 
@@ -597,7 +822,7 @@ Deno.serve(async (req) => {
     );
     const enrichResults = await runConcurrent(tasks, CONCURRENCY);
 
-    const artigos: ArtigoFinal[] = enrichResults
+    const artigosQualificados: ArtigoFinal[] = enrichResults
       .filter((r): r is PromiseFulfilledResult<ArtigoFinal> => r.status === "fulfilled")
       .map((r) => r.value)
       .filter((a) =>
@@ -606,9 +831,30 @@ Deno.serve(async (req) => {
         a.descricao && a.descricao.length > 50
       );
 
-    logs.push(`Artigos com título + imagem + descrição: ${artigos.length}`);
+    const artigos = artigosQualificados.filter((a) =>
+      isRelevantToCidade(
+        a,
+        cidadeRow.nome,
+        cidadeRow.slug ?? null,
+        otherCityPhrases,
+        sourceHostAllowlist
+      ).ok
+    ).slice(0, max_articles);
+
+    logs.push(`Artigos com título + imagem + descrição: ${artigosQualificados.length}`);
+    logs.push(`Artigos após filtro de cidade: ${artigos.length}`);
 
     // ── 7. UPSERT no banco ────────────────────────────────────────────────────
+    const { error: purgeErr } = await supabase
+      .from("tabela_agente_buscador")
+      .delete()
+      .eq("cidade_id", cidade_id);
+    if (purgeErr) {
+      logs.push(`Erro ao limpar lote anterior: ${purgeErr.message}`);
+    } else {
+      logs.push("Lote anterior da cidade removido");
+    }
+
     let inseridos = 0;
     const BATCH = 20;
     for (let i = 0; i < artigos.length; i += BATCH) {

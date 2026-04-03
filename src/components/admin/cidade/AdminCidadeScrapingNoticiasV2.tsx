@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Search, FileText, Image as ImageIcon, ArrowRight,
+  Search, FileText, Image as ImageIcon,
   CheckCircle2, Loader2, Circle, Plus, Trash2, Globe, Rss,
   ChevronDown, ChevronUp, Newspaper, Calendar, AlertCircle, RefreshCw,
   X, ExternalLink, ChevronLeft, ChevronRight,
@@ -36,6 +36,8 @@ interface NoticiaColetada {
   fonte_nome: string | null;
   data_publicacao: string | null;
   status: string;
+  is_duplicada?: boolean;
+  imagem_refeita?: string | null;
   created_at: string;
 }
 
@@ -45,6 +47,163 @@ interface AgentRun {
   logs?: string[];
   erro?: string;
 }
+
+interface Agent2Run {
+  status: AgentStatus;
+  total_entrada?: number;
+  duplicadas?: number;
+  canonicas?: number;
+  grupos?: number;
+  itens?: Array<{ canonica_id: string; grupo_qtd: number; score: number }>;
+  erro?: string;
+}
+
+interface Agent3Run {
+  status: AgentStatus;
+  processados?: number;
+  erros?: number;
+  model?: string;
+  erro?: string;
+}
+
+interface Agent4Run {
+  status: AgentStatus;
+  processados?: number;
+  erro?: string;
+  detalhe?: string;
+}
+
+interface Agent5Run {
+  status: AgentStatus;
+  publicados?: number;
+  jaExistia?: number;
+  erros?: number;
+  erro?: string;
+}
+
+const safeString = (value: unknown) => {
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
+const parseInvokeError = async (err: unknown): Promise<string> => {
+  const e = err as {
+    name?: string;
+    message?: string;
+    status?: number;
+    context?: Response;
+    details?: unknown;
+    hint?: unknown;
+    code?: unknown;
+    error?: unknown;
+  };
+
+  const lines: string[] = [];
+  if (e.name) lines.push(`type: ${e.name}`);
+  if (typeof e.status === "number") lines.push(`status: ${e.status}`);
+  if (e.message) lines.push(`message: ${e.message}`);
+
+  const context = e.context;
+  if (context) {
+    lines.push(`response_status: ${context.status}`);
+    lines.push(`response_status_text: ${context.statusText}`);
+    try {
+      const raw = await context.text();
+      if (raw) lines.push(`response_body: ${raw.slice(0, 1200)}`);
+    } catch {
+      lines.push("response_body: <nao foi possivel ler>");
+    }
+  }
+
+  if (e.code !== undefined) lines.push(`code: ${safeString(e.code)}`);
+  if (e.hint !== undefined) lines.push(`hint: ${safeString(e.hint)}`);
+  if (e.details !== undefined) lines.push(`details: ${safeString(e.details)}`);
+  if (e.error !== undefined) lines.push(`error: ${safeString(e.error)}`);
+
+  return lines.length ? lines.join("\n") : safeString(err);
+};
+
+const isInvalidJwtError = async (err: unknown): Promise<boolean> => {
+  const e = err as { status?: number; context?: Response; message?: string };
+  if (e?.status === 401 && /invalid jwt/i.test(e?.message ?? "")) return true;
+  if (e?.context?.status !== 401) return false;
+  try {
+    const raw = await e.context.clone().text();
+    return /invalid jwt/i.test(raw);
+  } catch {
+    return false;
+  }
+};
+
+const getFreshAccessToken = async (): Promise<string | null> => {
+  const current = await supabase.auth.getSession();
+  let session = current.data.session;
+  if (!session) return null;
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const expiresSoon = typeof session.expires_at === "number" && session.expires_at <= nowSec + 30;
+  if (expiresSoon) {
+    const refreshed = await supabase.auth.refreshSession();
+    session = refreshed.data.session ?? session;
+  }
+
+  return session?.access_token ?? null;
+};
+
+const invokeEdgeWithAnonKey = async (fnName: string, body: unknown) => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Variaveis VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY ausentes.");
+  }
+
+  const res = await fetch(`${supabaseUrl}/functions/v1/${fnName}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${supabaseAnonKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const raw = await res.text();
+  let parsed: any = null;
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch {
+    parsed = raw;
+  }
+
+  if (!res.ok) {
+    const err = new Error(`Edge Function HTTP ${res.status}`) as Error & {
+      status?: number;
+      details?: unknown;
+      code?: string;
+    };
+    err.status = res.status;
+    err.code = "edge_http_error";
+    err.details = parsed;
+    throw err;
+  }
+
+  return parsed;
+};
+
+const invokeEdgeWithSession = async (fnName: string, body: unknown) => {
+  const token = await getFreshAccessToken();
+  if (!token) {
+    throw new Error("Sessao expirada. Faca login novamente no painel admin.");
+  }
+  return supabase.functions.invoke(fnName, {
+    headers: { Authorization: `Bearer ${token}` },
+    body,
+  });
+};
 
 const TIPO_LABELS: Record<string, string> = { rss: "RSS", html: "HTML", auto: "Auto" };
 const TIPO_COLORS: Record<string, string> = {
@@ -60,6 +219,11 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
 
   // Agente 1 real run state
   const [agent1, setAgent1] = useState<AgentRun>({ status: "idle" });
+  const [agent2, setAgent2] = useState<Agent2Run>({ status: "idle" });
+  const [agent3, setAgent3] = useState<Agent3Run>({ status: "idle" });
+  const [agent4, setAgent4] = useState<Agent4Run>({ status: "idle" });
+  const [agent5, setAgent5] = useState<Agent5Run>({ status: "idle" });
+  const [pipelineRunning, setPipelineRunning] = useState(false);
 
   // Fontes panel
   const [fontesOpen, setFontesOpen] = useState(true);
@@ -92,7 +256,7 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tabela_agente_buscador")
-        .select("id, url, titulo, descricao, lista_imagens, fonte_nome, data_publicacao, status, created_at")
+        .select("id, url, titulo, descricao, lista_imagens, fonte_nome, data_publicacao, status, is_duplicada, imagem_refeita, created_at")
         .eq("cidade_id", cidadeId)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -106,9 +270,11 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
 
   const [modalNoticia, setModalNoticia] = useState<NoticiaColetada | null>(null);
   const [imgIndex, setImgIndex] = useState(0);
+  const [verImagemRefeita, setVerImagemRefeita] = useState(false);
+  const [popupImagemGerada, setPopupImagemGerada] = useState<string | null>(null);
 
-  const abrirModal = (n: NoticiaColetada) => { setModalNoticia(n); setImgIndex(0); };
-  const fecharModal = () => setModalNoticia(null);
+  const abrirModal = (n: NoticiaColetada) => { setModalNoticia(n); setImgIndex(0); setVerImagemRefeita(false); };
+  const fecharModal = () => { setModalNoticia(null); setVerImagemRefeita(false); };
 
   // ── Deletar todas as noticias ─────────────────────────────────────────────
 
@@ -124,21 +290,203 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
 
   // ── Iniciar Agente 1 ──────────────────────────────────────────────────────
 
-  const iniciarAgente1 = async () => {
+  const executarAgente1 = async () => {
     if (fontes.filter((f) => f.ativo).length === 0) {
-      setAgent1({ status: "error", erro: "Cadastre ao menos uma fonte ativa antes de iniciar." });
-      return;
+      const msg = "Cadastre ao menos uma fonte ativa antes de iniciar.";
+      setAgent1({ status: "error", erro: msg });
+      throw new Error(msg);
     }
     setAgent1({ status: "running" });
     try {
-      const { data, error } = await supabase.functions.invoke("agente_buscador_01", {
-        body: { cidade_id: cidadeId, lookback_days: 7, max_articles: 60 },
-      });
+      const payload = { cidade_id: cidadeId, lookback_days: 7, max_articles: 120 };
+      let { data, error } = await invokeEdgeWithSession("agente_buscador_01", payload);
+      if (error && await isInvalidJwtError(error)) {
+        const refreshed = await supabase.auth.refreshSession();
+        if (refreshed.data.session) {
+          const retry = await invokeEdgeWithSession("agente_buscador_01", payload);
+          data = retry.data;
+          error = retry.error;
+        }
+      }
+
+      if (error && await isInvalidJwtError(error)) {
+        data = await invokeEdgeWithAnonKey("agente_buscador_01", payload);
+        error = null;
+      }
+
       if (error) throw error;
       setAgent1({ status: "done", inseridos: data?.inseridos ?? 0, logs: data?.logs ?? [] });
       queryClient.invalidateQueries({ queryKey: ["tabela_agente_buscador", cidadeId] });
+      return data;
     } catch (e) {
-      setAgent1({ status: "error", erro: String(e) });
+      const detalhe = await parseInvokeError(e);
+      setAgent1({ status: "error", erro: detalhe });
+      throw e;
+    }
+  };
+
+  const executarAgente2 = async () => {
+    setAgent2({ status: "running" });
+    try {
+      const payload = { cidade_id: cidadeId, limit: 220 };
+      let { data, error } = await invokeEdgeWithSession("agente_conferencia_02", payload);
+      if (error && await isInvalidJwtError(error)) {
+        const refreshed = await supabase.auth.refreshSession();
+        if (refreshed.data.session) {
+          const retry = await invokeEdgeWithSession("agente_conferencia_02", payload);
+          data = retry.data;
+          error = retry.error;
+        }
+      }
+      if (error && await isInvalidJwtError(error)) {
+        data = await invokeEdgeWithAnonKey("agente_conferencia_02", payload);
+        error = null;
+      }
+      if (error) throw error;
+
+      setAgent2({
+        status: "done",
+        total_entrada: data?.total_entrada ?? 0,
+        duplicadas: data?.total_duplicadas ?? 0,
+        canonicas: data?.total_canonicas ?? 0,
+        grupos: data?.grupos_duplicados ?? 0,
+        itens: data?.itens ?? [],
+      });
+      queryClient.invalidateQueries({ queryKey: ["tabela_agente_buscador", cidadeId] });
+      return data;
+    } catch (e) {
+      const detalhe = await parseInvokeError(e);
+      setAgent2({ status: "error", erro: detalhe });
+      throw e;
+    }
+  };
+
+  const executarAgente3 = async () => {
+    setAgent3({ status: "running" });
+    try {
+      const payload = { cidade_id: cidadeId, limit: 120 };
+      let { data, error } = await invokeEdgeWithSession("agente_texto_03", payload);
+      if (error && await isInvalidJwtError(error)) {
+        const refreshed = await supabase.auth.refreshSession();
+        if (refreshed.data.session) {
+          const retry = await invokeEdgeWithSession("agente_texto_03", payload);
+          data = retry.data;
+          error = retry.error;
+        }
+      }
+      if (error && await isInvalidJwtError(error)) {
+        data = await invokeEdgeWithAnonKey("agente_texto_03", payload);
+        error = null;
+      }
+      if (error) throw error;
+
+      setAgent3({
+        status: "done",
+        processados: data?.total_processado ?? 0,
+        erros: data?.total_erros ?? 0,
+        model: data?.model ?? "",
+      });
+      queryClient.invalidateQueries({ queryKey: ["tabela_agente_buscador", cidadeId] });
+      return data;
+    } catch (e) {
+      const detalhe = await parseInvokeError(e);
+      setAgent3({ status: "error", erro: detalhe });
+      throw e;
+    }
+  };
+
+  const executarAgente4 = async () => {
+    setAgent4({ status: "running" });
+    try {
+      const payload = { cidade_id: cidadeId, limit: 80 };
+      let { data, error } = await invokeEdgeWithSession("agente_imagem_04", payload);
+      if (error && await isInvalidJwtError(error)) {
+        const refreshed = await supabase.auth.refreshSession();
+        if (refreshed.data.session) {
+          const retry = await invokeEdgeWithSession("agente_imagem_04", payload);
+          data = retry.data;
+          error = retry.error;
+        }
+      }
+      if (error && await isInvalidJwtError(error)) {
+        data = await invokeEdgeWithAnonKey("agente_imagem_04", payload);
+        error = null;
+      }
+      if (error) throw error;
+
+      setAgent4({
+        status: "done",
+        processados: data?.total_processado ?? data?.processados ?? 0,
+        detalhe: data?.message ?? data?.status ?? "",
+      });
+      queryClient.invalidateQueries({ queryKey: ["tabela_agente_buscador", cidadeId] });
+      return data;
+    } catch (e) {
+      const detalhe = await parseInvokeError(e);
+      setAgent4({ status: "error", erro: detalhe });
+      throw e;
+    }
+  };
+
+  const executarAgente5 = async () => {
+    setAgent5({ status: "running" });
+    try {
+      const payload = { cidade_id: cidadeId, limit: 120 };
+      let { data, error } = await invokeEdgeWithSession("agente_publicador_05", payload);
+      if (error && await isInvalidJwtError(error)) {
+        const refreshed = await supabase.auth.refreshSession();
+        if (refreshed.data.session) {
+          const retry = await invokeEdgeWithSession("agente_publicador_05", payload);
+          data = retry.data;
+          error = retry.error;
+        }
+      }
+      if (error && await isInvalidJwtError(error)) {
+        data = await invokeEdgeWithAnonKey("agente_publicador_05", payload);
+        error = null;
+      }
+      if (error) throw error;
+
+      setAgent5({
+        status: "done",
+        publicados: data?.total_publicado ?? 0,
+        jaExistia: data?.total_ja_existia ?? 0,
+        erros: data?.total_erros ?? 0,
+      });
+      queryClient.invalidateQueries({ queryKey: ["tabela_agente_buscador", cidadeId] });
+      return data;
+    } catch (e) {
+      const detalhe = await parseInvokeError(e);
+      setAgent5({ status: "error", erro: detalhe });
+      throw e;
+    }
+  };
+
+  const iniciarAgente1 = async () => {
+    setPipelineRunning(true);
+    try {
+      await executarAgente1();
+    } finally {
+      setPipelineRunning(false);
+    }
+  };
+
+  const iniciarPipelineAgentes = async () => {
+    setPipelineRunning(true);
+    setAgent2({ status: "waiting" });
+    setAgent3({ status: "waiting" });
+    setAgent4({ status: "waiting" });
+    setAgent5({ status: "waiting" });
+    try {
+      await executarAgente1();
+      await executarAgente2();
+      await executarAgente3();
+      await executarAgente4();
+      await executarAgente5();
+    } catch {
+      // status detalhado já é tratado por cada agente
+    } finally {
+      setPipelineRunning(false);
     }
   };
 
@@ -189,23 +537,56 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
   const a1Done    = agent1.status === "done";
   const a1Error   = agent1.status === "error";
   const a1Idle    = agent1.status === "idle";
+  const a2Running = agent2.status === "running";
+  const a2Done    = agent2.status === "done";
+  const a2Error   = agent2.status === "error";
+  const a2Waiting = agent2.status === "waiting";
+  const a2Idle    = agent2.status === "idle";
+  const a3Running = agent3.status === "running";
+  const a3Done    = agent3.status === "done";
+  const a3Error   = agent3.status === "error";
+  const a3Waiting = agent3.status === "waiting";
+  const a3Idle    = agent3.status === "idle";
+  const a4Running = agent4.status === "running";
+  const a4Done    = agent4.status === "done";
+  const a4Error   = agent4.status === "error";
+  const a4Waiting = agent4.status === "waiting";
+  const a4Idle    = agent4.status === "idle";
+  const a5Running = agent5.status === "running";
+  const a5Done    = agent5.status === "done";
+  const a5Error   = agent5.status === "error";
+  const a5Waiting = agent5.status === "waiting";
+  const a5Idle    = agent5.status === "idle";
 
   return (
     <div className="space-y-6">
 
       {/* Header */}
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900">Scraping de Noticias V2</h2>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Pipeline de agentes para coleta e enriquecimento de noticias
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Scraping de Noticias V2</h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Pipeline de agentes para coleta e enriquecimento de noticias
+          </p>
+        </div>
+        <Button
+          size="sm"
+          onClick={iniciarPipelineAgentes}
+          disabled={pipelineRunning}
+          className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
+        >
+          {pipelineRunning
+            ? <><Loader2 className="h-4 w-4 animate-spin" /> Executando agentes...</>
+            : <><RefreshCw className="h-4 w-4" /> Iniciar Agentes 1 {" > "} 2 {" > "} 3 {" > "} 4 {" > "} 5</>
+          }
+        </Button>
       </div>
 
       {/* ── Pipeline cards ─────────────────────────────────────────────────── */}
-      <div className="flex items-stretch gap-0">
+      <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-5 gap-3">
 
         {/* Agente 1 — Buscador (real) */}
-        <div className="flex items-center flex-1 min-w-0">
+        <div className="min-w-0">
           <div className={cn(
             "flex-1 rounded-xl border-2 p-5 transition-all duration-500 min-w-0",
             "border-blue-200 bg-blue-50",
@@ -234,7 +615,9 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
                 </p>
               )}
               {a1Error && (
-                <p className="text-xs text-red-500 leading-snug">{agent1.erro}</p>
+                <pre className="text-xs text-red-600 leading-snug whitespace-pre-wrap break-words rounded-md bg-red-50 p-2 border border-red-100">
+                  {agent1.erro}
+                </pre>
               )}
               {a1Running && (
                 <div className="h-1 bg-white rounded-full overflow-hidden">
@@ -249,7 +632,7 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
               <Button
                 size="sm"
                 onClick={iniciarAgente1}
-                disabled={a1Running}
+                disabled={pipelineRunning || a1Running || a2Running || a3Running || a4Running || a5Running}
                 className={cn(
                   "w-full gap-2 text-white text-xs",
                   a1Done || a1Error
@@ -266,54 +649,285 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
               </Button>
             </div>
           </div>
-          <div className="flex flex-col items-center px-2 shrink-0">
-            <ArrowRight className="h-6 w-6 text-gray-200" />
-          </div>
         </div>
 
-        {/* Agente 2 — Texto */}
-        <div className="flex items-center flex-1 min-w-0">
-          <div className="flex-1 rounded-xl border-2 border-violet-200 bg-violet-50 p-5 opacity-50 grayscale">
+        {/* Agente 2 — Conferencia */}
+        <div className="min-w-0">
+          <div className={cn(
+            "flex-1 rounded-xl border-2 border-violet-200 bg-violet-50 p-5 transition-all duration-500",
+            a2Waiting && "opacity-70",
+            a2Running && "shadow-lg scale-[1.02]",
+          )}>
             <div className="flex items-start justify-between gap-2 mb-3">
               <div className="p-2 rounded-lg bg-white shadow-sm text-violet-600">
                 <FileText className="h-5 w-5" />
               </div>
-              <Circle className="h-5 w-5 text-gray-300 mt-0.5" />
+              {a2Running && <Loader2 className="h-5 w-5 text-amber-500 animate-spin mt-0.5" />}
+              {a2Done    && <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5" />}
+              {a2Error   && <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />}
+              {(a2Idle || a2Waiting) && <Circle className="h-5 w-5 text-gray-300 mt-0.5" />}
             </div>
             <div className="space-y-1">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Agente 2</p>
-              <p className="font-semibold text-gray-900 text-sm leading-snug">Agente de Texto</p>
+              <p className="font-semibold text-gray-900 text-sm leading-snug">Agente de Conferencia</p>
               <p className="text-xs text-gray-500 leading-snug">
-                Reescreve titulo e descricao com linguagem local
+                Detecta noticias duplicadas e mantem uma canonica
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-white/60">
-              <p className="text-xs text-gray-300 font-medium">Aguardando agente anterior</p>
+            <div className="mt-4 pt-3 border-t border-white/60 space-y-2">
+              {a2Waiting && (
+                <p className="text-xs text-gray-500 font-medium">Aguardando agente 1 concluir</p>
+              )}
+              {a2Done && (
+                <p className="text-xs text-emerald-600 font-medium">
+                  {agent2.duplicadas ?? 0} duplicadas em {agent2.grupos ?? 0} grupos
+                  {typeof agent2.canonicas === "number" ? `, ${agent2.canonicas} canonicas` : ""}
+                </p>
+              )}
+              {a2Error && (
+                <pre className="text-xs text-red-600 leading-snug whitespace-pre-wrap break-words rounded-md bg-red-50 p-2 border border-red-100">
+                  {agent2.erro}
+                </pre>
+              )}
+              {a2Running && (
+                <div className="h-1 bg-white rounded-full overflow-hidden">
+                  <div className="h-full bg-amber-400 rounded-full w-3/5 animate-pulse" />
+                </div>
+              )}
+              {a2Done && (
+                <div className="h-1 bg-white rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full w-full" />
+                </div>
+              )}
+              <Button
+                size="sm"
+                onClick={executarAgente2}
+                disabled={pipelineRunning || a1Running || a2Running || a3Running || a4Running || a5Running || noticias.length === 0}
+                className={cn(
+                  "w-full gap-2 text-white text-xs",
+                  a2Done || a2Error
+                    ? "bg-violet-500 hover:bg-violet-600"
+                    : "bg-violet-600 hover:bg-violet-700"
+                )}
+              >
+                {a2Running
+                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Conferindo...</>
+                  : a2Done
+                  ? <><RefreshCw className="h-3.5 w-3.5" /> Conferir novamente</>
+                  : <><FileText className="h-3.5 w-3.5" /> Iniciar Agente 2</>
+                }
+              </Button>
             </div>
-          </div>
-          <div className="flex flex-col items-center px-2 shrink-0">
-            <ArrowRight className="h-6 w-6 text-gray-200" />
           </div>
         </div>
 
-        {/* Agente 3 — Imagem */}
-        <div className="flex items-center flex-1 min-w-0">
-          <div className="flex-1 rounded-xl border-2 border-emerald-200 bg-emerald-50 p-5 opacity-50 grayscale">
+        {/* Agente 3 — Texto */}
+        <div className="min-w-0">
+          <div className={cn(
+            "flex-1 rounded-xl border-2 border-emerald-200 bg-emerald-50 p-5 transition-all duration-500",
+            a3Waiting && "opacity-70",
+            a3Running && "shadow-lg scale-[1.02]",
+          )}>
             <div className="flex items-start justify-between gap-2 mb-3">
               <div className="p-2 rounded-lg bg-white shadow-sm text-emerald-600">
-                <ImageIcon className="h-5 w-5" />
+                <FileText className="h-5 w-5" />
               </div>
-              <Circle className="h-5 w-5 text-gray-300 mt-0.5" />
+              {a3Running && <Loader2 className="h-5 w-5 text-amber-500 animate-spin mt-0.5" />}
+              {a3Done    && <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5" />}
+              {a3Error   && <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />}
+              {(a3Idle || a3Waiting) && <Circle className="h-5 w-5 text-gray-300 mt-0.5" />}
             </div>
             <div className="space-y-1">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Agente 3</p>
-              <p className="font-semibold text-gray-900 text-sm leading-snug">Agente de Imagem</p>
+              <p className="font-semibold text-gray-900 text-sm leading-snug">Agente de Texto</p>
               <p className="text-xs text-gray-500 leading-snug">
-                Gera ou seleciona imagem adequada para a noticia
+                Reescreve as noticias canonicas para o formato final
               </p>
             </div>
-            <div className="mt-4 pt-3 border-t border-white/60">
-              <p className="text-xs text-gray-300 font-medium">Aguardando agente anterior</p>
+            <div className="mt-4 pt-3 border-t border-white/60 space-y-2">
+              {a3Waiting && (
+                <p className="text-xs text-gray-500 font-medium">Aguardando agente 2 concluir</p>
+              )}
+              {a3Done && (
+                <p className="text-xs text-emerald-600 font-medium">
+                  {agent3.processados ?? 0} noticias reescritas
+                  {typeof agent3.erros === "number" ? `, ${agent3.erros} erros` : ""}
+                  {agent3.model ? ` • ${agent3.model}` : ""}
+                </p>
+              )}
+              {a3Error && (
+                <pre className="text-xs text-red-600 leading-snug whitespace-pre-wrap break-words rounded-md bg-red-50 p-2 border border-red-100">
+                  {agent3.erro}
+                </pre>
+              )}
+              {a3Running && (
+                <div className="h-1 bg-white rounded-full overflow-hidden">
+                  <div className="h-full bg-amber-400 rounded-full w-3/5 animate-pulse" />
+                </div>
+              )}
+              {a3Done && (
+                <div className="h-1 bg-white rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full w-full" />
+                </div>
+              )}
+              <Button
+                size="sm"
+                onClick={executarAgente3}
+                disabled={pipelineRunning || a1Running || a2Running || a3Running || a4Running || a5Running || noticias.length === 0}
+                className={cn(
+                  "w-full gap-2 text-white text-xs",
+                  a3Done || a3Error
+                    ? "bg-emerald-500 hover:bg-emerald-600"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                )}
+              >
+                {a3Running
+                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Reescrevendo...</>
+                  : a3Done
+                  ? <><RefreshCw className="h-3.5 w-3.5" /> Reescrever novamente</>
+                  : <><FileText className="h-3.5 w-3.5" /> Iniciar Agente 3</>
+                }
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Agente 4 — Imagem */}
+        <div className="min-w-0">
+          <div className={cn(
+            "flex-1 rounded-xl border-2 border-pink-200 bg-pink-50 p-5 transition-all duration-500",
+            a4Waiting && "opacity-70",
+            a4Running && "shadow-lg scale-[1.02]",
+          )}>
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="p-2 rounded-lg bg-white shadow-sm text-pink-600">
+                <ImageIcon className="h-5 w-5" />
+              </div>
+              {a4Running && <Loader2 className="h-5 w-5 text-amber-500 animate-spin mt-0.5" />}
+              {a4Done    && <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5" />}
+              {a4Error   && <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />}
+              {(a4Idle || a4Waiting) && <Circle className="h-5 w-5 text-gray-300 mt-0.5" />}
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Agente 4</p>
+              <p className="font-semibold text-gray-900 text-sm leading-snug">Agente de Imagem</p>
+              <p className="text-xs text-gray-500 leading-snug">
+                Gera ou seleciona imagem para cada noticia
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-white/60 space-y-2">
+              {a4Waiting && (
+                <p className="text-xs text-gray-500 font-medium">Aguardando agente 3 concluir</p>
+              )}
+              {a4Done && (
+                <p className="text-xs text-emerald-600 font-medium">
+                  {agent4.processados ?? 0} noticias processadas
+                  {agent4.detalhe ? ` • ${agent4.detalhe}` : ""}
+                </p>
+              )}
+              {a4Error && (
+                <pre className="text-xs text-red-600 leading-snug whitespace-pre-wrap break-words rounded-md bg-red-50 p-2 border border-red-100">
+                  {agent4.erro}
+                </pre>
+              )}
+              {a4Running && (
+                <div className="h-1 bg-white rounded-full overflow-hidden">
+                  <div className="h-full bg-amber-400 rounded-full w-3/5 animate-pulse" />
+                </div>
+              )}
+              {a4Done && (
+                <div className="h-1 bg-white rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full w-full" />
+                </div>
+              )}
+              <Button
+                size="sm"
+                onClick={executarAgente4}
+                disabled={pipelineRunning || a1Running || a2Running || a3Running || a4Running || a5Running || noticias.length === 0}
+                className={cn(
+                  "w-full gap-2 text-white text-xs",
+                  a4Done || a4Error
+                    ? "bg-pink-500 hover:bg-pink-600"
+                    : "bg-pink-600 hover:bg-pink-700"
+                )}
+              >
+                {a4Running
+                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Gerando...</>
+                  : a4Done
+                  ? <><RefreshCw className="h-3.5 w-3.5" /> Gerar novamente</>
+                  : <><ImageIcon className="h-3.5 w-3.5" /> Iniciar Agente 4</>
+                }
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="min-w-0">
+          <div className={cn(
+            "flex-1 rounded-xl border-2 border-amber-200 bg-amber-50 p-5 transition-all duration-500",
+            a5Waiting && "opacity-70",
+            a5Running && "shadow-lg scale-[1.02]",
+          )}>
+            <div className="flex items-start justify-between gap-2 mb-3">
+              <div className="p-2 rounded-lg bg-white shadow-sm text-amber-600">
+                <Newspaper className="h-5 w-5" />
+              </div>
+              {a5Running && <Loader2 className="h-5 w-5 text-amber-500 animate-spin mt-0.5" />}
+              {a5Done    && <CheckCircle2 className="h-5 w-5 text-emerald-500 mt-0.5" />}
+              {a5Error   && <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />}
+              {(a5Idle || a5Waiting) && <Circle className="h-5 w-5 text-gray-300 mt-0.5" />}
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Agente 5</p>
+              <p className="font-semibold text-gray-900 text-sm leading-snug">Agente Publicador</p>
+              <p className="text-xs text-gray-500 leading-snug">
+                Publica no Jornal da Cidade sem repostar noticia ja publicada
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-white/60 space-y-2">
+              {a5Waiting && (
+                <p className="text-xs text-gray-500 font-medium">Aguardando agente 4 concluir</p>
+              )}
+              {a5Done && (
+                <p className="text-xs text-emerald-600 font-medium">
+                  {agent5.publicados ?? 0} publicadas
+                  {typeof agent5.jaExistia === "number" ? `, ${agent5.jaExistia} ja existentes` : ""}
+                  {typeof agent5.erros === "number" ? `, ${agent5.erros} erros` : ""}
+                </p>
+              )}
+              {a5Error && (
+                <pre className="text-xs text-red-600 leading-snug whitespace-pre-wrap break-words rounded-md bg-red-50 p-2 border border-red-100">
+                  {agent5.erro}
+                </pre>
+              )}
+              {a5Running && (
+                <div className="h-1 bg-white rounded-full overflow-hidden">
+                  <div className="h-full bg-amber-400 rounded-full w-3/5 animate-pulse" />
+                </div>
+              )}
+              {a5Done && (
+                <div className="h-1 bg-white rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full w-full" />
+                </div>
+              )}
+              <Button
+                size="sm"
+                onClick={executarAgente5}
+                disabled={pipelineRunning || a1Running || a2Running || a3Running || a4Running || a5Running || noticias.length === 0}
+                className={cn(
+                  "w-full gap-2 text-white text-xs",
+                  a5Done || a5Error
+                    ? "bg-amber-500 hover:bg-amber-600"
+                    : "bg-amber-600 hover:bg-amber-700"
+                )}
+              >
+                {a5Running
+                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Publicando...</>
+                  : a5Done
+                  ? <><RefreshCw className="h-3.5 w-3.5" /> Publicar novamente</>
+                  : <><Newspaper className="h-3.5 w-3.5" /> Iniciar Agente 5</>
+                }
+              </Button>
             </div>
           </div>
         </div>
@@ -520,6 +1134,17 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
                       {noticia.lista_imagens?.length > 1 && (
                         <span className="text-xs text-gray-400">{noticia.lista_imagens.length} imgs</span>
                       )}
+                      {noticia.imagem_refeita && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPopupImagemGerada(noticia.imagem_refeita ?? null);
+                          }}
+                          className="text-xs text-pink-600 font-medium hover:text-pink-700 underline"
+                        >
+                          Ver imagem gerada
+                        </button>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -571,6 +1196,14 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
+                {modalNoticia.imagem_refeita && (
+                  <button
+                    className="text-xs px-2 py-1 rounded-md border border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors"
+                    onClick={() => setVerImagemRefeita((v) => !v)}
+                  >
+                    {verImagemRefeita ? "Ver imagem original" : "Ver imagem gerada"}
+                  </button>
+                )}
                 <a
                   href={modalNoticia.url}
                   target="_blank"
@@ -594,7 +1227,16 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
             <div className="overflow-y-auto flex-1">
 
               {/* Galeria de imagens */}
-              {modalNoticia.lista_imagens?.length > 0 && (
+              {verImagemRefeita && modalNoticia.imagem_refeita ? (
+                <div className="relative bg-gray-900">
+                  <img
+                    src={modalNoticia.imagem_refeita}
+                    alt=""
+                    className="w-full max-h-72 object-contain bg-white"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                </div>
+              ) : modalNoticia.lista_imagens?.length > 0 && (
                 <div className="relative bg-gray-900">
                   <img
                     src={modalNoticia.lista_imagens[imgIndex]}
@@ -650,6 +1292,36 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
                 )}
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup imagem gerada */}
+      {popupImagemGerada && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          onClick={() => setPopupImagemGerada(null)}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <p className="text-sm font-semibold text-gray-900">Imagem gerada</p>
+              <button
+                onClick={() => setPopupImagemGerada(null)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="bg-gray-100 flex items-center justify-center p-3 max-h-[80vh] overflow-auto">
+              <img
+                src={popupImagemGerada}
+                alt="Imagem gerada"
+                className="max-w-full max-h-[75vh] object-contain rounded-lg bg-white"
+              />
             </div>
           </div>
         </div>

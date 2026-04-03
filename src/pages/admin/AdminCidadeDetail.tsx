@@ -34,8 +34,8 @@ const tabs = [
   { id: "usuarios", label: "Usuarios", icon: Users },
   { id: "admins", label: "Admins", icon: Users },
   { id: "precificacao", label: "Precificacao", icon: DollarSign },
-  { id: "scraping", label: "scarpping de noticas", icon: Rss },
   { id: "scraping-noticias-v2", label: "scraping de noticias v2", icon: Rss },
+  { id: "scraping", label: "scraping de noticias (legado)", icon: Rss },
   { id: "scraping-eventos", label: "scraping de eventos", icon: Rss },
   { id: "push-notificacao", label: "Push notificação", icon: Bell },
 ];
@@ -46,6 +46,7 @@ const AdminCidadeDetail = () => {
   const [searchParams] = useSearchParams();
   const activeTab = useMemo(() => {
     const requested = searchParams.get("tab") || "jornal";
+    if (requested === "scraping") return "scraping-noticias-v2";
     return tabs.some((tab) => tab.id === requested) ? requested : "jornal";
   }, [searchParams]);
 

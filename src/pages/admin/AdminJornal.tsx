@@ -85,8 +85,8 @@ const AdminJornal = ({ forcedCidadeId }: AdminJornalProps) => {
       let query = supabase
         .from("rel_cidade_jornal")
         .select("*")
-        .order("data_noticia", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .order("data_noticia", { ascending: false, nullsFirst: false });
 
       if (forcedCidadeId) {
         query = query.eq("cidade_id", forcedCidadeId);
