@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:stable": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-stable-start.ps1",
+    "dev:stable:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-stable-stop.ps1",
     "dev:mobile": "vite --host 0.0.0.0 --port 8080 --strictPort",
     "build": "vite build",
     "build:dev": "vite build --mode development",

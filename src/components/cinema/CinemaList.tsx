@@ -1,6 +1,6 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Film, Clock, Tag, Timer, MapPin } from "lucide-react";
+import { Film, Clock, Tag, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import CinemaCard from "./CinemaCard";
 import type { Cinema } from "@/types/cinema";
@@ -16,6 +16,55 @@ import {
 interface CinemaListProps {
   cidadeSlug?: string;
 }
+
+const cleanText = (value?: string | null): string =>
+  (value || "")
+    .replace(/`r`n/gi, " ")
+    .replace(/\r?\n/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const getClassificacaoClasses = (classificacao?: string | null): string => {
+  const value = cleanText(classificacao).toUpperCase();
+  if (!value) return "bg-zinc-100 text-zinc-700 border-zinc-300";
+  if (value === "L") return "bg-emerald-100 text-emerald-800 border-emerald-300";
+  if (value.includes("10")) return "bg-blue-100 text-blue-800 border-blue-300";
+  if (value.includes("12")) return "bg-amber-100 text-amber-800 border-amber-300";
+  if (value.includes("14")) return "bg-orange-100 text-orange-800 border-orange-300";
+  if (value.includes("16")) return "bg-red-100 text-red-800 border-red-300";
+  if (value.includes("18")) return "bg-zinc-900 text-white border-zinc-900";
+  return "bg-zinc-100 text-zinc-700 border-zinc-300";
+};
+
+const toLocalTodayIso = () => {
+  const now = new Date();
+  const tzOffsetMs = now.getTimezoneOffset() * 60 * 1000;
+  return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+};
+
+const normalizeIsoDate = (value: string): string | null => {
+  const v = value.trim();
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return `${m[1]}-${m[2]}-${m[3]}`;
+};
+
+const getSortedDias = (filme: Cinema): string[] =>
+  (filme.dias_exibicao || [])
+    .map(normalizeIsoDate)
+    .filter((d): d is string => !!d)
+    .sort();
+
+const getFirstDiaIso = (filme: Cinema): string | null => {
+  const dias = getSortedDias(filme);
+  return dias.length > 0 ? dias[0] : null;
+};
+
+const toBrDate = (iso: string): string => {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return iso;
+  return `${m[3]}/${m[2]}/${m[1]}`;
+};
 
 const CinemaList = ({ cidadeSlug }: CinemaListProps) => {
   const [activeTab, setActiveTab] = useState<"em_cartaz" | "em_breve">("em_cartaz");
@@ -50,7 +99,27 @@ const CinemaList = ({ cidadeSlug }: CinemaListProps) => {
     enabled: !!cidadeSlug,
   });
 
-  const filteredFilmes = filmes.filter((f) => f.status === activeTab);
+  const todayIso = toLocalTodayIso();
+  const filteredFilmes = filmes.filter((f) => {
+    const dias = getSortedDias(f);
+    if (activeTab === "em_cartaz") {
+      return dias.includes(todayIso);
+    }
+    if (dias.length === 0) return false;
+    return dias[0] > todayIso;
+  });
+  const orderedFilmes = [...filteredFilmes].sort((a, b) => {
+    if (activeTab !== "em_breve") return 0;
+    const aDate = getFirstDiaIso(a) || "9999-99-99";
+    const bDate = getFirstDiaIso(b) || "9999-99-99";
+    return aDate.localeCompare(bDate);
+  });
+  const getEstreiaBr = (filme: Cinema): string | null => {
+    if (filme.data_estreia) return toBrDate(filme.data_estreia);
+    const dias = getSortedDias(filme);
+    if (dias.length === 0) return null;
+    return toBrDate(dias[0]);
+  };
   const embedUrl = selectedFilme?.trailer_url
     ? getYouTubeEmbedUrl(selectedFilme.trailer_url)
     : null;
@@ -145,7 +214,7 @@ const CinemaList = ({ cidadeSlug }: CinemaListProps) => {
         </div>
       ) : (
         <div className="px-4 py-4 space-y-5">
-          {filteredFilmes.map((filme) => (
+          {orderedFilmes.map((filme) => (
             <div key={filme.id} onClick={() => setSelectedFilme(filme)} className="cursor-pointer">
               <CinemaCard
                 cinema={filme}
@@ -165,7 +234,7 @@ const CinemaList = ({ cidadeSlug }: CinemaListProps) => {
                 <div className="aspect-[2/3] max-h-[280px] w-full overflow-hidden">
                   <img
                     src={selectedFilme.banner_url}
-                    alt={selectedFilme.nome_filme}
+                    alt={cleanText(selectedFilme.nome_filme)}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -174,35 +243,41 @@ const CinemaList = ({ cidadeSlug }: CinemaListProps) => {
               <div className="p-4 space-y-3">
                 <DialogHeader>
                   <DialogTitle className="text-lg leading-tight">
-                    {selectedFilme.nome_filme}
+                    {cleanText(selectedFilme.nome_filme)}
                   </DialogTitle>
                 </DialogHeader>
-
-                {selectedFilme.nome_cinema && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {selectedFilme.nome_cinema}
+                {(selectedFilme.classificacao || getEstreiaBr(selectedFilme)) && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedFilme.classificacao && (
+                      <Badge variant="outline" className={`text-[11px] h-6 ${getClassificacaoClasses(selectedFilme.classificacao)}`}>
+                        Classificacao: {selectedFilme.classificacao}
+                      </Badge>
+                    )}
+                    {getEstreiaBr(selectedFilme) && (
+                      <span className="text-xs text-muted-foreground">
+                        Estreia: {getEstreiaBr(selectedFilme)}
+                      </span>
+                    )}
                   </div>
                 )}
-
                 <div className="flex items-center gap-2 flex-wrap">
                   {selectedFilme.genero && (
-                    <Badge variant="secondary" className="text-[11px] h-6 gap-1">
+                    <Badge variant="outline" className="text-[11px] h-6 gap-1 bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-800/60 dark:text-zinc-200 dark:border-zinc-700">
                       <Tag className="h-3 w-3" />
-                      {selectedFilme.genero}
+                      {cleanText(selectedFilme.genero)}
                     </Badge>
                   )}
                   {selectedFilme.duracao && (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Timer className="h-3.5 w-3.5" />
-                      {selectedFilme.duracao}
+                      {cleanText(selectedFilme.duracao)}
                     </span>
                   )}
                 </div>
 
                 {selectedFilme.sinopse && (
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedFilme.sinopse}
+                    {cleanText(selectedFilme.sinopse)}
                   </p>
                 )}
 
@@ -210,13 +285,13 @@ const CinemaList = ({ cidadeSlug }: CinemaListProps) => {
                   <div>
                     <div className="flex items-center gap-1.5 mb-2">
                       <Clock className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs font-medium text-foreground">Horários</span>
+                      <span className="text-xs font-medium text-foreground">Horarios</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {selectedFilme.horarios.map((hora, idx) => (
                         <span
                           key={idx}
-                          className="text-xs font-medium px-3 py-1 rounded-full bg-primary/10 text-primary"
+                          className="text-xs font-medium px-3 py-1 rounded-full bg-red-600 text-white"
                         >
                           {hora}
                         </span>
@@ -247,3 +322,4 @@ const CinemaList = ({ cidadeSlug }: CinemaListProps) => {
 };
 
 export default CinemaList;
+

@@ -43,7 +43,7 @@ const ARTICLE_FETCH_TIMEOUT_MS = 10_000;
 const CONCURRENCY = 8; // artigos enriquecidos em paralelo
 const MAX_ARTICLES_DEFAULT = 120;
 const LOOKBACK_DAYS_DEFAULT = 3;
-const MAX_IMAGES_PER_ARTICLE = 5;
+const MAX_IMAGES_PER_ARTICLE = 1;
 const ARTICLE_READ_MAX_BYTES = 260_000;
 
 // ─── Image blocklist (logos, ícones, tracking, social, etc.) ─────────────────
@@ -845,23 +845,29 @@ Deno.serve(async (req) => {
     logs.push(`Artigos após filtro de cidade: ${artigos.length}`);
 
     // ── 7. UPSERT no banco ────────────────────────────────────────────────────
-    const { error: purgeErr } = await supabase
+    const { data: existentes, error: existentesErr } = await supabase
       .from("tabela_agente_buscador")
-      .delete()
+      .select("url")
       .eq("cidade_id", cidade_id);
-    if (purgeErr) {
-      logs.push(`Erro ao limpar lote anterior: ${purgeErr.message}`);
-    } else {
-      logs.push("Lote anterior da cidade removido");
-    }
+    if (existentesErr) throw existentesErr;
+
+    const existingUrls = new Set(
+      (existentes ?? [])
+        .map((r) => String((r as { url?: string }).url ?? "").trim())
+        .filter(Boolean)
+    );
+
+    const artigosNovos = artigos.filter((a) => !existingUrls.has(a.url));
+    const puladosPorJaExistir = artigos.length - artigosNovos.length;
+    logs.push(`Ja existentes (mesmo link): ${puladosPorJaExistir}`);
 
     let inseridos = 0;
     const BATCH = 20;
-    for (let i = 0; i < artigos.length; i += BATCH) {
-      const slice = artigos.slice(i, i + BATCH);
+    for (let i = 0; i < artigosNovos.length; i += BATCH) {
+      const slice = artigosNovos.slice(i, i + BATCH);
       const { error: upsertErr, count } = await supabase
         .from("tabela_agente_buscador")
-        .upsert(slice, { onConflict: "cidade_id,url", ignoreDuplicates: false })
+        .upsert(slice, { onConflict: "cidade_id,url", ignoreDuplicates: true })
         .select("id", { count: "exact", head: true });
 
       if (upsertErr) {
@@ -871,7 +877,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    logs.push(`Salvos/atualizados: ${inseridos}`);
+    logs.push(`Novos inseridos: ${inseridos}`);
 
     return new Response(
       JSON.stringify({ ok: true, inseridos, total_candidatos: unicos.length, logs }),
@@ -885,3 +891,4 @@ Deno.serve(async (req) => {
     );
   }
 });
+

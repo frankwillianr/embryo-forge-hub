@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Search, FileText, Image as ImageIcon,
@@ -81,6 +81,36 @@ interface Agent5Run {
   erro?: string;
 }
 
+const parseDateToMs = (raw?: string | null): number => {
+  const s = (raw ?? "").trim();
+  if (!s) return 0;
+
+  const isoMs = Date.parse(s);
+  if (Number.isFinite(isoMs)) return isoMs;
+
+  const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) {
+    const dd = dmy[1].padStart(2, "0");
+    const mm = dmy[2].padStart(2, "0");
+    const yyyy = dmy[3];
+    const ms = Date.parse(`${yyyy}-${mm}-${dd}T00:00:00Z`);
+    if (Number.isFinite(ms)) return ms;
+  }
+
+  return 0;
+};
+
+const extractDateFromTextToMs = (raw?: string | null): number => {
+  const s = (raw ?? "").trim();
+  if (!s) return 0;
+  const m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!m) return 0;
+  const dd = m[1].padStart(2, "0");
+  const mm = m[2].padStart(2, "0");
+  const yyyy = m[3];
+  return parseDateToMs(`${yyyy}-${mm}-${dd}`);
+};
+
 const safeString = (value: unknown) => {
   if (typeof value === "string") return value;
   try {
@@ -152,6 +182,18 @@ const getFreshAccessToken = async (): Promise<string | null> => {
   }
 
   return session?.access_token ?? null;
+};
+
+const isTransientFetchError = (err: unknown): boolean => {
+  const e = err as { message?: string; name?: string };
+  const msg = String(e?.message ?? "").toLowerCase();
+  const name = String(e?.name ?? "").toLowerCase();
+  return (
+    msg.includes("failed to fetch") ||
+    msg.includes("networkerror") ||
+    msg.includes("load failed") ||
+    name.includes("typeerror")
+  );
 };
 
 const invokeEdgeWithAnonKey = async (fnName: string, body: unknown) => {
@@ -232,6 +274,7 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
   const [novoTipo, setNovoTipo] = useState<"rss" | "html" | "auto">("auto");
   const [saving, setSaving] = useState(false);
   const [erroForm, setErroForm] = useState<string | null>(null);
+  const [savingAuto, setSavingAuto] = useState(false);
 
   // ── Fontes query ─────────────────────────────────────────────────────────
 
@@ -249,6 +292,20 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
     enabled: !!cidadeId,
   });
 
+  const { data: autoConfig } = useQuery<{ auto_ativo: boolean } | null>({
+    queryKey: ["cidade_scraping_config", cidadeId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cidade_scraping_config")
+        .select("auto_ativo")
+        .eq("cidade_id", cidadeId)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as { auto_ativo: boolean } | null) ?? null;
+    },
+    enabled: !!cidadeId,
+  });
+
   // ── Noticias coletadas query ───────────────────────────────────────────────
 
   const { data: noticias = [], isLoading: loadingNoticias } = useQuery<NoticiaColetada[]>({
@@ -258,13 +315,37 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
         .from("tabela_agente_buscador")
         .select("id, url, titulo, descricao, lista_imagens, fonte_nome, data_publicacao, status, is_duplicada, imagem_refeita, created_at")
         .eq("cidade_id", cidadeId)
-        .order("created_at", { ascending: false })
         .limit(100);
       if (error) throw error;
-      return data as NoticiaColetada[];
+      const rows = (data ?? []) as NoticiaColetada[];
+      rows.sort((a, b) => {
+        const aMs = parseDateToMs(a.data_publicacao) || parseDateToMs(a.created_at);
+        const bMs = parseDateToMs(b.data_publicacao) || parseDateToMs(b.created_at);
+        if (bMs !== aMs) return bMs - aMs;
+        return parseDateToMs(b.created_at) - parseDateToMs(a.created_at);
+      });
+      return rows;
     },
     enabled: !!cidadeId,
   });
+
+  const noticiasOrdenadas = useMemo(() => {
+    return [...noticias].sort((a, b) => {
+      const aPubMs =
+        parseDateToMs(a.data_publicacao) ||
+        extractDateFromTextToMs(a.titulo) ||
+        extractDateFromTextToMs(a.descricao) ||
+        parseDateToMs(a.created_at);
+      const bPubMs =
+        parseDateToMs(b.data_publicacao) ||
+        extractDateFromTextToMs(b.titulo) ||
+        extractDateFromTextToMs(b.descricao) ||
+        parseDateToMs(b.created_at);
+
+      if (bPubMs !== aPubMs) return bPubMs - aPubMs;
+      return parseDateToMs(b.created_at) - parseDateToMs(a.created_at);
+    });
+  }, [noticias]);
 
   // ── Modal de noticia ──────────────────────────────────────────────────────
 
@@ -398,29 +479,115 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
   const executarAgente4 = async () => {
     setAgent4({ status: "running" });
     try {
-      const payload = { cidade_id: cidadeId, limit: 80 };
-      let { data, error } = await invokeEdgeWithSession("agente_imagem_04", payload);
-      if (error && await isInvalidJwtError(error)) {
-        const refreshed = await supabase.auth.refreshSession();
-        if (refreshed.data.session) {
-          const retry = await invokeEdgeWithSession("agente_imagem_04", payload);
-          data = retry.data;
-          error = retry.error;
+      const MAX_RODADAS = 120;
+      const DELAY_ENTRE_RODADAS_MS = 1200;
+      let totalProcessado = 0;
+      let totalErros = 0;
+      let totalTentado = 0;
+      let rodadas = 0;
+      let ultimoDetalhe = "";
+      let totalElegiveis = 0;
+      let rodadasSemMovimento = 0;
+      let workerLimitHits = 0;
+
+      for (let i = 0; i < MAX_RODADAS; i++) {
+        rodadas++;
+        const payload = { cidade_id: cidadeId, limit: 1 };
+        let data: any = null;
+        let error: any = null;
+        let tentativasRede = 0;
+
+        while (tentativasRede < 3) {
+          try {
+            ({ data, error } = await invokeEdgeWithSession("agente_imagem_04", payload));
+            break;
+          } catch (netErr) {
+            if (!isTransientFetchError(netErr)) throw netErr;
+            tentativasRede++;
+            setAgent4({
+              status: "running",
+              processados: totalProcessado,
+              detalhe: totalElegiveis > 0
+                ? `${totalProcessado}/${totalElegiveis} • Rodada ${rodadas} • reconectando... (${tentativasRede}/3)`
+                : `Rodada ${rodadas} • reconectando... (${tentativasRede}/3)`,
+            });
+            if (tentativasRede >= 3) throw netErr;
+            await new Promise((resolve) => setTimeout(resolve, 1800));
+          }
         }
+
+        if (error && await isInvalidJwtError(error)) {
+          const refreshed = await supabase.auth.refreshSession();
+          if (refreshed.data.session) {
+            const retry = await invokeEdgeWithSession("agente_imagem_04", payload);
+            data = retry.data;
+            error = retry.error;
+          }
+        }
+        if (error && await isInvalidJwtError(error)) {
+          data = await invokeEdgeWithAnonKey("agente_imagem_04", payload);
+          error = null;
+        }
+        if (error) {
+          const status = Number((error as { status?: number })?.status ?? 0);
+          if (status === 546) {
+            workerLimitHits++;
+            setAgent4({
+              status: "running",
+              processados: totalProcessado,
+              detalhe: totalElegiveis > 0
+                ? `${totalProcessado}/${totalElegiveis} • Rodada ${rodadas} • aguardando recursos...`
+                : `Rodada ${rodadas} • aguardando recursos...`,
+            });
+            if (workerLimitHits >= 5) throw error;
+            await new Promise((resolve) => setTimeout(resolve, 2500));
+            continue;
+          }
+          throw error;
+        }
+        workerLimitHits = 0;
+
+        const processadoRodada = Number(data?.total_processado ?? data?.processados ?? 0);
+        const errosRodada = Number(data?.total_erros ?? 0);
+        const tentadoRodada = Number(data?.total_tentado ?? (processadoRodada + errosRodada));
+        const restanteGlobal = Number(data?.restantes_globais ?? 0);
+        const elegiveisRodada = Number(data?.total_elegiveis ?? 0);
+        totalProcessado += processadoRodada;
+        totalErros += errosRodada;
+        totalTentado += tentadoRodada;
+        ultimoDetalhe = String(data?.message ?? data?.status ?? "").trim();
+        totalElegiveis = Math.max(totalElegiveis, elegiveisRodada, totalProcessado + restanteGlobal);
+
+        if (tentadoRodada <= 0) rodadasSemMovimento++;
+        else rodadasSemMovimento = 0;
+
+        setAgent4({
+          status: "running",
+          processados: totalProcessado,
+          detalhe: totalElegiveis > 0
+            ? `${totalProcessado}/${totalElegiveis} • Rodada ${rodadas} • ${Math.max(restanteGlobal, 0)} restantes`
+            : `Rodada ${rodadas} • ${totalProcessado} processadas`,
+        });
+
+        if (restanteGlobal <= 0) break;
+        if (rodadasSemMovimento >= 3) break;
+
+        await new Promise((resolve) => setTimeout(resolve, DELAY_ENTRE_RODADAS_MS));
       }
-      if (error && await isInvalidJwtError(error)) {
-        data = await invokeEdgeWithAnonKey("agente_imagem_04", payload);
-        error = null;
-      }
-      if (error) throw error;
+
+      const detalheFinal = totalErros > 0
+        ? `${totalProcessado}/${Math.max(totalElegiveis, totalProcessado)} • ${rodadas} rodadas, ${totalErros} erros`
+        : `${totalProcessado}/${Math.max(totalElegiveis, totalProcessado)} • ${rodadas} rodadas`;
 
       setAgent4({
         status: "done",
-        processados: data?.total_processado ?? data?.processados ?? 0,
-        detalhe: data?.message ?? data?.status ?? "",
+        processados: totalProcessado,
+        detalhe: totalProcessado > 0
+          ? detalheFinal
+          : (totalErros > 0 ? `${detalheFinal}` : (ultimoDetalhe || "Nenhuma notícia elegível para gerar imagem.")),
       });
       queryClient.invalidateQueries({ queryKey: ["tabela_agente_buscador", cidadeId] });
-      return data;
+      return { total_processado: totalProcessado, total_erros: totalErros, total_tentado: totalTentado, rodadas };
     } catch (e) {
       const detalhe = await parseInvokeError(e);
       setAgent4({ status: "error", erro: detalhe });
@@ -531,6 +698,29 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
     queryClient.invalidateQueries({ queryKey: ["cidade_scraping_fonte_v2", cidadeId] });
   };
 
+  const autoAtivo = Boolean(autoConfig?.auto_ativo);
+  const toggleFluxoAutomatico = async () => {
+    setSavingAuto(true);
+    const { error } = await supabase
+      .from("cidade_scraping_config")
+      .upsert(
+        {
+          cidade_id: cidadeId,
+          auto_ativo: !autoAtivo,
+          intervalo_horas: 3,
+          lookback_dias: 7,
+          max_artigos: 120,
+          rewrite_ai: true,
+          validate_ai: true,
+        },
+        { onConflict: "cidade_id" },
+      );
+    setSavingAuto(false);
+    if (!error) {
+      queryClient.invalidateQueries({ queryKey: ["cidade_scraping_config", cidadeId] });
+    }
+  };
+
   // ─── Render ───────────────────────────────────────────────────────────────
 
   const a1Running = agent1.status === "running";
@@ -568,18 +758,37 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
           <p className="text-sm text-gray-500 mt-0.5">
             Pipeline de agentes para coleta e enriquecimento de noticias
           </p>
+          <p className="text-xs mt-1 text-gray-500">
+            Fluxo automático: 08h, 12h, 16h e 21h (horário de Brasília)
+          </p>
         </div>
-        <Button
-          size="sm"
-          onClick={iniciarPipelineAgentes}
-          disabled={pipelineRunning}
-          className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
-        >
-          {pipelineRunning
-            ? <><Loader2 className="h-4 w-4 animate-spin" /> Executando agentes...</>
-            : <><RefreshCw className="h-4 w-4" /> Iniciar Agentes 1 {" > "} 2 {" > "} 3 {" > "} 4 {" > "} 5</>
-          }
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            size="sm"
+            variant={autoAtivo ? "default" : "outline"}
+            onClick={toggleFluxoAutomatico}
+            disabled={savingAuto}
+            className={cn("gap-2", autoAtivo && "bg-emerald-600 hover:bg-emerald-700 text-white")}
+          >
+            {savingAuto
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Salvando...</>
+              : autoAtivo
+              ? <><CheckCircle2 className="h-4 w-4" /> Fluxo automático ativo</>
+              : <><Circle className="h-4 w-4" /> Ativar fluxo automático</>
+            }
+          </Button>
+          <Button
+            size="sm"
+            onClick={iniciarPipelineAgentes}
+            disabled={pipelineRunning}
+            className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
+            {pipelineRunning
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Executando agentes...</>
+              : <><RefreshCw className="h-4 w-4" /> Iniciar Agentes 1 {" > "} 2 {" > "} 3 {" > "} 4 {" > "} 5</>
+            }
+          </Button>
+        </div>
       </div>
 
       {/* ── Pipeline cards ─────────────────────────────────────────────────── */}
@@ -818,6 +1027,11 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
             <div className="mt-4 pt-3 border-t border-white/60 space-y-2">
               {a4Waiting && (
                 <p className="text-xs text-gray-500 font-medium">Aguardando agente 3 concluir</p>
+              )}
+              {a4Running && (
+                <p className="text-xs text-amber-700 font-medium">
+                  {agent4.detalhe || `Gerando... ${agent4.processados ?? 0} processadas`}
+                </p>
               )}
               {a4Done && (
                 <p className="text-xs text-emerald-600 font-medium">
@@ -1091,7 +1305,7 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {noticias.map((noticia) => (
+              {noticiasOrdenadas.map((noticia) => (
                 <button
                   key={noticia.id}
                   onClick={() => abrirModal(noticia)}
@@ -1331,3 +1545,4 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
 };
 
 export default AdminCidadeScrapingNoticiasV2;
+

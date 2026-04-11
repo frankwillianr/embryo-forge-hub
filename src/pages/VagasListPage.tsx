@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Search,
+  X,
   Briefcase,
   UtensilsCrossed,
   ShoppingBag,
@@ -223,17 +224,29 @@ const VagasListPage = () => {
         </div>
       </div>
 
-      <div className="px-4 py-3 flex gap-2">
+      <div className="px-4 py-3 flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
+          <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+            <Search className="h-3.5 w-3.5" />
+          </div>
           <Input
             placeholder="Buscar cargo, empresa ou habilidade"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-10 rounded-xl bg-muted/50 border-0 focus-visible:ring-1"
+            className="h-11 rounded-2xl border border-border/70 bg-card pl-12 pr-10 shadow-sm focus-visible:ring-2 focus-visible:ring-primary/25 focus-visible:border-primary/40"
           />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors"
+              aria-label="Limpar busca"
+            >
+              <X className="h-3.5 w-3.5 mx-auto" />
+            </button>
+          )}
         </div>
-        <Button onClick={() => navigate(`/cidade/${slug}/vagas/nova`)} className="rounded-xl">
+        <Button onClick={() => navigate(`/cidade/${slug}/vagas/nova`)} className="h-11 rounded-2xl px-4 shadow-sm">
           Anunciar
         </Button>
       </div>

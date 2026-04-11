@@ -60,9 +60,8 @@ Deno.serve(async (req) => {
       .from("tabela_agente_buscador")
       .select("id, cidade_id, url, titulo, descricao, fonte_nome, categoria, data_publicacao, lista_imagens, imagem_refeita, status, is_duplicada, jornal_postado_at")
       .eq("cidade_id", cidade_id)
-      .eq("is_duplicada", false)
       .not("imagem_refeita", "is", null)
-      .neq("status", "publicado")
+      .neq("status", "concluido")
       .is("jornal_postado_at", null)
       .order("created_at", { ascending: true })
       .limit(limit);

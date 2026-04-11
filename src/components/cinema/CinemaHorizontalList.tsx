@@ -1,7 +1,7 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Film, Play, Clock, Tag, Timer, MapPin } from "lucide-react";
+import { Film, Play, Clock, Tag, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,50 @@ import type { Cinema } from "@/types/cinema";
 interface CinemaHorizontalListProps {
   cidadeSlug?: string;
 }
+
+const cleanText = (value?: string | null): string =>
+  (value || "")
+    .replace(/`r`n/gi, " ")
+    .replace(/\r?\n/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const getClassificacaoClasses = (classificacao?: string | null): string => {
+  const value = cleanText(classificacao).toUpperCase();
+  if (!value) return "bg-zinc-100 text-zinc-700 border-zinc-300";
+  if (value === "L") return "bg-emerald-100 text-emerald-800 border-emerald-300";
+  if (value.includes("10")) return "bg-blue-100 text-blue-800 border-blue-300";
+  if (value.includes("12")) return "bg-amber-100 text-amber-800 border-amber-300";
+  if (value.includes("14")) return "bg-orange-100 text-orange-800 border-orange-300";
+  if (value.includes("16")) return "bg-red-100 text-red-800 border-red-300";
+  if (value.includes("18")) return "bg-zinc-900 text-white border-zinc-900";
+  return "bg-zinc-100 text-zinc-700 border-zinc-300";
+};
+
+const toLocalTodayIso = () => {
+  const now = new Date();
+  const tzOffsetMs = now.getTimezoneOffset() * 60 * 1000;
+  return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+};
+
+const normalizeIsoDate = (value: string): string | null => {
+  const v = value.trim();
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return `${m[1]}-${m[2]}-${m[3]}`;
+};
+
+const getSortedDias = (filme: Cinema): string[] =>
+  (filme.dias_exibicao || [])
+    .map(normalizeIsoDate)
+    .filter((d): d is string => !!d)
+    .sort();
+
+const toBrDate = (iso: string): string => {
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return iso;
+  return `${m[3]}/${m[2]}/${m[1]}`;
+};
 
 const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
   const navigate = useNavigate();
@@ -37,15 +81,19 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
         .from("rel_cidade_cinema")
         .select("*")
         .eq("cidade_id", cidadeData.id)
-        .eq("status", "em_cartaz")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(100);
 
       if (error) throw error;
       return (data || []) as Cinema[];
     },
     enabled: !!cidadeSlug,
   });
+
+  const todayIso = toLocalTodayIso();
+  const filmesEmCartazHoje = filmes
+    .filter((f) => getSortedDias(f).includes(todayIso))
+    .slice(0, 10);
 
   const getYouTubeEmbedUrl = (url: string) => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
@@ -65,11 +113,17 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
     );
   }
 
-  if (filmes.length === 0) return null;
+  if (filmesEmCartazHoje.length === 0) return null;
 
   const embedUrl = selectedFilme?.trailer_url
     ? getYouTubeEmbedUrl(selectedFilme.trailer_url)
     : null;
+  const getEstreiaBr = (filme: Cinema): string | null => {
+    if (filme.data_estreia) return toBrDate(filme.data_estreia);
+    const dias = getSortedDias(filme);
+    if (dias.length === 0) return null;
+    return toBrDate(dias[0]);
+  };
 
   return (
     <div className="py-6">
@@ -97,7 +151,7 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
       {/* Horizontal scroll */}
       <div className="overflow-x-auto scrollbar-hide">
         <div className="flex gap-3 px-5 pb-2">
-          {filmes.map((filme) => (
+          {filmesEmCartazHoje.map((filme) => (
             <div
               key={filme.id}
               className="min-w-[140px] max-w-[140px] flex-shrink-0 cursor-pointer active:scale-[0.97] transition-transform"
@@ -108,7 +162,7 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
                 {filme.banner_url ? (
                   <img
                     src={filme.banner_url}
-                    alt={filme.nome_filme}
+                    alt={cleanText(filme.nome_filme)}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -119,18 +173,34 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
               </div>
               {/* Title */}
               <p className="text-xs font-medium text-foreground mt-1.5 line-clamp-2 leading-tight">
-                {filme.nome_filme}
+                {cleanText(filme.nome_filme)}
               </p>
-              {/* Gênero */}
+              {/* GÃªnero */}
               {filme.genero && (
                 <div className="flex items-center gap-1 mt-1">
                   <Tag className="h-2.5 w-2.5 text-muted-foreground" />
                   <p className="text-[10px] text-muted-foreground truncate">
-                    {filme.genero}
+                    {cleanText(filme.genero)}
                   </p>
                 </div>
               )}
-              {/* Horários */}
+              {(filme.classificacao || getEstreiaBr(filme)) && (
+                <div className="mt-1 flex items-center gap-1 flex-wrap">
+                  {filme.classificacao ? (
+                    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded border ${getClassificacaoClasses(filme.classificacao)}`}>
+                      {filme.classificacao}
+                    </span>
+                  ) : (
+                    <span className="text-[9px] text-muted-foreground">Classificacao: n/i</span>
+                  )}
+                  {getEstreiaBr(filme) && (
+                    <span className="text-[9px] text-muted-foreground">
+                      Estreia: {getEstreiaBr(filme)}
+                    </span>
+                  )}
+                </div>
+              )}
+              {/* Horarios */}
               {filme.horarios && filme.horarios.length > 0 && (
                 <div className="flex items-center gap-1 mt-1 flex-wrap">
                   <Clock className="h-2.5 w-2.5 text-primary/70 flex-shrink-0" />
@@ -138,7 +208,7 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
                     {filme.horarios.slice(0, 3).map((hora, idx) => (
                       <span
                         key={idx}
-                        className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary"
+                        className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-red-600 text-white"
                       >
                         {hora}
                       </span>
@@ -164,7 +234,7 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
                 <div className="aspect-[2/3] max-h-[280px] w-full overflow-hidden">
                   <img
                     src={selectedFilme.banner_url}
-                    alt={selectedFilme.nome_filme}
+                    alt={cleanText(selectedFilme.nome_filme)}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -173,30 +243,37 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
               <div className="p-4 space-y-3">
                 <DialogHeader>
                   <DialogTitle className="text-lg leading-tight">
-                    {selectedFilme.nome_filme}
+                    {cleanText(selectedFilme.nome_filme)}
                   </DialogTitle>
                 </DialogHeader>
 
-                {/* Cinema */}
-                {selectedFilme.nome_cinema && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {selectedFilme.nome_cinema}
+                {(selectedFilme.classificacao || getEstreiaBr(selectedFilme)) && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {selectedFilme.classificacao && (
+                      <Badge variant="outline" className={`text-[11px] h-6 ${getClassificacaoClasses(selectedFilme.classificacao)}`}>
+                        Classificacao: {selectedFilme.classificacao}
+                      </Badge>
+                    )}
+                    {getEstreiaBr(selectedFilme) && (
+                      <span className="text-xs text-muted-foreground">
+                        Estreia: {getEstreiaBr(selectedFilme)}
+                      </span>
+                    )}
                   </div>
                 )}
 
-                {/* Gênero e Duração */}
+                {/* Genero e Duracao */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {selectedFilme.genero && (
-                    <Badge variant="secondary" className="text-[11px] h-6 gap-1">
+                    <Badge variant="outline" className="text-[11px] h-6 gap-1 bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-800/60 dark:text-zinc-200 dark:border-zinc-700">
                       <Tag className="h-3 w-3" />
-                      {selectedFilme.genero}
+                      {cleanText(selectedFilme.genero)}
                     </Badge>
                   )}
                   {selectedFilme.duracao && (
                     <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Timer className="h-3.5 w-3.5" />
-                      {selectedFilme.duracao}
+                      {cleanText(selectedFilme.duracao)}
                     </span>
                   )}
                 </div>
@@ -204,22 +281,22 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
                 {/* Sinopse */}
                 {selectedFilme.sinopse && (
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedFilme.sinopse}
+                    {cleanText(selectedFilme.sinopse)}
                   </p>
                 )}
 
-                {/* Horários */}
+                {/* Horarios */}
                 {selectedFilme.horarios && selectedFilme.horarios.length > 0 && (
                   <div>
                     <div className="flex items-center gap-1.5 mb-2">
                       <Clock className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs font-medium text-foreground">Horários</span>
+                      <span className="text-xs font-medium text-foreground">Horarios</span>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {selectedFilme.horarios.map((hora, idx) => (
                         <span
                           key={idx}
-                          className="text-xs font-medium px-3 py-1 rounded-full bg-primary/10 text-primary"
+                          className="text-xs font-medium px-3 py-1 rounded-full bg-red-600 text-white"
                         >
                           {hora}
                         </span>
@@ -251,3 +328,4 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
 };
 
 export default CinemaHorizontalList;
+

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Briefcase, Bus, MapPin, Lightbulb } from "lucide-react";
+import { Bus, MapPin, Lightbulb } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,14 +28,6 @@ const cards = [
     bgPattern: "bg-gradient-to-br",
   },
   {
-    id: "vagas",
-    title: "Vagas de Emprego",
-    subtitle: "Encontre oportunidades",
-    icon: Briefcase,
-    gradient: "from-orange-500 to-amber-400",
-    bgPattern: "bg-gradient-to-br",
-  },
-  {
     id: "onibus",
     title: "Horario de Onibus",
     subtitle: "Confira os horarios",
@@ -55,8 +47,6 @@ const QuickAccessCards = ({ cidadeSlug, onMapClick }: QuickAccessCardsProps) => 
   const handleClick = (id: string) => {
     if (id === "mapa") {
       goCityMap();
-    } else if (id === "vagas") {
-      navigate(`/cidade/${cidadeSlug}/vagas`);
     } else if (id === "onibus") {
       navigate(`/cidade/${cidadeSlug}/onibus`);
     }
@@ -118,12 +108,12 @@ const QuickAccessCards = ({ cidadeSlug, onMapClick }: QuickAccessCardsProps) => 
 
   return (
     <section className="px-4 py-4">
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {cards.map((card) => (
           <button
             key={card.id}
             onClick={() => handleClick(card.id)}
-            className={`aspect-square rounded-2xl ${card.bgPattern} ${card.gradient} p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden`}
+            className={`h-[88px] rounded-2xl ${card.bgPattern} ${card.gradient} p-2.5 flex flex-col justify-between text-white shadow-lg hover:shadow-xl transition-all active:scale-95 relative overflow-hidden`}
           >
             <div className="absolute -right-3 -bottom-3 opacity-20">
               <card.icon className="w-14 h-14" strokeWidth={1} />

@@ -32,9 +32,9 @@ const EventoCard = ({
   return (
     <div
       onClick={() => navigate(`/cidade/${cidadeSlug}/eventos/${id}`)}
-      className={customClassName || "min-w-[220px] max-w-[220px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer group"}
+      className={customClassName || "min-w-[150px] max-w-[150px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer group"}
     >
-      <div className="relative h-[140px] w-full">
+      <div className="relative h-[95px] w-full">
         {imagem_url ? (
           <img src={imagem_url} alt={titulo} loading="lazy" className="w-full h-full object-cover" />
         ) : (
@@ -53,17 +53,17 @@ const EventoCard = ({
         )}
       </div>
       <div className="p-3 space-y-1.5">
-        <h3 className="font-semibold text-foreground text-sm line-clamp-2 leading-tight">{titulo}</h3>
+        <h3 className="font-semibold text-foreground text-[10px] line-clamp-2 leading-tight">{titulo}</h3>
         {local_nome && (
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <MapPin className="h-3 w-3 flex-shrink-0" />
-            <span className="text-xs truncate">{local_nome}</span>
+          <div className="flex items-start gap-1 text-muted-foreground min-h-[24px]">
+            <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
+            <span className="text-[10px] leading-tight line-clamp-2">{local_nome}</span>
           </div>
         )}
         {horario && (
           <div className="flex items-center gap-1 text-muted-foreground">
             <Clock className="h-3 w-3" />
-            <span className="text-xs">{horario}</span>
+            <span className="text-[10px]">{horario}</span>
           </div>
         )}
       </div>

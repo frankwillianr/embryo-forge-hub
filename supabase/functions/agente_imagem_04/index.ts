@@ -9,6 +9,7 @@ const CORS = {
 
 interface RequestBody {
   cidade_id: string;
+  limit?: number;
 }
 
 interface NoticiaRow {
@@ -24,22 +25,27 @@ interface NoticiaRow {
 }
 
 const BUCKET_DEFAULT = "jornal-imagens";
+const LIMIT_DEFAULT = 1;
+const LIMIT_MAX = 1;
+const EXECUTION_BUDGET_MS = 9000;
+const MAX_TENTATIVAS_POR_RODADA = 3;
 const GVCITY_LOGO_URL =
   "https://umauozcntfxgphzbiifz.supabase.co/storage/v1/object/public/jornal-imagens/logos/gvcity-logo.png";
 
-// Dimensões fixas do card
 const CARD_W = 1024;
 const CARD_H = 1024;
 const PAD = 28;
 const LOGO_SIZE = 52;
 const LOGO_X = PAD;
 const LOGO_Y = 14;
-const HEADER_H = LOGO_Y + LOGO_SIZE + 16; // ~82px
-const TITLE_Y = HEADER_H + 16;            // ~98px
-const TITLE_MAX_H = 196;                   // espaço levemente maior para título
-const IMAGE_Y = TITLE_Y + TITLE_MAX_H;    // ~278px â†’ foto preenche o resto
+const HEADER_H = LOGO_Y + LOGO_SIZE + 16;
+const TITLE_Y = HEADER_H + 16;
+const TITLE_MAX_H = 196;
+const IMAGE_Y = TITLE_Y + TITLE_MAX_H;
 const TITLE_TARGET_SIZE = 45;
 const CAT_TARGET_SIZE = 20;
+const CAT_FONT_PROMISE = Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+const TITLE_FONT_PROMISE = Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
 
 async function fetchBuffer(url: string): Promise<Buffer> {
   const res = await fetch(url, { headers: { "User-Agent": "agente_imagem_04/1.0" } });
@@ -53,39 +59,53 @@ function safeTitle(raw: string | null | undefined): string {
 }
 
 function firstImageCandidates(firstUrl: string): string[] {
-  const out = [firstUrl];
+  const out: string[] = [];
 
-  // Tentativa comum: *.jpg.webp -> *.jpg
-  if (/\.webp(\?|$)/i.test(firstUrl)) {
-    out.push(firstUrl.replace(/\.webp(\?|$)/i, "$1"));
-  }
-
-  // Tentativa comum do plugin WebP Express (WordPress)
+  const variations = [firstUrl];
+  if (/\.webp(\?|$)/i.test(firstUrl)) variations.push(firstUrl.replace(/\.webp(\?|$)/i, "$1"));
   if (/\/webp-express\/webp-images\//i.test(firstUrl)) {
-    out.push(firstUrl.replace(/\/webp-express\/webp-images\//i, "/"));
+    variations.push(firstUrl.replace(/\/webp-express\/webp-images\//i, "/"));
   }
-
-  // Combinação das duas regras
   if (/\/webp-express\/webp-images\//i.test(firstUrl) && /\.webp(\?|$)/i.test(firstUrl)) {
-    out.push(
+    variations.push(
       firstUrl
         .replace(/\/webp-express\/webp-images\//i, "/")
         .replace(/\.webp(\?|$)/i, "$1"),
     );
   }
 
-  // Fallback universal: proxy que converte imagem remota para JPG/PNG.
-  // Mantém a MESMA primeira imagem, apenas muda a forma de servir o arquivo.
-  try {
-    const clean = firstUrl.trim();
-    const noProto = clean.replace(/^https?:\/\//i, "");
-    out.push(`https://images.weserv.nl/?url=${encodeURIComponent(noProto)}&output=jpg`);
-    out.push(`https://images.weserv.nl/?url=${encodeURIComponent(noProto)}&output=png`);
-  } catch {
-    // ignora
+  for (const v of variations) {
+    try {
+      const clean = v.trim();
+      const noProto = clean.replace(/^https?:\/\//i, "");
+      // Padroniza para JPEG e reduz dimensao para evitar WORKER_LIMIT por imagem gigante.
+      out.push(`https://images.weserv.nl/?url=${encodeURIComponent(noProto)}&w=1600&h=1600&fit=inside&output=jpg`);
+      out.push(`https://images.weserv.nl/?url=${encodeURIComponent(noProto)}&w=1600&h=1600&fit=inside&output=png`);
+    } catch {
+      // ignore
+    }
+    out.push(v);
   }
 
   return [...new Set(out)];
+}
+
+async function contarElegiveis(
+  supabase: ReturnType<typeof createClient>,
+  cidade_id: string,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("tabela_agente_buscador")
+    .select("id", { count: "exact", head: true })
+    .eq("cidade_id", cidade_id)
+    .eq("is_duplicada", false)
+    .is("imagem_refeita", null)
+    .not("lista_imagens", "is", null)
+    .neq("status", "concluido")
+    .neq("status", "publicado");
+
+  if (error) throw error;
+  return Number(count ?? 0);
 }
 
 async function buildCard(
@@ -94,16 +114,13 @@ async function buildCard(
   title: string,
   categoria: string,
 ): Promise<Buffer> {
-  // ── 1. Card base branco ───────────────────────────────────────────────────
   const card = new Jimp(CARD_W, CARD_H, 0xffffffff);
 
-  // ── 2. Foto da notícia (cobre a área abaixo do header+título) ─────────────
   const newsImg = await Jimp.read(newsBuf);
   const imgAreaH = CARD_H - IMAGE_Y;
   newsImg.cover(CARD_W, imgAreaH);
   card.composite(newsImg, 0, IMAGE_Y);
 
-  // ── 3. Logo circular ──────────────────────────────────────────────────────
   const logoImg = await Jimp.read(logoBuf);
   logoImg.resize(LOGO_SIZE, LOGO_SIZE);
 
@@ -113,7 +130,8 @@ async function buildCard(
 
   for (let py = 0; py < LOGO_SIZE; py++) {
     for (let px = 0; px < LOGO_SIZE; px++) {
-      const dx = px - cx, dy = py - cy;
+      const dx = px - cx;
+      const dy = py - cy;
       if (dx * dx + dy * dy <= r2) {
         const color = logoImg.getPixelColor(px, py);
         card.setPixelColor(color, LOGO_X + px, LOGO_Y + py);
@@ -121,14 +139,12 @@ async function buildCard(
     }
   }
 
-  // ── 4. Linha divisória ────────────────────────────────────────────────────
   const dividerColor = 0xE0E0E0FF;
   for (let x = 0; x < CARD_W; x++) {
     card.setPixelColor(dividerColor, x, HEADER_H);
   }
 
-  // ── 5. Categoria em negrito ───────────────────────────────────────────────
-  const catFont = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+  const catFont = await CAT_FONT_PROMISE;
   const catLabel = (categoria || "Geral").toUpperCase();
   const catX = LOGO_X + LOGO_SIZE + 14;
   const catY = LOGO_Y + Math.floor((LOGO_SIZE - CAT_TARGET_SIZE) / 2);
@@ -141,10 +157,9 @@ async function buildCard(
   const catH = Math.max(1, Math.round(catHiH * catScale));
   catLayer.resize(catW, catH, Jimp.RESIZE_BICUBIC);
   card.composite(catLayer, catX, catY);
-  card.composite(catLayer, catX + 1, catY); // leve reforço de peso
+  card.composite(catLayer, catX + 1, catY);
 
-  // ── 6. Título ─────────────────────────────────────────────────────────────
-  const titleFont = await Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
+  const titleFont = await TITLE_FONT_PROMISE;
   const titleBoxW = CARD_W - PAD * 2;
   const scale = TITLE_TARGET_SIZE / 64;
   const hiW = Math.max(1, Math.round(titleBoxW / scale));
@@ -164,6 +179,10 @@ Deno.serve(async (req) => {
   try {
     const body = (await req.json().catch(() => ({}))) as Partial<RequestBody>;
     const cidade_id = body?.cidade_id;
+    const requestedLimit = Math.min(
+      Math.max(Number(body?.limit ?? LIMIT_DEFAULT) || LIMIT_DEFAULT, 1),
+      LIMIT_MAX,
+    );
 
     if (!cidade_id) {
       return new Response(
@@ -178,15 +197,19 @@ Deno.serve(async (req) => {
     );
     const bucket = Deno.env.get("AGENTE_IMAGEM_04_BUCKET") ?? BUCKET_DEFAULT;
 
+    const totalElegiveisAntes = await contarElegiveis(supabase, cidade_id);
+
     const { data, error } = await supabase
       .from("tabela_agente_buscador")
       .select("id, cidade_id, titulo, categoria, lista_imagens, imagem_refeita, is_duplicada, status, created_at")
       .eq("cidade_id", cidade_id)
       .eq("is_duplicada", false)
+      .is("imagem_refeita", null)
+      .not("lista_imagens", "is", null)
       .neq("status", "concluido")
       .neq("status", "publicado")
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(Math.min(10, Math.max(requestedLimit * MAX_TENTATIVAS_POR_RODADA, MAX_TENTATIVAS_POR_RODADA)));
 
     if (error) throw error;
 
@@ -200,31 +223,54 @@ Deno.serve(async (req) => {
           ok: true,
           agente: "agente_imagem_04",
           cidade_id,
+          total_elegiveis: totalElegiveisAntes,
           total_entrada: 0,
+          total_tentado: 0,
           total_processado: 0,
-          message: "Nenhuma notícia elegível para gerar imagem.",
+          total_erros: 0,
+          restantes_globais: 0,
+          message: "Nenhuma noticia elegivel para gerar imagem.",
           itens: [],
         }),
         { headers: { ...CORS, "Content-Type": "application/json" } },
       );
     }
 
-    // ── Busca logo + primeira notícia (usando sempre a 1ª imagem da lista) ──
     const logoBuf = await fetchBuffer(GVCITY_LOGO_URL);
+    const startedAt = Date.now();
 
     const itens: Array<Record<string, unknown>> = [];
     let total_processado = 0;
     let total_erros = 0;
+    let total_tentado = 0;
+    const maxTentativasNaRodada = Math.min(
+      10,
+      Math.max(requestedLimit * MAX_TENTATIVAS_POR_RODADA, MAX_TENTATIVAS_POR_RODADA),
+    );
+    let interrompido_por_limite = false;
+    let interrompido_por_tempo = false;
 
     for (const noticia of noticias) {
-      try {
-        const origem = noticia.lista_imagens?.[0] ?? "";
-        if (!origem) {
-          throw new Error("A noticia selecionada nao possui primeira imagem");
-        }
+      // A rodada conclui quando atingir o alvo de sucessos.
+      // Isso evita travar quando a primeira noticia da fila falha.
+      if (total_processado >= requestedLimit) {
+        interrompido_por_limite = true;
+        break;
+      }
+      if (total_tentado >= maxTentativasNaRodada) {
+        interrompido_por_limite = true;
+        break;
+      }
+      if (Date.now() - startedAt >= EXECUTION_BUDGET_MS) {
+        interrompido_por_tempo = true;
+        break;
+      }
 
-        // Regra solicitada: usar sempre a primeira imagem da noticia.
-        // Se vier em WebP, tenta variacoes equivalentes do MESMO link para obter JPG/PNG.
+      try {
+        total_tentado++;
+        const origem = noticia.lista_imagens?.[0] ?? "";
+        if (!origem) throw new Error("A noticia selecionada nao possui primeira imagem");
+
         let newsBuf: Buffer | null = null;
         let origemUsada = origem;
         let lastErr = "";
@@ -275,14 +321,22 @@ Deno.serve(async (req) => {
       }
     }
 
+    const totalElegiveisDepois = await contarElegiveis(supabase, cidade_id);
+
     return new Response(
       JSON.stringify({
         ok: true,
         agente: "agente_imagem_04",
         cidade_id,
+        total_elegiveis: totalElegiveisAntes,
         total_entrada: noticias.length,
+        total_tentado,
         total_processado,
         total_erros,
+        interrompido_por_limite,
+        interrompido_por_tempo,
+        restantes_estimados: Math.max(0, noticias.length - total_tentado),
+        restantes_globais: totalElegiveisDepois,
         itens,
       }),
       { headers: { ...CORS, "Content-Type": "application/json" } },
@@ -294,5 +348,3 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-

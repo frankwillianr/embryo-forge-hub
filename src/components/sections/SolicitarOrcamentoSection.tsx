@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { FileText, Inbox, Plus, Send } from "lucide-react";
+import { CalendarDays, FileText, Inbox, MapPin, Plus, Send, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -68,6 +68,13 @@ const STATUS_LABEL: Record<string, string> = {
   cancelada: "Cancelada",
 };
 
+const STATUS_CLASSNAME: Record<string, string> = {
+  aberta: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  em_andamento: "bg-amber-100 text-amber-800 border-amber-300",
+  concluida: "bg-blue-100 text-blue-800 border-blue-300",
+  cancelada: "bg-zinc-100 text-zinc-700 border-zinc-300",
+};
+
 const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -126,7 +133,7 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
   return (
     <div className="py-6">
       <div className="flex items-center justify-between px-5 mb-1">
-        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+        <h2 className="text-[14px] font-semibold text-foreground tracking-tight flex items-center gap-1.5">
           <FileText className="h-4 w-4 text-primary" />
           Tô Precisando
         </h2>
@@ -146,7 +153,7 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
         <div className="flex gap-3 px-5 pb-2">
           {isLoading ? (
             [1, 2, 3].map((i) => (
-              <div key={i} className="flex-shrink-0 w-56 h-28 rounded-xl bg-muted/50 animate-pulse" />
+              <div key={i} className="flex-shrink-0 w-[150px] max-w-[150px] h-28 rounded-xl bg-muted/50 animate-pulse" />
             ))
           ) : solicitacoes.length > 0 ? (
             <>
@@ -157,31 +164,62 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
                   tabIndex={0}
                   onClick={() => setModalSolicitacao(s)}
                   onKeyDown={(e) => e.key === "Enter" && setModalSolicitacao(s)}
-                  className="flex-shrink-0 w-56 p-3 rounded-xl border border-border bg-card text-left flex flex-col cursor-pointer hover:bg-muted/30 transition-colors"
+                  className="group relative overflow-hidden flex-shrink-0 w-[150px] max-w-[150px] p-0 rounded-2xl border border-border/70 bg-card text-left flex flex-col cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30"
                 >
-                  <p className="text-xs font-medium text-primary">
-                    {CATEGORIA_LABEL[s.categoria] || s.categoria}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{s.descricao}</p>
-                  <div className="text-[10px] text-muted-foreground/80 mt-2 space-y-0.5">
-                    {s.bairro && <p>Bairro: {s.bairro}</p>}
-                    {!s.bairro && s.cep && (
-                      <p>Região: {String(s.cep).replace(/(\d{5})(\d{3})/, "$1-$2")}</p>
-                    )}
-                    <p>{format(new Date(s.created_at), "dd/MM/yyyy", { locale: ptBR })} · Solicitado por {s.nome_solicitante_censurado || "Anônimo"}</p>
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/70 via-primary to-primary/60" />
+
+                  <div className="p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-[11px] font-semibold text-foreground leading-tight">
+                        {CATEGORIA_LABEL[s.categoria] || s.categoria}
+                      </p>
+                      <span
+                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                          STATUS_CLASSNAME[s.status] || "bg-zinc-100 text-zinc-700 border-zinc-300"
+                        }`}
+                      >
+                        {STATUS_LABEL[s.status] || s.status}
+                      </span>
+                    </div>
+
+                    <p className="text-[13px] leading-snug text-foreground/85 mt-2 line-clamp-3 min-h-[56px]">
+                      {s.descricao || "Sem descrição"}
+                    </p>
+
+                    <div className="mt-2 space-y-1.5 text-[10px] text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3 w-3" />
+                        <span className="truncate">
+                          {s.bairro
+                            ? s.bairro
+                            : s.cep
+                            ? `Região ${String(s.cep).replace(/(\d{5})(\d{3})/, "$1-$2")}`
+                            : "Região não informada"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <CalendarDays className="h-3 w-3" />
+                        <span>{format(new Date(s.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <UserRound className="h-3 w-3" />
+                        <span className="truncate">{s.nome_solicitante_censurado || "Anônimo"}</span>
+                      </div>
+                    </div>
                   </div>
+
                   {user?.id !== s.user_id && (
                     <Button
                       size="sm"
-                      variant="ghost"
-                      className="mt-2 w-full text-xs h-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      variant="outline"
+                      className="mx-3 mb-3 mt-0 h-8 text-[11px] rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (user) navigate(`/cidade/${cidadeSlug}/orcamentos/${s.id}/enviar`);
                         else navigate(`/cidade/${cidadeSlug}/auth?redirect=${encodeURIComponent(`/cidade/${cidadeSlug}/orcamentos`)}`);
                       }}
                     >
-                      <Send className="h-3 w-3 mr-1 opacity-70" />
+                      <Send className="h-3.5 w-3.5 mr-1.5" />
                       Enviar orçamento
                     </Button>
                   )}
@@ -194,7 +232,7 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
                     ? navigate(`/cidade/${cidadeSlug}/solicitar-orcamento`)
                     : navigate(`/cidade/${cidadeSlug}/auth?redirect=${encodeURIComponent(`/cidade/${cidadeSlug}/solicitar-orcamento`)}`)
                 }
-                className="flex-shrink-0 w-40 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 hover:bg-muted/40 transition-colors py-4"
+                className="flex-shrink-0 w-[150px] max-w-[150px] flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 hover:bg-muted/40 transition-colors py-4"
               >
                 <Plus className="h-6 w-6 text-muted-foreground" />
                 <span className="text-xs font-medium text-muted-foreground">Solicitar orçamento</span>
@@ -208,7 +246,7 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
                   ? navigate(`/cidade/${cidadeSlug}/solicitar-orcamento`)
                   : navigate(`/cidade/${cidadeSlug}/auth?redirect=${encodeURIComponent(`/cidade/${cidadeSlug}/solicitar-orcamento`)}`)
               }
-              className="flex-shrink-0 w-48 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 hover:bg-muted/40 transition-colors py-6"
+              className="flex-shrink-0 w-[150px] max-w-[150px] flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 hover:bg-muted/40 transition-colors py-6"
             >
               <FileText className="h-8 w-8 text-muted-foreground" />
               <span className="text-xs font-medium text-muted-foreground text-center px-2">
@@ -336,6 +374,7 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
 };
 
 export default SolicitarOrcamentoSection;
+
 
 
 

@@ -87,6 +87,10 @@ const HomeSection = ({ cidadeSlug, onMapClick }: HomeSectionProps) => {
         <BannerCarousel banners={banners} cidadeSlug={cidadeSlug} />
       ) : null}
 
+      <MusicaAoVivoSection cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
       <LazySection minHeight="220px">
         <EnqueteSection cidadeSlug={cidadeSlug} />
       </LazySection>
@@ -105,17 +109,13 @@ const HomeSection = ({ cidadeSlug, onMapClick }: HomeSectionProps) => {
 
       <Separador />
 
-      <MusicaAoVivoSection cidadeSlug={cidadeSlug} />
+      <LazySection minHeight="160px">
+        <SolicitarOrcamentoSection cidadeSlug={cidadeSlug} />
+      </LazySection>
 
       <Separador />
 
       <EventosSection cidadeSlug={cidadeSlug} />
-
-      <Separador />
-
-      <LazySection minHeight="160px">
-        <SolicitarOrcamentoSection cidadeSlug={cidadeSlug} />
-      </LazySection>
 
       <Separador />
 

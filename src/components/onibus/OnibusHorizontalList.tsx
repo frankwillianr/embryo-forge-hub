@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Bus, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,7 +56,7 @@ const OnibusHorizontalList = ({ cidadeSlug }: OnibusHorizontalListProps) => {
       <div className="flex items-center justify-between px-5 mb-3">
         <div className="flex items-center gap-2">
           <Bus className="h-5 w-5 text-accent" />
-          <h2 className="font-bold text-foreground text-base">Horários de Ônibus</h2>
+          <h2 className="font-bold text-foreground text-[14px]">Horários de Ônibus</h2>
         </div>
         <button
           onClick={() => {

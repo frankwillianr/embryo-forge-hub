@@ -152,7 +152,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
       if (!ofertasFiltradas.length) return;
 
       const firstCard = container.querySelector("button");
-      const cardWidth = firstCard ? (firstCard as HTMLElement).offsetWidth + 12 : 268; // largura + gap
+      const cardWidth = firstCard ? (firstCard as HTMLElement).offsetWidth + 12 : 162; // largura + gap
       const maxScroll = container.scrollWidth - container.clientWidth;
 
       if (maxScroll <= 0) return;
@@ -176,7 +176,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
         </div>
         <div className="flex gap-3 px-5">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="w-64 h-28 rounded-2xl flex-shrink-0" />
+            <Skeleton key={i} className="w-[150px] h-[84px] rounded-2xl flex-shrink-0" />
           ))}
         </div>
       </div>
@@ -189,7 +189,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
     <div className="py-6">
       {/* Header */}
       <div className="flex items-center justify-between px-5 mb-1">
-        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+        <h2 className="text-[14px] font-semibold text-foreground tracking-tight flex items-center gap-1.5">
           <BadgePercent className="h-4 w-4 text-primary" />
           Mural de ofertas
         </h2>
@@ -250,7 +250,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
                     navigate(`/cidade/${cidadeSlug}/servicos/${oferta.categoria}/${oferta.id}`);
                   }
                 }}
-                className="relative flex-shrink-0 w-64 aspect-[1288/718] rounded-2xl overflow-hidden shadow-md transition-transform active:scale-[0.98]"
+                className="relative flex-shrink-0 w-[150px] aspect-[1288/718] rounded-2xl overflow-hidden shadow-md transition-transform active:scale-[0.98]"
               >
                 {oferta.banner_oferta_url || oferta.logomarca_url ? (
                   <img
@@ -271,7 +271,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
           ) : (
             <button
               onClick={() => navigate(`/cidade/${cidadeSlug}/empresa/novo`)}
-              className="flex-shrink-0 w-64 aspect-[1288/718] rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center gap-2 transition-colors hover:bg-primary/10 active:scale-[0.98]"
+              className="flex-shrink-0 w-[150px] aspect-[1288/718] rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center gap-2 transition-colors hover:bg-primary/10 active:scale-[0.98]"
             >
               <BadgePercent className="h-8 w-8 text-primary/40" />
               <p className="text-sm font-medium text-primary/60">Coloque sua empresa aqui</p>
@@ -285,3 +285,4 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
 };
 
 export default OfertasSection;
+

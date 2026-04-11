@@ -224,7 +224,7 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
   return (
     <div className="py-6">
       <div className="flex items-center justify-between px-5 mb-1">
-        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+        <h2 className="text-[14px] font-semibold text-foreground tracking-tight flex items-center gap-1.5">
           <Music2 className="h-4 w-4 text-primary" />
           Musica ao vivo
         </h2>
@@ -250,9 +250,9 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
               key={item.id}
               type="button"
               onClick={() => setEventoSelecionado(item)}
-              className="min-w-[170px] max-w-[170px] text-left"
+              className="min-w-[120px] max-w-[120px] text-left"
             >
-              <div className="relative h-[230px] rounded-[20px] overflow-hidden shadow-lg border border-white/10">
+              <div className="relative w-full aspect-[170/248] rounded-[20px] overflow-hidden shadow-lg border border-white/10">
                 {normalizarImagem(item.banner_evento) || normalizarImagem(item.cantor?.foto) ? (
                   <img
                     src={normalizarImagem(item.banner_evento) || normalizarImagem(item.cantor?.foto) || ""}
@@ -283,37 +283,36 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
                 ) : null}
 
                 <div className="absolute left-3 right-3 bottom-3">
-                  <p className="text-[22px] leading-[1] font-bold text-white drop-shadow-md line-clamp-1">
-                    {item.bar?.nome_bar || "Bar"}
-                  </p>
-                  <p className="text-[11px] text-white/85 mt-1 line-clamp-1">
-                    {item.estilo_musical || "Show ao vivo"} • {formatarDataShow(item.data_evento, item.horario).linha2}
-                  </p>
                 </div>
 
-                <div
-                  className={`absolute bottom-3 right-3 rounded-2xl px-2 py-1.5 text-center min-w-[56px] border ${
-                    badge.destaque === "Hoje"
-                      ? "bg-emerald-600/90 border-emerald-300/30"
-                      : badge.destaque === "Amanha"
-                        ? "bg-amber-500/90 border-amber-200/35"
-                        : "bg-blue-600/90 border-blue-300/30"
-                  }`}
-                >
-                  {badge.destaque ? (
-                    <>
-                      <p className="text-[11px] font-extrabold uppercase text-white leading-none">{badge.destaque}</p>
-                      <p className="text-[10px] font-medium text-white/95 leading-none mt-1">
-                        {badge.dia}/{badge.mes}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-[14px] font-bold text-white leading-none">{badge.dia}</p>
-                      <p className="text-[10px] font-semibold uppercase text-white/95 leading-none mt-1">{badge.diaSemana}</p>
-                      <p className="text-[10px] font-medium text-white/95 leading-none mt-1">{badge.mes}</p>
-                    </>
-                  )}
+                <div className="absolute bottom-2 right-2 flex flex-col items-end gap-1">
+                  <div
+                    className={`rounded-xl px-1.5 py-1 text-center min-w-[46px] border ${
+                      badge.destaque === "Hoje"
+                        ? "bg-emerald-600/90 border-emerald-300/30"
+                        : badge.destaque === "Amanha"
+                          ? "bg-amber-500/90 border-amber-200/35"
+                          : "bg-blue-600/90 border-blue-300/30"
+                    }`}
+                  >
+                    {badge.destaque ? (
+                      <>
+                        <p className="text-[9px] font-extrabold uppercase text-white leading-none">{badge.destaque}</p>
+                        <p className="text-[8px] font-medium text-white/95 leading-none mt-0.5">
+                          {badge.dia}/{badge.mes}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-[11px] font-bold text-white leading-none">{badge.dia}</p>
+                        <p className="text-[8px] font-semibold uppercase text-white/95 leading-none mt-0.5">{badge.diaSemana}</p>
+                        <p className="text-[8px] font-medium text-white/95 leading-none mt-0.5">{badge.mes}</p>
+                      </>
+                    )}
+                  </div>
+                  <p className="max-w-[86px] rounded-md bg-black/85 px-1.5 py-1 text-[8px] text-white text-right leading-tight line-clamp-2 border border-white/25">
+                    {item.estilo_musical || "Show ao vivo"} • {formatarDataShow(item.data_evento, item.horario).linha2}
+                  </p>
                 </div>
               </div>
             </button>

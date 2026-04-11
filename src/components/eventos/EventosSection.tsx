@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarDays, ChevronRight } from "lucide-react";
@@ -46,7 +46,7 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
         <div className="h-5 w-40 bg-muted animate-pulse rounded-lg" />
         <div className="flex gap-3">
           {[1, 2].map((i) => (
-            <div key={i} className="min-w-[220px] h-[230px] bg-muted animate-pulse rounded-2xl" />
+            <div key={i} className="min-w-[150px] h-[157px] bg-muted animate-pulse rounded-2xl" />
           ))}
         </div>
       </div>
@@ -59,7 +59,7 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
     <div className="py-6">
       {/* Header minimalista */}
       <div className="flex items-center justify-between px-5 mb-1">
-        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5">
+        <h2 className="text-[14px] font-semibold text-foreground tracking-tight flex items-center gap-1.5">
           <CalendarDays className="h-4 w-4 text-primary" />
           Próximos Eventos
         </h2>

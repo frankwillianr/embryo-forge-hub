@@ -334,6 +334,8 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
   const handleClick = (servicoId: string) => {
     if (servicoId === "veiculos") {
       navigate(`/cidade/${cidadeSlug}/veiculos`);
+    } else if (servicoId === "vagas") {
+      navigate(`/cidade/${cidadeSlug}/vagas`);
     } else if (servicoId === "desapega") {
       navigate(`/cidade/${cidadeSlug}/desapega`);
     } else if (servicoId === "doacoes") {
@@ -351,7 +353,7 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
 
   const highlightsBlock = showHighlights ? (
     <div className="px-5 mb-[15px]">
-      <div className="grid grid-cols-3" style={{ gap: "15px" }}>
+      <div className="grid grid-cols-4" style={{ gap: "10px" }}>
         <button
           onClick={() => handleClick("veiculos")}
           className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-600 p-2.5 min-h-[90px] flex flex-col gap-1.5 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
@@ -383,6 +385,17 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
           </div>
           <Gift className="w-4 h-4 text-white/80" />
           <span className="text-[11px] font-semibold relative z-10">Doações</span>
+        </button>
+
+        <button
+          onClick={() => handleClick("vagas")}
+          className="rounded-2xl bg-gradient-to-br from-orange-500 to-amber-400 p-2.5 min-h-[90px] flex flex-col gap-1.5 text-white shadow-md active:scale-[0.97] transition-transform relative overflow-hidden"
+        >
+          <div className="absolute -right-2 -bottom-2 opacity-15">
+            <Briefcase className="w-10 h-10" strokeWidth={1} />
+          </div>
+          <Briefcase className="w-4 h-4 text-white/80" />
+          <span className="text-[11px] font-semibold relative z-10">Vagas de Emprego</span>
         </button>
       </div>
     </div>
@@ -422,7 +435,7 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
     return <div className="pt-2 pb-1">{highlightsBlock}</div>;
   }
 
-  // Ao mudar a categoria, centraliza a aba no container SEM rolar a pÃ¡gina
+  // Ao mudar a categoria, centraliza a aba no container SEM rolar a página
   useEffect(() => {
     const index = categorias.findIndex((c) => c.id === categoriaSelecionada);
     const tabEl = tabRefsRef.current[index];
@@ -439,7 +452,7 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
     <div className="pt-6 pb-2">
       {/* Header com busca integrada */}
       <div className="px-5 mb-5">
-        <h2 className="text-base font-semibold text-foreground tracking-tight flex items-center gap-1.5 mb-0.5">
+        <h2 className="text-[14px] font-semibold text-foreground tracking-tight flex items-center gap-1.5 mb-0.5">
           <Briefcase className="h-4 w-4 text-primary" />
           Serviços
         </h2>
@@ -484,7 +497,7 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
 
       {highlightsBlock}
 
-      {/* Categorias - Tabs + banner + grid (sempre visÃ­veis) */}
+      {/* Categorias - Tabs + banner + grid (sempre visíveis) */}
       <div ref={tabsScrollRef} className="overflow-x-auto scrollbar-hide mt-[15px] mb-[15px] scroll-smooth">
         <div className="flex px-5 border-b border-border/30" style={{ gap: "15px" }}>
           {categorias.map((cat, index) => (
@@ -559,4 +572,5 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
 };
 
 export default ServicosSection;
+
 

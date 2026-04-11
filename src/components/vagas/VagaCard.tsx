@@ -1,6 +1,5 @@
 import { Vaga, tipoContratoLabels, modalidadeLabels } from "@/types/vagas";
-import { Badge } from "@/components/ui/badge";
-import { Briefcase } from "lucide-react";
+import { Briefcase, Building2, Laptop, MapPin, Workflow } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 interface VagaCardProps {
@@ -12,14 +11,17 @@ interface VagaCardProps {
 
 const VagaCard = ({ vaga, onClick, segmentoLabel, SegmentoIcon }: VagaCardProps) => {
   const Icon = SegmentoIcon || Briefcase;
+  const descricaoTruncada =
+    vaga.descricao.length > 650 ? `${vaga.descricao.slice(0, 650).trimEnd()}...` : vaga.descricao;
+  const ModalidadeIcon = vaga.modalidade === "remoto" ? Laptop : vaga.modalidade === "hibrido" ? Workflow : MapPin;
 
   return (
     <div
-      className="rounded-2xl border border-border/60 bg-card p-4 cursor-pointer transition-all hover:shadow-sm active:scale-[0.99]"
+      className="rounded-2xl border border-border/60 bg-card p-4 cursor-pointer transition-all hover:shadow-md hover:border-primary/25 active:scale-[0.99]"
       onClick={onClick}
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 ring-1 ring-primary/15">
           <Icon className="h-5 w-5" />
         </div>
 
@@ -29,25 +31,37 @@ const VagaCard = ({ vaga, onClick, segmentoLabel, SegmentoIcon }: VagaCardProps)
               {vaga.titulo}
             </h3>
             {vaga.salario && (
-              <p className="text-[13px] font-semibold text-primary whitespace-nowrap">
+              <p className="text-[13px] font-semibold text-emerald-600 whitespace-nowrap">
                 {vaga.salario}
               </p>
             )}
           </div>
 
-          <p className="text-[13px] text-muted-foreground mt-0.5">{vaga.empresa}</p>
+          <p className="text-[13px] text-muted-foreground mt-1 flex items-center gap-1.5">
+            <Building2 className="h-3.5 w-3.5" />
+            <span>{vaga.empresa}</span>
+          </p>
 
-          <div className="flex flex-wrap gap-1.5 mt-2.5">
-            <Badge variant="secondary" className="text-[11px] font-medium">
+          <p className="text-[12px] leading-relaxed text-muted-foreground/90 mt-2 whitespace-pre-line break-words line-clamp-5">
+            {descricaoTruncada}
+          </p>
+
+          <div className="flex flex-wrap gap-2 mt-3">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-muted/60 px-2.5 py-1 text-[11px] font-medium text-foreground/90">
+              <Briefcase className="h-3.5 w-3.5 text-primary/80" />
               {tipoContratoLabels[vaga.tipo_contrato]}
-            </Badge>
-            <Badge variant="outline" className="text-[11px] font-medium">
+            </span>
+
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/70 bg-muted/60 px-2.5 py-1 text-[11px] font-medium text-foreground/90">
+              <ModalidadeIcon className="h-3.5 w-3.5 text-primary/80" />
               {modalidadeLabels[vaga.modalidade]}
-            </Badge>
+            </span>
+
             {segmentoLabel && (
-              <Badge variant="outline" className="text-[11px] font-medium">
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary">
+                <Icon className="h-3.5 w-3.5" />
                 {segmentoLabel}
-              </Badge>
+              </span>
             )}
           </div>
         </div>

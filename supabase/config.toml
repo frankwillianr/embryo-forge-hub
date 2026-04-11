@@ -45,3 +45,6 @@ verify_jwt = false
 
 [functions.coletar-eventos-gv]
 verify_jwt = false
+
+[functions.agente_cinema_buscador_01]
+verify_jwt = false

@@ -249,7 +249,7 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
     <section className="px-4 py-2">
       <div className="rounded-2xl border border-border/60 bg-muted/30 px-3 py-3">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#1a1a2e]/90 px-3 py-1 text-[11px] font-semibold text-white">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#1a1a2e]/90 px-3 py-1 text-[10px] font-semibold text-white">
             <Vote className="h-3.5 w-3.5" />
             Enquete da semana
           </div>
@@ -258,17 +258,17 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
             disabled={!canVote || voteMutation.isPending}
             onClick={handleOpenVoteModal}
             variant="outline"
-            className="h-8 rounded-full border-border/70 bg-transparent px-3 text-xs font-medium text-foreground shadow-none hover:bg-muted/50"
+            className="h-8 rounded-full border-border/70 bg-transparent px-3 text-[11px] font-medium text-foreground shadow-none hover:bg-muted/50"
           >
             {votedOptionId ? "Alterar voto" : "Votar"}
           </Button>
         </div>
 
-        <h3 className="text-sm font-semibold leading-snug text-foreground">{enquete.pergunta}</h3>
+        <h3 className="text-[11px] font-semibold leading-snug text-foreground">{enquete.pergunta}</h3>
 
         <div className="mt-4 space-y-2.5">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
               <TrendingUp className="h-3 w-3" />
               Ranking Top 3
             </div>
@@ -276,7 +276,7 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 px-1.5 text-xs font-normal text-muted-foreground hover:bg-transparent hover:text-foreground"
+              className="h-7 px-1.5 text-[11px] font-normal text-muted-foreground hover:bg-transparent hover:text-foreground"
               onClick={() => setFullRankingModalOpen(true)}
             >
               Ver votacao completa
@@ -293,12 +293,12 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
                   style={{ width: `${Math.max(pct, 2)}%` }}
                 />
                 <div className="relative flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1 text-[10px] font-normal text-foreground">
-                    <span className="mr-1.5 text-xs text-muted-foreground">#{index + 1}</span>
+                  <div className="min-w-0 flex-1 text-[9px] font-normal text-foreground">
+                    <span className="mr-1.5 text-[10px] text-muted-foreground">#{index + 1}</span>
                     <span className="inline-block max-w-full break-words align-bottom">{item.texto}</span>
-                    {isMine ? <span className="ml-2 text-[11px] text-primary">(Seu voto)</span> : null}
+                    {isMine ? <span className="ml-2 text-[10px] text-primary">(Seu voto)</span> : null}
                   </div>
-                  <div className="shrink-0 whitespace-nowrap pl-1 text-xs font-semibold text-foreground">
+                  <div className="shrink-0 whitespace-nowrap pl-1 text-[10px] font-semibold text-foreground">
                     {item.votos} ({Number(item.percentual || 0).toFixed(1)}%)
                   </div>
                 </div>
@@ -306,7 +306,7 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
             );
           })}
 
-          <div className="pt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="pt-1 flex items-center justify-between text-[10px] text-muted-foreground">
             <span>
               {totalVotos} {totalVotos === 1 ? "voto" : "votos"}
             </span>
@@ -318,7 +318,7 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
             variant="outline"
             size="sm"
             disabled={!cidadeSlug}
-            className="mt-1 w-full rounded-full border-border/70 bg-transparent text-xs font-medium text-foreground shadow-none hover:bg-muted/50"
+            className="mt-1 w-full rounded-full border-border/70 bg-transparent text-[11px] font-medium text-foreground shadow-none hover:bg-muted/50"
             onClick={() => cidadeSlug && navigate(`/cidade/${cidadeSlug}/enquetes`)}
           >
             Ver todas enquetes
@@ -356,7 +356,7 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
             style={{ maxHeight: "100%" }}
           >
             {opcoesFiltradas.length === 0 ? (
-              <div className="rounded-lg border border-border bg-muted/30 px-3 py-4 text-center text-sm text-muted-foreground">
+              <div className="rounded-lg border border-border bg-muted/30 px-3 py-4 text-center text-[12px] text-muted-foreground">
                 Nenhuma alternativa encontrada.
               </div>
             ) : (
@@ -367,7 +367,7 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
                     key={opcao.id}
                     type="button"
                     onClick={() => setSelectedOptionId(opcao.id)}
-                    className={`w-full rounded-xl border px-3 py-2.5 text-left text-[13px] font-normal transition-all ${
+                    className={`w-full rounded-xl border px-3 py-2.5 text-left text-[12px] font-normal transition-all ${
                       selected
                         ? "border-primary bg-primary/10 text-foreground"
                         : "border-border bg-background hover:border-primary/40"
@@ -416,12 +416,12 @@ const EnqueteSection = ({ cidadeSlug }: EnqueteSectionProps) => {
                   className="rounded-xl border border-border/60 bg-background/70 px-3 py-2"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1 text-[10px] font-normal text-foreground">
-                      <span className="mr-1.5 text-xs text-muted-foreground">#{index + 1}</span>
+                    <div className="min-w-0 flex-1 text-[9px] font-normal text-foreground">
+                      <span className="mr-1.5 text-[10px] text-muted-foreground">#{index + 1}</span>
                       <span className="inline-block max-w-full break-words align-bottom">{item.texto}</span>
-                      {isMine ? <span className="ml-2 text-[11px] text-primary">(Seu voto)</span> : null}
+                      {isMine ? <span className="ml-2 text-[10px] text-primary">(Seu voto)</span> : null}
                     </div>
-                    <div className="shrink-0 whitespace-nowrap pl-1 text-xs font-semibold text-foreground">
+                    <div className="shrink-0 whitespace-nowrap pl-1 text-[10px] font-semibold text-foreground">
                       {item.votos} ({Number(item.percentual || 0).toFixed(1)}%)
                     </div>
                   </div>
