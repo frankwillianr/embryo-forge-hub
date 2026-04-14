@@ -9,6 +9,8 @@ const corsHeaders = {
 interface PushNotificationRequest {
   cidadeId?: string;
   deviceToken?: string;
+  userId?: string;
+  userIds?: string[];
   platform?: "ios" | "android" | "web";
   dryRun?: boolean;
   title: string;
@@ -147,7 +149,7 @@ serve(async (req: Request): Promise<Response> => {
       throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON invalida (faltam campos obrigatorios)");
     }
 
-    const { cidadeId, deviceToken, platform, dryRun, title, body, data }: PushNotificationRequest = await req.json();
+    const { cidadeId, deviceToken, userId, userIds, platform, dryRun, title, body, data }: PushNotificationRequest = await req.json();
 
     if (!dryRun && (!title || !body)) {
       throw new Error("title e body sao obrigatorios");
@@ -158,10 +160,36 @@ serve(async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     let tokens: string[] = [];
+    const normalizedUserIds = [
+      ...(userId ? [userId] : []),
+      ...(Array.isArray(userIds) ? userIds : []),
+    ]
+      .map((id) => String(id || "").trim())
+      .filter(Boolean);
+    const uniqueUserIds = [...new Set(normalizedUserIds)];
 
     if (deviceToken) {
       tokens = [deviceToken];
       console.log("Enviando para token especifico");
+    } else if (uniqueUserIds.length > 0) {
+      let query = supabase
+        .from("rel_cidade_push_tokens")
+        .select("device_token")
+        .in("user_id", uniqueUserIds);
+
+      if (cidadeId) {
+        query = query.eq("cidade_id", cidadeId);
+      }
+
+      if (platform) {
+        query = query.eq("platform", platform);
+      }
+
+      const { data: tokensData, error } = await query;
+      if (error) throw new Error(`Erro ao buscar tokens por usuario: ${error.message}`);
+
+      tokens = tokensData?.map((t) => t.device_token) || [];
+      console.log(`Encontrados ${tokens.length} tokens para ${uniqueUserIds.length} usuario(s)`);
     } else if (cidadeId) {
       let query = supabase
         .from("rel_cidade_push_tokens")
@@ -196,6 +224,7 @@ serve(async (req: Request): Promise<Response> => {
           success: true,
           dryRun: true,
           cidadeId: cidadeId ?? null,
+          userIds: uniqueUserIds,
           platform: platform ?? "todos",
           wouldSend: tokens.length,
         }),

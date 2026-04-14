@@ -241,7 +241,7 @@ const MusicaAoVivoSection = ({ cidadeSlug }: MusicaAoVivoSectionProps) => {
       </p>
 
       <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex gap-4 px-5 pb-2">
+        <div className="flex gap-[10px] px-5 pb-2">
           {eventos.map((item) => (
             (() => {
               const badge = formatarDataBadge(item.data_evento);

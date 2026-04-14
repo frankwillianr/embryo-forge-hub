@@ -1,39 +1,40 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { supabase } from '@/integrations/supabase/client';
 
 interface UsePushNotificationsProps {
   cidadeId: string | null;
+  userId?: string | null;
 }
 
-export function usePushNotifications({ cidadeId }: UsePushNotificationsProps) {
+export function usePushNotifications({ cidadeId, userId = null }: UsePushNotificationsProps) {
   const [token, setToken] = useState<string | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'prompt'>('prompt');
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
-      console.log('Push notifications só funcionam em apps nativos');
+      console.log('Push notifications so funcionam em apps nativos');
       return;
     }
 
     const initPushNotifications = async () => {
       try {
-        // Verifica permissão atual
+        // Verifica permissao atual
         const permStatus = await PushNotifications.checkPermissions();
-        
+
         if (permStatus.receive === 'prompt') {
-          // Solicita permissão
+          // Solicita permissao
           const requestResult = await PushNotifications.requestPermissions();
           setPermissionStatus(requestResult.receive as 'granted' | 'denied' | 'prompt');
-          
+
           if (requestResult.receive !== 'granted') {
-            console.log('Permissão de notificação negada');
+            console.log('Permissao de notificacao negada');
             return;
           }
         } else if (permStatus.receive === 'denied') {
           setPermissionStatus('denied');
-          console.log('Permissão de notificação negada anteriormente');
+          console.log('Permissao de notificacao negada anteriormente');
           return;
         } else {
           setPermissionStatus('granted');
@@ -42,8 +43,8 @@ export function usePushNotifications({ cidadeId }: UsePushNotificationsProps) {
         if (Capacitor.getPlatform() === 'android') {
           await PushNotifications.createChannel({
             id: 'default',
-            name: 'Notificações',
-            description: 'Canal padrão de notificações',
+            name: 'Notificacoes',
+            description: 'Canal padrao de notificacoes',
             importance: 5,
             visibility: 1,
             vibration: true,
@@ -55,10 +56,10 @@ export function usePushNotifications({ cidadeId }: UsePushNotificationsProps) {
         const registrationListener = await PushNotifications.addListener('registration', async (tokenData) => {
           console.log('Token de push recebido:', tokenData.value);
           setToken(tokenData.value);
-          
+
           // Salva o token no Supabase se tiver cidade
           if (cidadeId && tokenData.value) {
-            await saveTokenToSupabase(cidadeId, tokenData.value);
+            await saveTokenToSupabase(cidadeId, tokenData.value, userId);
           }
         });
 
@@ -67,14 +68,14 @@ export function usePushNotifications({ cidadeId }: UsePushNotificationsProps) {
           console.error('Erro ao registrar push:', error);
         });
 
-        // Listener para notificações recebidas (app em primeiro plano)
+        // Listener para notificacoes recebidas (app em primeiro plano)
         const receivedListener = await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          console.log('Notificação recebida:', notification);
+          console.log('Notificacao recebida:', notification);
         });
 
-        // Listener para quando usuário toca na notificação
+        // Listener para quando usuario toca na notificacao
         const actionListener = await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-          console.log('Ação na notificação:', notification);
+          console.log('Acao na notificacao:', notification);
         });
 
         // Registra para push notifications (depois dos listeners)
@@ -86,7 +87,6 @@ export function usePushNotifications({ cidadeId }: UsePushNotificationsProps) {
           receivedListener.remove();
           actionListener.remove();
         };
-
       } catch (error) {
         console.error('Erro ao inicializar push notifications:', error);
         return undefined;
@@ -101,48 +101,54 @@ export function usePushNotifications({ cidadeId }: UsePushNotificationsProps) {
       }
       cleanupPromise = null;
     };
-  }, [cidadeId]);
+  }, [cidadeId, userId]);
 
-  // Salva/atualiza token no Supabase
-  const saveTokenToSupabase = async (cidadeId: string, deviceToken: string) => {
-    const platform = Capacitor.getPlatform(); // 'ios' ou 'android'
-    
+  // Salva/atualiza token
+  const saveTokenToSupabase = async (cidadeIdValue: string, deviceToken: string, currentUserId?: string | null) => {
+    const platform = Capacitor.getPlatform(); // 'ios' | 'android' | 'web'
+
     try {
-      // Usa upsert para inserir ou atualizar
       const { error } = await supabase
         .from('rel_cidade_push_tokens')
         .upsert(
           {
-            cidade_id: cidadeId,
+            cidade_id: cidadeIdValue,
             device_token: deviceToken,
-            platform: platform,
-            updated_at: new Date().toISOString()
+            user_id: currentUserId || null,
+            platform,
+            updated_at: new Date().toISOString(),
           },
           {
-            onConflict: 'cidade_id,device_token'
+            onConflict: 'cidade_id,device_token',
           }
         );
 
       if (error) {
         console.error('Erro ao salvar token:', error);
       } else {
-        console.log('Token salvo com sucesso para cidade:', cidadeId);
+        console.log('Token salvo com sucesso para cidade:', cidadeIdValue);
       }
     } catch (error) {
       console.error('Erro ao salvar token no Supabase:', error);
     }
   };
 
-  // Função para atualizar cidade (quando usuário muda de cidade)
   const updateCidade = async (newCidadeId: string) => {
     if (token && newCidadeId) {
-      await saveTokenToSupabase(newCidadeId, token);
+      await saveTokenToSupabase(newCidadeId, token, userId);
     }
   };
+
+  // Backfill automatico: quando usuario loga (ou app reabre com sessao),
+  // vincula o token ja existente ao user_id sem depender de novo registro.
+  useEffect(() => {
+    if (!cidadeId || !token || !userId) return;
+    void saveTokenToSupabase(cidadeId, token, userId);
+  }, [cidadeId, token, userId]);
 
   return {
     token,
     permissionStatus,
-    updateCidade
+    updateCidade,
   };
 }

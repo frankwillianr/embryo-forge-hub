@@ -79,6 +79,7 @@ import MeusCuponsPage from "@/pages/MeusCuponsPage";
 import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
 import SuportePage from "@/pages/SuportePage";
 import EnquetesHistoricoPage from "@/pages/EnquetesHistoricoPage";
+import TesteTokenPage from "@/pages/TesteTokenPage";
 
 const QUERY_CACHE_STORAGE_KEY = "gc:offline-query-cache:v2";
 
@@ -216,6 +217,7 @@ const App = () => (
               <Route path="/cidade/:slug/enquetes" element={<EnquetesHistoricoPage />} />
               <Route path="/cidade/:slug/cupons" element={<CuponsListPage />} />
               <Route path="/cidade/:slug/meus-cupons" element={<MeusCuponsPage />} />
+              <Route path="/cidade/:slug/teste_token" element={<TesteTokenPage />} />
               <Route path="/cidade/:slug/auth" element={<AuthPage />} />
             </Route>
 

@@ -14,6 +14,11 @@ const VagaCard = ({ vaga, onClick, segmentoLabel, SegmentoIcon }: VagaCardProps)
   const descricaoTruncada =
     vaga.descricao.length > 650 ? `${vaga.descricao.slice(0, 650).trimEnd()}...` : vaga.descricao;
   const ModalidadeIcon = vaga.modalidade === "remoto" ? Laptop : vaga.modalidade === "hibrido" ? Workflow : MapPin;
+  const dataPublicacao = new Date(vaga.created_at);
+  const dataPublicacaoValida = !Number.isNaN(dataPublicacao.getTime());
+  const dataPublicacaoFormatada = dataPublicacaoValida
+    ? new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(dataPublicacao)
+    : null;
 
   return (
     <div
@@ -41,6 +46,12 @@ const VagaCard = ({ vaga, onClick, segmentoLabel, SegmentoIcon }: VagaCardProps)
             <Building2 className="h-3.5 w-3.5" />
             <span>{vaga.empresa}</span>
           </p>
+
+          {dataPublicacaoFormatada && (
+            <p className="text-[11px] text-muted-foreground/80 mt-1">
+              Publicado em {dataPublicacaoFormatada}
+            </p>
+          )}
 
           <p className="text-[12px] leading-relaxed text-muted-foreground/90 mt-2 whitespace-pre-line break-words line-clamp-5">
             {descricaoTruncada}

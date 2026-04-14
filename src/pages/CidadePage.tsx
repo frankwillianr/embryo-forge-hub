@@ -43,7 +43,7 @@ const CidadePage = () => {
     return "home";
   };
   const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   useTrackCidadeAccess(slug);
   const scrollPositions = useRef<Record<TabType, number>>({
     home: 0, cinema: 0, prefeitura: 0, maps: 0, menu: 0,
@@ -72,7 +72,8 @@ const CidadePage = () => {
 
   // Inicializa push notifications com o ID da cidade
   const { permissionStatus } = usePushNotifications({
-    cidadeId: cidade?.id || null
+    cidadeId: cidade?.id || null,
+    userId: user?.id || null,
   });
 
   useEffect(() => {
