@@ -428,7 +428,7 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    const iosBundleId = "com.frankwillianr.gvcity6";
+    const iosBundleId = Deno.env.get("IOS_BUNDLE_ID") || "com.will.gvcity";
     const iosSandbox = (Deno.env.get("IOS_APNS_SANDBOX") || "true").toLowerCase() === "true";
 
     const iosRows = tokenRows.filter((row) => row.platform === "ios");
