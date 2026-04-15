@@ -225,20 +225,16 @@ export function usePushNotifications({
         tokenLength: deviceToken?.length ?? 0,
       }, deviceToken);
 
-      const { error } = await supabase
-        .from('rel_cidade_push_tokens')
-        .upsert(
-          {
-            cidade_id: cidadeIdValue,
-            device_token: deviceToken,
-            user_id: currentUserId || null,
-            platform,
-            updated_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'cidade_id,device_token',
-          }
-        );
+      const { data, error } = await supabase.rpc(
+        "upsert_cidade_push_token" as any,
+        {
+          p_cidade_id: cidadeIdValue,
+          p_device_token: deviceToken,
+          p_platform: platform,
+          p_user_id: currentUserId || null,
+          p_device_id: null,
+        } as any
+      );
 
       if (error) {
         console.error('Erro ao salvar token:', error);
@@ -258,11 +254,15 @@ export function usePushNotifications({
       } else {
         console.log('Token salvo com sucesso para cidade:', cidadeIdValue);
         setLastError(null);
+        const persisted = Array.isArray(data) ? data[0] : data;
         void logPushDebug("push_upsert_success", {
           cidadeIdValue,
           hasUserId: !!currentUserId,
           userId: currentUserId || null,
           platform,
+          persistedUserId: persisted?.user_id ?? null,
+          persistedUpdatedAt: persisted?.updated_at ?? null,
+          usedRpc: true,
         }, deviceToken, permissionStatus, null);
       }
     } catch (error) {
