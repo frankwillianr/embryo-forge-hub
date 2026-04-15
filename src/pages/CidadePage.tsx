@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Bell } from "lucide-react";
 import { IonPage } from "@ionic/react";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/integrations/supabase/client";
 import CidadeBanner from "@/components/CidadeBanner";
 import HomeSection from "@/components/sections/HomeSection";
@@ -71,10 +72,34 @@ const CidadePage = () => {
   });
 
   // Inicializa push notifications com o ID da cidade
-  const { permissionStatus } = usePushNotifications({
+  const { permissionStatus, token, lastError } = usePushNotifications({
     cidadeId: cidade?.id || null,
     userId: user?.id || null,
   });
+  const loggedOpenRef = useRef<Set<string>>(new Set());
+  const lastPushLogSignatureRef = useRef<string>("");
+
+  const logCidadeEvent = async (evento: "cidade_open" | "push_state") => {
+    try {
+      const tokenPrefix = token ? token.slice(0, 24) : null;
+      const payload = {
+        user_id: user?.id || null,
+        cidade_id: cidade?.id || null,
+        cidade_slug: slug || null,
+        pagina: "cidade",
+        evento,
+        push_permission_status: permissionStatus ?? null,
+        push_token_presente: !!token,
+        push_token_prefix: tokenPrefix,
+        push_error: lastError || null,
+        app_platform: Capacitor.getPlatform(),
+      };
+
+      await supabase.from("usuario_log_login" as any).insert(payload as any);
+    } catch (error) {
+      console.warn("[CidadePage] falha ao gravar usuario_log_login", error);
+    }
+  };
 
   useEffect(() => {
     console.log("[CidadePage] state", {
@@ -93,6 +118,31 @@ const CidadePage = () => {
       console.log('Push notifications ativadas para esta cidade');
     }
   }, [permissionStatus]);
+
+  // Log principal: assim que abrir a tela da cidade.
+  useEffect(() => {
+    if (!slug) return;
+    if (loggedOpenRef.current.has(slug)) return;
+    loggedOpenRef.current.add(slug);
+    void logCidadeEvent("cidade_open");
+  }, [slug, cidade?.id, user?.id]);
+
+  // Log de estado do push (inclui erro de token).
+  useEffect(() => {
+    if (!slug) return;
+    const signature = [
+      slug,
+      cidade?.id || "",
+      user?.id || "",
+      permissionStatus || "",
+      token ? "1" : "0",
+      lastError || "",
+    ].join("|");
+
+    if (lastPushLogSignatureRef.current === signature) return;
+    lastPushLogSignatureRef.current = signature;
+    void logCidadeEvent("push_state");
+  }, [slug, cidade?.id, user?.id, permissionStatus, token, lastError]);
 
   // Track scroll position continuamente via ref
   const lastScrollY = useRef(0);

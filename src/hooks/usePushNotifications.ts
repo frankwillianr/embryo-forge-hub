@@ -11,6 +11,7 @@ interface UsePushNotificationsProps {
 export function usePushNotifications({ cidadeId, userId = null }: UsePushNotificationsProps) {
   const [token, setToken] = useState<string | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [lastError, setLastError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
@@ -66,6 +67,7 @@ export function usePushNotifications({ cidadeId, userId = null }: UsePushNotific
         // Listener para erros de registro
         const registrationErrorListener = await PushNotifications.addListener('registrationError', (error) => {
           console.error('Erro ao registrar push:', error);
+          setLastError(error?.error || error?.message || JSON.stringify(error));
         });
 
         // Listener para notificacoes recebidas (app em primeiro plano)
@@ -89,6 +91,7 @@ export function usePushNotifications({ cidadeId, userId = null }: UsePushNotific
         };
       } catch (error) {
         console.error('Erro ao inicializar push notifications:', error);
+        setLastError(error instanceof Error ? error.message : String(error));
         return undefined;
       }
     };
@@ -149,6 +152,7 @@ export function usePushNotifications({ cidadeId, userId = null }: UsePushNotific
   return {
     token,
     permissionStatus,
+    lastError,
     updateCidade,
   };
 }
