@@ -95,7 +95,7 @@ async function signJwt(serviceAccount: FirebaseServiceAccount): Promise<string> 
     iss: serviceAccount.client_email,
     sub: serviceAccount.client_email,
     aud: tokenUri,
-    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    scope: "https://www.googleapis.com/auth/firebase.messaging https://www.googleapis.com/auth/cloud-platform",
     iat: now,
     exp: now + 3600,
   };
