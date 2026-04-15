@@ -429,7 +429,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const iosBundleId = "com.frankwillianr.gvcity6";
-    const iosSandbox = (Deno.env.get("IOS_APNS_SANDBOX") || "true").toLowerCase() === "true";
+    const iosSandbox = (Deno.env.get("IOS_APNS_SANDBOX") || "false").toLowerCase() === "true";
 
     const iosRows = tokenRows.filter((row) => row.platform === "ios");
     const nonIosRows = tokenRows.filter((row) => row.platform !== "ios");
