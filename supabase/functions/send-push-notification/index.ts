@@ -261,31 +261,6 @@ function isLikelyApnsToken(token: string): boolean {
   return /^[A-Fa-f0-9]{64}$/.test((token || "").trim());
 }
 
-function getIosConversionConfigs(): Array<{ application: string; sandbox: boolean }> {
-  const envBundleIds = (Deno.env.get("IOS_BUNDLE_IDS") || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
-  const primaryBundle = Deno.env.get("IOS_BUNDLE_ID") || "com.will.gvcity";
-  const knownBundles = [primaryBundle, "com.frankwillianr.gvcity6"];
-
-  const bundleIds = [...new Set([...envBundleIds, ...knownBundles].filter(Boolean))];
-
-  const envSandbox = Deno.env.get("IOS_APNS_SANDBOX");
-  const sandboxModes =
-    envSandbox === undefined || envSandbox === null || envSandbox === ""
-      ? [true]
-      : [(envSandbox || "false").toLowerCase() === "true"];
-
-  const configs: Array<{ application: string; sandbox: boolean }> = [];
-  for (const application of bundleIds) {
-    for (const sandbox of sandboxModes) {
-      configs.push({ application, sandbox });
-    }
-  }
-  return configs;
-}
 
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -411,7 +386,9 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const accessToken = await getGoogleAccessToken(serviceAccount);
-    const iosConfigs = getIosConversionConfigs();
+
+    const iosBundleId = "com.frankwillianr.gvcity6";
+    const iosSandbox = (Deno.env.get("IOS_APNS_SANDBOX") || "true").toLowerCase() === "true";
 
     const nonIosTargets: SendTarget[] = tokenRows
       .filter((row) => row.platform !== "ios")
@@ -430,73 +407,32 @@ serve(async (req: Request): Promise<Response> => {
     const iosAttemptErrors: IosConversionAttemptError[] = [];
 
     if (iosRows.length > 0) {
-      const uniqueIosTokens = [...new Set(iosRows.map((r) => r.device_token))];
-      let remaining = uniqueIosTokens.filter((t) => isLikelyApnsToken(t));
-      const iosAlreadyFcmTokens = uniqueIosTokens.filter((t) => !isLikelyApnsToken(t));
+      const iosRawTokens = [...new Set(iosRows.map((r) => r.device_token))];
+      for (const batch of chunkArray(iosRawTokens, 100)) {
+        try {
+          const conversion = await convertApnsToFcmBatch({
+            apnsTokens: batch,
+            accessToken,
+            application: iosBundleId,
+            sandbox: iosSandbox,
+          });
 
-      if (iosAlreadyFcmTokens.length > 0) {
-        iosDirectFcmTargets.push(
-          ...iosAlreadyFcmTokens.map((token) => ({
-            originalToken: token,
-            sendToken: token,
-            sourcePlatform: "ios" as const,
-          })),
-        );
-      }
+          iosConvertedTargets.push(
+            ...conversion.mapped.map((item) => ({
+              originalToken: item.apnsToken,
+              sendToken: item.fcmToken,
+              sourcePlatform: "ios" as const,
+            })),
+          );
 
-      for (const cfg of iosConfigs) {
-        if (!remaining.length) break;
-
-        let cfgConverted = 0;
-        let cfgFailed = 0;
-
-        for (const batch of chunkArray(remaining, 100)) {
-          try {
-            const conversion = await convertApnsToFcmBatch({
-              apnsTokens: batch,
-              accessToken,
-              application: cfg.application,
-              sandbox: cfg.sandbox,
-            });
-
-            iosConvertedTargets.push(
-              ...conversion.mapped.map((item) => ({
-                originalToken: item.apnsToken,
-                sendToken: item.fcmToken,
-                sourcePlatform: "ios" as const,
-              })),
-            );
-
-            cfgConverted += conversion.mapped.length;
-            cfgFailed += conversion.failed.length;
-            invalidApnsTokensFromImport.push(...conversion.invalidApnsTokens);
-            apnsConversionFailures.push(...conversion.failed);
-          } catch (error) {
-            cfgFailed += batch.length;
-            iosAttemptErrors.push({
-              application: cfg.application,
-              sandbox: cfg.sandbox,
-              batchSize: batch.length,
-              error: error instanceof Error ? error.message : String(error),
-            });
-            console.error("Falha ao converter lote APNs->FCM", {
-              application: cfg.application,
-              sandbox: cfg.sandbox,
-              batchSize: batch.length,
-              error: error instanceof Error ? error.message : String(error),
-            });
-          }
+          invalidApnsTokensFromImport.push(...conversion.invalidApnsTokens);
+          apnsConversionFailures.push(...conversion.failed);
+        } catch (error) {
+          console.error("Falha ao converter lote APNs->FCM", {
+            batchSize: batch.length,
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
-
-        iosAttemptsSummary.push({
-          application: cfg.application,
-          sandbox: cfg.sandbox,
-          converted: cfgConverted,
-          failed: cfgFailed,
-        });
-
-        const mappedSet = new Set(iosConvertedTargets.map((t) => t.originalToken));
-        remaining = remaining.filter((t) => !mappedSet.has(t));
       }
     }
 
