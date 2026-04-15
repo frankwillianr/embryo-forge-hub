@@ -36,6 +36,28 @@ interface SendTarget {
   sourcePlatform: "ios" | "android" | "web" | "unknown";
 }
 
+interface IosConversionAttempt {
+  application: string;
+  sandbox: boolean;
+  converted: number;
+  failed: number;
+}
+
+interface IosConversionAttemptError {
+  application: string;
+  sandbox: boolean;
+  batchSize: number;
+  error: string;
+}
+
+interface FirebaseErrorInfo {
+  httpStatus: number | null;
+  statusText: string | null;
+  googleStatus: string | null;
+  fcmErrorCode: string | null;
+  message: string | null;
+}
+
 let cachedAccessToken: { token: string; exp: number } | null = null;
 
 const textEncoder = new TextEncoder();
@@ -144,6 +166,16 @@ function getFcmErrorCode(payload: any): string | null {
   return fcmDetail?.errorCode || null;
 }
 
+function getFirebaseErrorInfo(status: number, payload: any): FirebaseErrorInfo {
+  return {
+    httpStatus: Number.isFinite(status) ? status : null,
+    statusText: payload?.error?.status ? String(payload.error.status) : null,
+    googleStatus: payload?.error?.status ? String(payload.error.status) : null,
+    fcmErrorCode: getFcmErrorCode(payload),
+    message: payload?.error?.message ? String(payload.error.message) : null,
+  };
+}
+
 function chunkArray<T>(input: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < input.length; i += size) {
@@ -172,6 +204,7 @@ async function convertApnsToFcmBatch(params: {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
+      access_token_auth: "true",
     },
     body: JSON.stringify({
       application,
@@ -222,6 +255,36 @@ async function convertApnsToFcmBatch(params: {
     invalidApnsTokens: [...new Set(invalidApnsTokens)],
     failed,
   };
+}
+
+function isLikelyApnsToken(token: string): boolean {
+  return /^[A-Fa-f0-9]{64}$/.test((token || "").trim());
+}
+
+function getIosConversionConfigs(): Array<{ application: string; sandbox: boolean }> {
+  const envBundleIds = (Deno.env.get("IOS_BUNDLE_IDS") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const primaryBundle = Deno.env.get("IOS_BUNDLE_ID") || "com.will.gvcity";
+  const knownBundles = [primaryBundle, "com.frankwillianr.gvcity6"];
+
+  const bundleIds = [...new Set([...envBundleIds, ...knownBundles].filter(Boolean))];
+
+  const envSandbox = Deno.env.get("IOS_APNS_SANDBOX");
+  const sandboxModes =
+    envSandbox === undefined || envSandbox === null || envSandbox === ""
+      ? [true]
+      : [(envSandbox || "false").toLowerCase() === "true"];
+
+  const configs: Array<{ application: string; sandbox: boolean }> = [];
+  for (const application of bundleIds) {
+    for (const sandbox of sandboxModes) {
+      configs.push({ application, sandbox });
+    }
+  }
+  return configs;
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -348,8 +411,7 @@ serve(async (req: Request): Promise<Response> => {
     }
 
     const accessToken = await getGoogleAccessToken(serviceAccount);
-    const iosBundleId = Deno.env.get("IOS_BUNDLE_ID") || "com.frankwillianr.gvcity6";
-    const iosSandbox = (Deno.env.get("IOS_APNS_SANDBOX") || "false").toLowerCase() === "true";
+    const iosConfigs = getIosConversionConfigs();
 
     const nonIosTargets: SendTarget[] = tokenRows
       .filter((row) => row.platform !== "ios")
@@ -361,40 +423,84 @@ serve(async (req: Request): Promise<Response> => {
 
     const iosRows = tokenRows.filter((row) => row.platform === "ios");
     let iosConvertedTargets: SendTarget[] = [];
+    const iosDirectFcmTargets: SendTarget[] = [];
     let invalidApnsTokensFromImport: string[] = [];
     let apnsConversionFailures: Array<{ apnsToken: string; status: string; message: string | null }> = [];
+    const iosAttemptsSummary: IosConversionAttempt[] = [];
+    const iosAttemptErrors: IosConversionAttemptError[] = [];
 
     if (iosRows.length > 0) {
-      const iosRawTokens = [...new Set(iosRows.map((r) => r.device_token))];
-      for (const batch of chunkArray(iosRawTokens, 100)) {
-        try {
-          const conversion = await convertApnsToFcmBatch({
-            apnsTokens: batch,
-            accessToken,
-            application: iosBundleId,
-            sandbox: iosSandbox,
-          });
+      const uniqueIosTokens = [...new Set(iosRows.map((r) => r.device_token))];
+      let remaining = uniqueIosTokens.filter((t) => isLikelyApnsToken(t));
+      const iosAlreadyFcmTokens = uniqueIosTokens.filter((t) => !isLikelyApnsToken(t));
 
-          iosConvertedTargets.push(
-            ...conversion.mapped.map((item) => ({
-              originalToken: item.apnsToken,
-              sendToken: item.fcmToken,
-              sourcePlatform: "ios" as const,
-            })),
-          );
+      if (iosAlreadyFcmTokens.length > 0) {
+        iosDirectFcmTargets.push(
+          ...iosAlreadyFcmTokens.map((token) => ({
+            originalToken: token,
+            sendToken: token,
+            sourcePlatform: "ios" as const,
+          })),
+        );
+      }
 
-          invalidApnsTokensFromImport.push(...conversion.invalidApnsTokens);
-          apnsConversionFailures.push(...conversion.failed);
-        } catch (error) {
-          console.error("Falha ao converter lote APNs->FCM", {
-            batchSize: batch.length,
-            error: error instanceof Error ? error.message : String(error),
-          });
+      for (const cfg of iosConfigs) {
+        if (!remaining.length) break;
+
+        let cfgConverted = 0;
+        let cfgFailed = 0;
+
+        for (const batch of chunkArray(remaining, 100)) {
+          try {
+            const conversion = await convertApnsToFcmBatch({
+              apnsTokens: batch,
+              accessToken,
+              application: cfg.application,
+              sandbox: cfg.sandbox,
+            });
+
+            iosConvertedTargets.push(
+              ...conversion.mapped.map((item) => ({
+                originalToken: item.apnsToken,
+                sendToken: item.fcmToken,
+                sourcePlatform: "ios" as const,
+              })),
+            );
+
+            cfgConverted += conversion.mapped.length;
+            cfgFailed += conversion.failed.length;
+            invalidApnsTokensFromImport.push(...conversion.invalidApnsTokens);
+            apnsConversionFailures.push(...conversion.failed);
+          } catch (error) {
+            cfgFailed += batch.length;
+            iosAttemptErrors.push({
+              application: cfg.application,
+              sandbox: cfg.sandbox,
+              batchSize: batch.length,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            console.error("Falha ao converter lote APNs->FCM", {
+              application: cfg.application,
+              sandbox: cfg.sandbox,
+              batchSize: batch.length,
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
         }
+
+        iosAttemptsSummary.push({
+          application: cfg.application,
+          sandbox: cfg.sandbox,
+          converted: cfgConverted,
+          failed: cfgFailed,
+        });
+
+        const mappedSet = new Set(iosConvertedTargets.map((t) => t.originalToken));
+        remaining = remaining.filter((t) => !mappedSet.has(t));
       }
     }
 
-    const sendTargets = [...nonIosTargets, ...iosConvertedTargets];
+    const sendTargets = [...nonIosTargets, ...iosDirectFcmTargets, ...iosConvertedTargets];
 
     if (!sendTargets.length) {
       return new Response(
@@ -403,8 +509,11 @@ serve(async (req: Request): Promise<Response> => {
           message: "Nenhum token valido para envio apos conversao APNs->FCM",
           iosConversion: {
             rawIosTokens: iosRows.length,
+            iosAlreadyFcm: iosDirectFcmTargets.length,
             converted: iosConvertedTargets.length,
             failed: apnsConversionFailures.length,
+            attempts: iosAttemptsSummary,
+            attemptErrors: iosAttemptErrors,
           },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -457,8 +566,9 @@ serve(async (req: Request): Promise<Response> => {
         });
 
         const respPayload = await resp.json();
-        const fcmErrorCode = getFcmErrorCode(respPayload);
-        const topErrorMessage = respPayload?.error?.message || null;
+        const firebaseError = getFirebaseErrorInfo(resp.status, respPayload);
+        const fcmErrorCode = firebaseError.fcmErrorCode;
+        const topErrorMessage = firebaseError.message;
 
         if (
           !resp.ok &&
@@ -470,11 +580,10 @@ serve(async (req: Request): Promise<Response> => {
 
         if (!resp.ok) {
           console.error("FCM envio falhou", {
-            status: resp.status,
-            fcmErrorCode,
-            topErrorMessage,
+            firebaseError,
             sourcePlatform: target.sourcePlatform,
             tokenPrefix: target.originalToken.substring(0, 20),
+            tokenLength: target.originalToken.length,
           });
         }
 
@@ -485,6 +594,7 @@ serve(async (req: Request): Promise<Response> => {
           status: resp.status,
           fcmErrorCode,
           errorMessage: topErrorMessage,
+          firebaseError,
           result: respPayload,
         };
       }),
@@ -515,10 +625,34 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
+    const primaryFailureReason = failureReasons[0] || null;
+    const responseMessage =
+      successCount > 0
+        ? "Push processado"
+        : primaryFailureReason
+          ? `Nenhum push entregue (${primaryFailureReason})`
+          : "Nenhum push entregue";
+
+    if (successCount === 0) {
+      console.error("Push sem entregas", {
+        totalTargets: sendTargets.length,
+        failureCount,
+        failureReasons,
+        iosConversion: {
+          rawIosTokens: iosRows.length,
+          iosAlreadyFcm: iosDirectFcmTargets.length,
+          converted: iosConvertedTargets.length,
+          failed: apnsConversionFailures.length,
+          attempts: iosAttemptsSummary,
+          attemptErrors: iosAttemptErrors,
+        },
+      });
+    }
+
     return new Response(
       JSON.stringify({
         success: successCount > 0,
-        message: successCount > 0 ? "Push processado" : "Nenhum push entregue",
+        message: responseMessage,
         sent: sendTargets.length,
         successCount,
         failureCount,
@@ -526,11 +660,12 @@ serve(async (req: Request): Promise<Response> => {
         invalidTokensRemoved: removableInvalidTokens.length,
         iosConversion: {
           rawIosTokens: iosRows.length,
+          iosAlreadyFcm: iosDirectFcmTargets.length,
           converted: iosConvertedTargets.length,
           failed: apnsConversionFailures.length,
           invalidRemoved: invalidApnsTokensFromImport.length,
-          application: iosBundleId,
-          sandbox: iosSandbox,
+          attempts: iosAttemptsSummary,
+          attemptErrors: iosAttemptErrors,
         },
         results,
       }),
