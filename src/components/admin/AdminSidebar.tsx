@@ -17,6 +17,7 @@
   Lightbulb,
   Search,
   Briefcase,
+  Smartphone,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ const cidadeMenuItems = [
   { id: "atividade", title: "Atividade", icon: Activity, route: "/admin/atividade" },
   { id: "enquete", title: "Enquete", icon: MessageCircle, route: "/admin/enquete" },
   { id: "sugestoes", title: "Sugestoes", icon: Lightbulb, route: "/admin/sugestoes" },
+  { id: "verificar-ios", title: "Verificar iOS", icon: Smartphone, route: "/admin/verificar-ios" },
   { id: "scarping-cinema", title: "Scarping cinema", icon: Film, route: "/admin/scarping-cinema" },
   { id: "scraping-emprego", title: "Scraping emprego", icon: Briefcase, route: "/admin/scraping-emprego" },
   { id: "jornal", title: "Jornal", icon: Newspaper },
