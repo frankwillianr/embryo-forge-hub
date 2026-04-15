@@ -31,6 +31,8 @@ const TesteTokenPage = () => {
   const { token, permissionStatus } = usePushNotifications({
     cidadeId: cidade?.id || null,
     userId: user?.id || null,
+    cidadeSlug: slug || null,
+    pagina: "teste_token",
   });
 
   const permissionLabel = useMemo(() => {

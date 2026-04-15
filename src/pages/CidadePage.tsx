@@ -75,11 +75,13 @@ const CidadePage = () => {
   const { permissionStatus, token, lastError } = usePushNotifications({
     cidadeId: cidade?.id || null,
     userId: user?.id || null,
+    cidadeSlug: slug || null,
+    pagina: "cidade",
   });
   const loggedOpenRef = useRef<Set<string>>(new Set());
   const lastPushLogSignatureRef = useRef<string>("");
 
-  const logCidadeEvent = async (evento: "cidade_open" | "push_state") => {
+  const logCidadeEvent = async (evento: "cidade_open" | "push_state", detalhes?: Record<string, unknown>) => {
     try {
       const tokenPrefix = token ? token.slice(0, 24) : null;
       const payload = {
@@ -93,6 +95,7 @@ const CidadePage = () => {
         push_token_prefix: tokenPrefix,
         push_error: lastError || null,
         app_platform: Capacitor.getPlatform(),
+        detalhes: detalhes ?? null,
       };
 
       await supabase.from("usuario_log_login" as any).insert(payload as any);
@@ -124,8 +127,12 @@ const CidadePage = () => {
     if (!slug) return;
     if (loggedOpenRef.current.has(slug)) return;
     loggedOpenRef.current.add(slug);
-    void logCidadeEvent("cidade_open");
-  }, [slug, cidade?.id, user?.id]);
+    void logCidadeEvent("cidade_open", {
+      activeTab,
+      hasCidadeId: !!cidade?.id,
+      hasUserId: !!user?.id,
+    });
+  }, [slug, cidade?.id, user?.id, activeTab]);
 
   // Log de estado do push (inclui erro de token).
   useEffect(() => {
@@ -141,8 +148,11 @@ const CidadePage = () => {
 
     if (lastPushLogSignatureRef.current === signature) return;
     lastPushLogSignatureRef.current = signature;
-    void logCidadeEvent("push_state");
-  }, [slug, cidade?.id, user?.id, permissionStatus, token, lastError]);
+    void logCidadeEvent("push_state", {
+      activeTab,
+      signature,
+    });
+  }, [slug, cidade?.id, user?.id, permissionStatus, token, lastError, activeTab]);
 
   // Track scroll position continuamente via ref
   const lastScrollY = useRef(0);
