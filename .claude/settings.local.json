@@ -14,7 +14,9 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://umauozcntfxgphzbiifz.supabase.co/storage/v1/object/public/jornal-imagens/assets/gvcity-logo.png\")",
       "mcp__claude_ai_Supabase__apply_migration",
       "Bash(curl -s -X POST https://api.supabase.com/v1/projects/umauozcntfxgphzbiifz/database/query -H 'Authorization: Bearer sbp_d5e188fc761aa29fb67cf03f31f558d4dd59cb5b' -H 'Content-Type: application/json' -d '{:*)",
-      "Bash(SUPABASE_ACCESS_TOKEN=sbp_d5e188fc761aa29fb67cf03f31f558d4dd59cb5b npx supabase functions deploy agente_emprego_buscador_01 --project-ref umauozcntfxgphzbiifz --no-verify-jwt)"
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_d5e188fc761aa29fb67cf03f31f558d4dd59cb5b npx supabase functions deploy agente_emprego_buscador_01 --project-ref umauozcntfxgphzbiifz --no-verify-jwt)",
+      "Bash(supabase functions:*)",
+      "Bash(npx supabase:*)"
     ]
   }
 }
