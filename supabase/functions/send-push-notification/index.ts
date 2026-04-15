@@ -1,4 +1,4 @@
-﻿import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -30,26 +30,6 @@ interface PushTokenRow {
   platform: "ios" | "android" | "web" | null;
 }
 
-interface SendTarget {
-  originalToken: string;
-  sendToken: string;
-  sourcePlatform: "ios" | "android" | "web" | "unknown";
-}
-
-interface IosConversionAttempt {
-  application: string;
-  sandbox: boolean;
-  converted: number;
-  failed: number;
-}
-
-interface IosConversionAttemptError {
-  application: string;
-  sandbox: boolean;
-  batchSize: number;
-  error: string;
-}
-
 interface FirebaseErrorInfo {
   httpStatus: number | null;
   statusText: string | null;
@@ -58,7 +38,26 @@ interface FirebaseErrorInfo {
   message: string | null;
 }
 
+interface FcmSendResult {
+  token: string;
+  ok: boolean;
+  status: number;
+  fcmErrorCode: string | null;
+  errorMessage: string | null;
+  firebaseError: FirebaseErrorInfo;
+  result: any;
+}
+
+interface ApnsSendResult {
+  token: string;
+  ok: boolean;
+  status: number;
+  reason: string | null;
+}
+
 let cachedAccessToken: { token: string; exp: number } | null = null;
+let cachedApnsJwt: { token: string; exp: number } | null = null;
+let cachedApnsKey: CryptoKey | null = null;
 
 const textEncoder = new TextEncoder();
 
@@ -67,7 +66,6 @@ function toBase64Url(input: Uint8Array): string {
   for (let i = 0; i < input.length; i++) {
     binary += String.fromCharCode(input[i]);
   }
-
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
@@ -95,7 +93,7 @@ async function signJwt(serviceAccount: FirebaseServiceAccount): Promise<string> 
     iss: serviceAccount.client_email,
     sub: serviceAccount.client_email,
     aud: tokenUri,
-    scope: "https://www.googleapis.com/auth/firebase.messaging https://www.googleapis.com/auth/cloud-platform",
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
     iat: now,
     exp: now + 3600,
   };
@@ -176,91 +174,136 @@ function getFirebaseErrorInfo(status: number, payload: any): FirebaseErrorInfo {
   };
 }
 
-function chunkArray<T>(input: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < input.length; i += size) {
-    out.push(input.slice(i, i + size));
+async function getApnsJwt(): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedApnsJwt && cachedApnsJwt.exp > now + 60) {
+    return cachedApnsJwt.token;
   }
-  return out;
+
+  const apnsKeyP8 = Deno.env.get("APNS_KEY_P8");
+  if (!apnsKeyP8) {
+    throw new Error("APNS_KEY_P8 nao configurada");
+  }
+
+  const apnsKeyId = Deno.env.get("APNS_KEY_ID") || "TGVSQS36VH";
+  const apnsTeamId = Deno.env.get("APNS_TEAM_ID") || "P5T8N69HM9";
+
+  if (!cachedApnsKey) {
+    cachedApnsKey = await crypto.subtle.importKey(
+      "pkcs8",
+      decodePemPrivateKey(apnsKeyP8),
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["sign"],
+    );
+  }
+
+  const header = { alg: "ES256", kid: apnsKeyId };
+  const payload = { iss: apnsTeamId, iat: now };
+
+  const encodedHeader = toBase64Url(textEncoder.encode(JSON.stringify(header)));
+  const encodedPayload = toBase64Url(textEncoder.encode(JSON.stringify(payload)));
+  const unsigned = `${encodedHeader}.${encodedPayload}`;
+
+  const signatureBuffer = await crypto.subtle.sign(
+    { name: "ECDSA", hash: "SHA-256" },
+    cachedApnsKey,
+    textEncoder.encode(unsigned),
+  );
+
+  const signatureBytes = new Uint8Array(signatureBuffer);
+  let rawSig: Uint8Array;
+
+  if (signatureBytes[0] === 0x30) {
+    let offset = 2;
+    const rLen = signatureBytes[offset + 1];
+    let r = signatureBytes.slice(offset + 2, offset + 2 + rLen);
+    offset = offset + 2 + rLen;
+    const sLen = signatureBytes[offset + 1];
+    let s = signatureBytes.slice(offset + 2, offset + 2 + sLen);
+
+    if (r.length > 32) r = r.slice(r.length - 32);
+    if (s.length > 32) s = s.slice(s.length - 32);
+    if (r.length < 32) {
+      const padded = new Uint8Array(32);
+      padded.set(r, 32 - r.length);
+      r = padded;
+    }
+    if (s.length < 32) {
+      const padded = new Uint8Array(32);
+      padded.set(s, 32 - s.length);
+      s = padded;
+    }
+
+    rawSig = new Uint8Array(64);
+    rawSig.set(r, 0);
+    rawSig.set(s, 32);
+  } else {
+    rawSig = signatureBytes;
+  }
+
+  const token = `${unsigned}.${toBase64Url(rawSig)}`;
+  cachedApnsJwt = { token, exp: now + 1800 };
+  return token;
 }
 
-async function convertApnsToFcmBatch(params: {
-  apnsTokens: string[];
-  accessToken: string;
-  application: string;
+async function sendViaApns(params: {
+  deviceToken: string;
+  title: string;
+  body: string;
+  data?: Record<string, string>;
+  bundleId: string;
   sandbox: boolean;
-}): Promise<{
-  mapped: Array<{ apnsToken: string; fcmToken: string }>;
-  invalidApnsTokens: string[];
-  failed: Array<{ apnsToken: string; status: string; message: string | null }>;
-}> {
-  const { apnsTokens, accessToken, application, sandbox } = params;
-  if (!apnsTokens.length) {
-    return { mapped: [], invalidApnsTokens: [], failed: [] };
-  }
+}): Promise<ApnsSendResult> {
+  const { deviceToken, title, body, data, bundleId, sandbox } = params;
 
-  const resp = await fetch("https://iid.googleapis.com/iid/v1:batchImport", {
+  const host = sandbox
+    ? "https://api.sandbox.push.apple.com"
+    : "https://api.push.apple.com";
+  const url = `${host}/3/device/${deviceToken}`;
+
+  const apnsPayload = {
+    aps: {
+      alert: { title, body },
+      sound: "default",
+      badge: 1,
+    },
+    ...(data || {}),
+  };
+
+  const jwt = await getApnsJwt();
+
+  const resp = await fetch(url, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-      access_token_auth: "true",
+      authorization: `bearer ${jwt}`,
+      "apns-topic": bundleId,
+      "apns-push-type": "alert",
+      "apns-priority": "10",
+      "content-type": "application/json",
     },
-    body: JSON.stringify({
-      application,
-      sandbox,
-      apns_tokens: apnsTokens,
-    }),
+    body: JSON.stringify(apnsPayload),
   });
 
-  const payload = await resp.json();
+  let reason: string | null = null;
   if (!resp.ok) {
-    throw new Error(`Erro no batchImport APNs->FCM: ${resp.status} ${JSON.stringify(payload)}`);
-  }
-
-  const results = Array.isArray(payload?.results) ? payload.results : [];
-  const mapped: Array<{ apnsToken: string; fcmToken: string }> = [];
-  const invalidApnsTokens: string[] = [];
-  const failed: Array<{ apnsToken: string; status: string; message: string | null }> = [];
-
-  for (let i = 0; i < apnsTokens.length; i++) {
-    const apnsToken = apnsTokens[i];
-    const row = results[i] || {};
-    const status = String(row?.status || "UNKNOWN");
-    const registrationToken = row?.registration_token ? String(row.registration_token) : null;
-    const message = row?.error ? String(row.error) : null;
-
-    if (status === "OK" && registrationToken) {
-      mapped.push({ apnsToken, fcmToken: registrationToken });
-      continue;
+    try {
+      const errPayload = await resp.json();
+      reason = errPayload?.reason ? String(errPayload.reason) : null;
+    } catch {
+      reason = null;
     }
-
-    failed.push({ apnsToken, status, message });
-
-    const statusUpper = status.toUpperCase();
-    const messageUpper = (message || "").toUpperCase();
-    const isInvalid =
-      statusUpper.includes("INVALID") ||
-      statusUpper.includes("NOT_FOUND") ||
-      messageUpper.includes("INVALID") ||
-      messageUpper.includes("NOT_FOUND");
-
-    if (isInvalid) {
-      invalidApnsTokens.push(apnsToken);
-    }
+  } else {
+    await resp.text().catch(() => {});
   }
 
   return {
-    mapped,
-    invalidApnsTokens: [...new Set(invalidApnsTokens)],
-    failed,
+    token: deviceToken,
+    ok: resp.ok,
+    status: resp.status,
+    reason,
   };
 }
-
-function isLikelyApnsToken(token: string): boolean {
-  return /^[A-Fa-f0-9]{64}$/.test((token || "").trim());
-}
-
 
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -385,169 +428,154 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
-    const accessToken = await getGoogleAccessToken(serviceAccount);
-
     const iosBundleId = "com.frankwillianr.gvcity6";
     const iosSandbox = (Deno.env.get("IOS_APNS_SANDBOX") || "true").toLowerCase() === "true";
 
-    const nonIosTargets: SendTarget[] = tokenRows
-      .filter((row) => row.platform !== "ios")
-      .map((row) => ({
-        originalToken: row.device_token,
-        sendToken: row.device_token,
-        sourcePlatform: (row.platform as SendTarget["sourcePlatform"]) || "unknown",
-      }));
-
     const iosRows = tokenRows.filter((row) => row.platform === "ios");
-    let iosConvertedTargets: SendTarget[] = [];
-    const iosDirectFcmTargets: SendTarget[] = [];
-    let invalidApnsTokensFromImport: string[] = [];
-    let apnsConversionFailures: Array<{ apnsToken: string; status: string; message: string | null }> = [];
-    const iosAttemptsSummary: IosConversionAttempt[] = [];
-    const iosAttemptErrors: IosConversionAttemptError[] = [];
+    const nonIosRows = tokenRows.filter((row) => row.platform !== "ios");
 
-    if (iosRows.length > 0) {
-      const iosRawTokens = [...new Set(iosRows.map((r) => r.device_token))];
-      for (const batch of chunkArray(iosRawTokens, 100)) {
-        try {
-          const conversion = await convertApnsToFcmBatch({
-            apnsTokens: batch,
-            accessToken,
-            application: iosBundleId,
-            sandbox: iosSandbox,
-          });
+    const fcmInvalidTokens: string[] = [];
+    const fcmResults: FcmSendResult[] = [];
 
-          iosConvertedTargets.push(
-            ...conversion.mapped.map((item) => ({
-              originalToken: item.apnsToken,
-              sendToken: item.fcmToken,
-              sourcePlatform: "ios" as const,
-            })),
-          );
+    if (nonIosRows.length > 0) {
+      const accessToken = await getGoogleAccessToken(serviceAccount);
+      const projectId = Deno.env.get("FIREBASE_PROJECT_ID") || serviceAccount.project_id;
+      const endpoint = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
 
-          invalidApnsTokensFromImport.push(...conversion.invalidApnsTokens);
-          apnsConversionFailures.push(...conversion.failed);
-        } catch (error) {
-          console.error("Falha ao converter lote APNs->FCM", {
-            batchSize: batch.length,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-    }
-
-    const sendTargets = [...nonIosTargets, ...iosDirectFcmTargets, ...iosConvertedTargets];
-
-    if (!sendTargets.length) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: "Nenhum token valido para envio apos conversao APNs->FCM",
-          iosConversion: {
-            rawIosTokens: iosRows.length,
-            iosAlreadyFcm: iosDirectFcmTargets.length,
-            converted: iosConvertedTargets.length,
-            failed: apnsConversionFailures.length,
-            attempts: iosAttemptsSummary,
-            attemptErrors: iosAttemptErrors,
-          },
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const projectId = Deno.env.get("FIREBASE_PROJECT_ID") || serviceAccount.project_id;
-    const endpoint = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
-
-    const invalidTokens: string[] = [];
-
-    const results = await Promise.all(
-      sendTargets.map(async (target) => {
-        const payload = {
-          message: {
-            token: target.sendToken,
-            notification: {
-              title,
-              body,
-            },
-            data: data || {},
-            android: {
-              priority: "high",
-              notification: {
-                channel_id: "default",
-                sound: "default",
-              },
-            },
-            apns: {
-              headers: {
-                "apns-priority": "10",
-              },
-              payload: {
-                aps: {
+      const results = await Promise.all(
+        nonIosRows.map(async (row) => {
+          const payload = {
+            message: {
+              token: row.device_token,
+              notification: { title, body },
+              data: data || {},
+              android: {
+                priority: "high",
+                notification: {
+                  channel_id: "default",
                   sound: "default",
-                  badge: 1,
                 },
               },
             },
-          },
-        };
+          };
 
-        const resp = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const respPayload = await resp.json();
-        const firebaseError = getFirebaseErrorInfo(resp.status, respPayload);
-        const fcmErrorCode = firebaseError.fcmErrorCode;
-        const topErrorMessage = firebaseError.message;
-
-        if (
-          !resp.ok &&
-          target.sourcePlatform !== "ios" &&
-          (fcmErrorCode === "UNREGISTERED" || fcmErrorCode === "INVALID_ARGUMENT")
-        ) {
-          invalidTokens.push(target.originalToken);
-        }
-
-        if (!resp.ok) {
-          console.error("FCM envio falhou", {
-            firebaseError,
-            sourcePlatform: target.sourcePlatform,
-            tokenPrefix: target.originalToken.substring(0, 20),
-            tokenLength: target.originalToken.length,
+          const resp = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(payload),
           });
-        }
 
-        return {
-          token: target.originalToken.substring(0, 20),
-          sourcePlatform: target.sourcePlatform,
-          ok: resp.ok,
-          status: resp.status,
-          fcmErrorCode,
-          errorMessage: topErrorMessage,
-          firebaseError,
-          result: respPayload,
-        };
-      }),
-    );
+          const respPayload = await resp.json();
+          const firebaseError = getFirebaseErrorInfo(resp.status, respPayload);
+          const fcmErrorCode = firebaseError.fcmErrorCode;
 
-    const successCount = results.filter((r) => r.ok).length;
-    const failureCount = results.length - successCount;
+          if (!resp.ok && (fcmErrorCode === "UNREGISTERED" || fcmErrorCode === "INVALID_ARGUMENT")) {
+            fcmInvalidTokens.push(row.device_token);
+          }
+
+          if (!resp.ok) {
+            console.error("FCM envio falhou", {
+              firebaseError,
+              platform: row.platform,
+              tokenPrefix: row.device_token.substring(0, 20),
+            });
+          }
+
+          return {
+            token: row.device_token.substring(0, 20),
+            ok: resp.ok,
+            status: resp.status,
+            fcmErrorCode,
+            errorMessage: firebaseError.message,
+            firebaseError,
+            result: respPayload,
+          };
+        }),
+      );
+
+      fcmResults.push(...results);
+    }
+
+    const apnsInvalidTokens: string[] = [];
+    const apnsResults: ApnsSendResult[] = [];
+
+    if (iosRows.length > 0) {
+      const results = await Promise.all(
+        iosRows.map(async (row) => {
+          try {
+            const r = await sendViaApns({
+              deviceToken: row.device_token,
+              title,
+              body,
+              data,
+              bundleId: iosBundleId,
+              sandbox: iosSandbox,
+            });
+
+            if (!r.ok && r.reason) {
+              const invalidReasons = ["BadDeviceToken", "Unregistered", "DeviceTokenNotForTopic"];
+              if (invalidReasons.includes(r.reason)) {
+                apnsInvalidTokens.push(row.device_token);
+              }
+            }
+
+            if (!r.ok) {
+              console.error("APNs envio falhou", {
+                status: r.status,
+                reason: r.reason,
+                tokenPrefix: row.device_token.substring(0, 20),
+              });
+            }
+
+            return {
+              token: row.device_token.substring(0, 20),
+              ok: r.ok,
+              status: r.status,
+              reason: r.reason,
+            };
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.error("APNs erro inesperado", {
+              message,
+              tokenPrefix: row.device_token.substring(0, 20),
+            });
+            return {
+              token: row.device_token.substring(0, 20),
+              ok: false,
+              status: 0,
+              reason: message,
+            };
+          }
+        }),
+      );
+
+      apnsResults.push(...results);
+    }
+
+    const fcmSuccess = fcmResults.filter((r) => r.ok).length;
+    const fcmFailure = fcmResults.length - fcmSuccess;
+    const apnsSuccess = apnsResults.filter((r) => r.ok).length;
+    const apnsFailure = apnsResults.length - apnsSuccess;
+
+    const successCount = fcmSuccess + apnsSuccess;
+    const failureCount = fcmFailure + apnsFailure;
+    const total = fcmResults.length + apnsResults.length;
+
     const failureReasons = [
-      ...new Set(
-        results
+      ...new Set([
+        ...fcmResults
           .filter((r) => !r.ok)
           .map((r) => r.fcmErrorCode || r.errorMessage || `HTTP_${r.status}`),
-      ),
+        ...apnsResults
+          .filter((r) => !r.ok)
+          .map((r) => r.reason || `HTTP_${r.status}`),
+      ]),
     ];
 
-    const removableInvalidTokens = [...new Set([...invalidTokens, ...invalidApnsTokensFromImport])];
-
+    const removableInvalidTokens = [...new Set([...fcmInvalidTokens, ...apnsInvalidTokens])];
     if (removableInvalidTokens.length > 0) {
       const { error: deleteError } = await supabase
         .from("rel_cidade_push_tokens")
@@ -569,19 +597,12 @@ serve(async (req: Request): Promise<Response> => {
           ? `Nenhum push entregue (${primaryFailureReason})`
           : "Nenhum push entregue";
 
-    if (successCount === 0) {
+    if (successCount === 0 && total > 0) {
       console.error("Push sem entregas", {
-        totalTargets: sendTargets.length,
-        failureCount,
+        total,
         failureReasons,
-        iosConversion: {
-          rawIosTokens: iosRows.length,
-          iosAlreadyFcm: iosDirectFcmTargets.length,
-          converted: iosConvertedTargets.length,
-          failed: apnsConversionFailures.length,
-          attempts: iosAttemptsSummary,
-          attemptErrors: iosAttemptErrors,
-        },
+        fcm: { total: fcmResults.length, failure: fcmFailure },
+        apns: { total: apnsResults.length, failure: apnsFailure },
       });
     }
 
@@ -589,21 +610,25 @@ serve(async (req: Request): Promise<Response> => {
       JSON.stringify({
         success: successCount > 0,
         message: responseMessage,
-        sent: sendTargets.length,
+        sent: total,
         successCount,
         failureCount,
         failureReasons,
         invalidTokensRemoved: removableInvalidTokens.length,
-        iosConversion: {
-          rawIosTokens: iosRows.length,
-          iosAlreadyFcm: iosDirectFcmTargets.length,
-          converted: iosConvertedTargets.length,
-          failed: apnsConversionFailures.length,
-          invalidRemoved: invalidApnsTokensFromImport.length,
-          attempts: iosAttemptsSummary,
-          attemptErrors: iosAttemptErrors,
+        android: {
+          sent: fcmResults.length,
+          successCount: fcmSuccess,
+          failureCount: fcmFailure,
+          results: fcmResults,
         },
-        results,
+        ios: {
+          sent: apnsResults.length,
+          successCount: apnsSuccess,
+          failureCount: apnsFailure,
+          sandbox: iosSandbox,
+          bundleId: iosBundleId,
+          results: apnsResults,
+        },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
