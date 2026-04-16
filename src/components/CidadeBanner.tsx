@@ -11,6 +11,11 @@ interface LocationData {
   city: string;
 }
 
+const GV_COORDS = {
+  latitude: -18.8514,
+  longitude: -41.9499,
+};
+
 type TimeOfDay = "morning" | "afternoon" | "evening" | "night";
 
 const getTimeOfDay = (): TimeOfDay => {
@@ -137,23 +142,8 @@ const CidadeBanner = ({ bannerUrl, cidadeNome, userName, onMenuClick }: CidadeBa
     };
 
     const getLocationData = () => {
-      if (!navigator.geolocation) {
-        fetchWeather(-23.5505, -46.6333);
-        fetchLocationName(-23.5505, -46.6333);
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          fetchWeather(latitude, longitude);
-          fetchLocationName(latitude, longitude);
-        },
-        () => {
-          fetchWeather(-23.5505, -46.6333);
-          fetchLocationName(-23.5505, -46.6333);
-        }
-      );
+      fetchWeather(GV_COORDS.latitude, GV_COORDS.longitude);
+      fetchLocationName(GV_COORDS.latitude, GV_COORDS.longitude);
     };
 
     getLocationData();

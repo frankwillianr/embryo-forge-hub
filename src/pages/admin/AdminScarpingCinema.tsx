@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  Clock3,
   CheckCircle2,
   Film,
   Globe,
@@ -219,6 +220,7 @@ const AdminScarpingCinema = () => {
   const [lookbackDias, setLookbackDias] = useState("14");
   const [isRunning, setIsRunning] = useState(false);
   const [isSavingFonte, setIsSavingFonte] = useState(false);
+  const [isSavingAutoCinema, setIsSavingAutoCinema] = useState(false);
   const [runError, setRunError] = useState<string | null>(null);
   const [runResult, setRunResult] = useState<any>(null);
   const [fonteError, setFonteError] = useState<string | null>(null);
@@ -289,6 +291,25 @@ const AdminScarpingCinema = () => {
     },
     enabled: !!cidadeIdSelecionada,
   });
+
+  const {
+    data: autoCinemaConfig,
+    refetch: refetchAutoCinemaConfig,
+  } = useQuery({
+    queryKey: ["admin-auto-cinema-config", cidadeIdSelecionada],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cidade_scraping_config")
+        .select("cidade_id, cinema_auto_ativo")
+        .eq("cidade_id", cidadeIdSelecionada)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as { cidade_id: string; cinema_auto_ativo?: boolean } | null) ?? null;
+    },
+    enabled: !!cidadeIdSelecionada,
+  });
+
+  const autoCinemaAtivo = autoCinemaConfig?.cinema_auto_ativo === true;
 
   const sitesAtivos = useMemo(
     () => fontes.filter((f) => f.ativo).map((f) => f.url),
@@ -446,6 +467,29 @@ const AdminScarpingCinema = () => {
     }
   };
 
+  const toggleAutoCinema = async () => {
+    if (!cidadeIdSelecionada) return;
+    setIsSavingAutoCinema(true);
+    setFonteError(null);
+    try {
+      const novoValor = !autoCinemaAtivo;
+      const payload = {
+        cidade_id: cidadeIdSelecionada,
+        cinema_auto_ativo: novoValor,
+      } as any;
+
+      const { error } = await supabase
+        .from("cidade_scraping_config")
+        .upsert(payload, { onConflict: "cidade_id" });
+      if (error) throw error;
+      await refetchAutoCinemaConfig();
+    } catch (e: any) {
+      setFonteError(e?.message || "Falha ao atualizar busca automatica de cinema.");
+    } finally {
+      setIsSavingAutoCinema(false);
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -584,6 +628,29 @@ const AdminScarpingCinema = () => {
                 onChange={(e) => setLookbackDias(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                onClick={toggleAutoCinema}
+                disabled={!cidadeIdSelecionada || isSavingAutoCinema}
+                variant={autoCinemaAtivo ? "default" : "outline"}
+                className="gap-2"
+              >
+                {isSavingAutoCinema ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Clock3 className="h-4 w-4" />
+                )}
+                {autoCinemaAtivo ? "Busca automatica: ATIVA" : "Ativar busca automatica"}
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Quando ativa, roda automaticamente o agente de cinema todos os dias as 07:00 e as
+              10:00.
+            </p>
           </div>
 
           <Button
