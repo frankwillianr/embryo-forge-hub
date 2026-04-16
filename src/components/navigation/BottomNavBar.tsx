@@ -14,8 +14,8 @@ interface BottomNavBarProps {
 }
 
 const baseItemClass = "mx-1 my-1 flex flex-col items-center justify-center gap-1.5 rounded-xl py-2 transition-all";
-const activeClass = "bg-white/10 text-white";
-const inactiveClass = "text-gray-400 hover:bg-white/5 hover:text-white";
+const activeClass = "bg-white/25 text-white border border-white/30 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]";
+const inactiveClass = "text-white hover:bg-white/5";
 
 const forceScrollTop = () => {
   window.scrollTo({ top: 0, behavior: "auto" });
@@ -40,6 +40,10 @@ const BottomNavBar = ({
   onOfertasClick,
 }: BottomNavBarProps) => {
   const navigate = useNavigate();
+  const iconStateClass = (tab: BottomNavTab) =>
+    active === tab
+      ? "drop-shadow-[0_0_8px_rgba(255,255,255,0.45)] brightness-125 scale-110"
+      : "drop-shadow-[0_0_6px_rgba(255,255,255,0.25)] brightness-110";
 
   const goHome = () => {
     if (onHomeClick) return onHomeClick();
@@ -79,8 +83,8 @@ const BottomNavBar = ({
           onClick={goJornal}
           className={`${baseItemClass} ${active === "jornal" ? activeClass : inactiveClass}`}
         >
-          <Newspaper className="h-5 w-5 text-sky-400" />
-          <span className="text-[9px] font-medium leading-[1.05] text-center">
+          <Newspaper className={`h-5 w-5 text-sky-400 transition-all ${iconStateClass("jornal")}`} />
+          <span className="text-[11px] font-normal leading-[1.5] text-center">
             Jornal da
             <br />
             cidade
@@ -90,16 +94,16 @@ const BottomNavBar = ({
           onClick={goCinema}
           className={`${baseItemClass} ${active === "cinema" ? activeClass : inactiveClass}`}
         >
-          <Film className="h-5 w-5 text-amber-400" />
-          <span className="text-[9px] font-medium leading-[1.05] text-center">
+          <Film className={`h-5 w-5 text-amber-400 transition-all ${iconStateClass("cinema")}`} />
+          <span className="text-[11px] font-normal leading-[1.5] text-center">
             Filmes em
             <br />
             cartaz
           </span>
         </button>
         <button onClick={goHome} className={`${baseItemClass} ${active === "home" ? activeClass : inactiveClass}`}>
-          <Home className="h-5 w-5 text-emerald-400" />
-          <span className="text-[9px] font-medium leading-[1.05] text-center">
+          <Home className={`h-5 w-5 text-emerald-400 transition-all ${iconStateClass("home")}`} />
+          <span className="text-[11px] font-normal leading-[1.5] text-center">
             Pagina
             <br />
             inicial
@@ -109,8 +113,8 @@ const BottomNavBar = ({
           onClick={goServicos}
           className={`${baseItemClass} ${active === "servicos" ? activeClass : inactiveClass}`}
         >
-          <Briefcase className="h-5 w-5 text-violet-400" />
-          <span className="text-[9px] font-medium leading-[1.05] text-center">
+          <Briefcase className={`h-5 w-5 text-violet-400 transition-all ${iconStateClass("servicos")}`} />
+          <span className="text-[11px] font-normal leading-[1.5] text-center">
             Onde ir &
             <br />
             Serviços
@@ -120,8 +124,8 @@ const BottomNavBar = ({
           onClick={goOfertas}
           className={`${baseItemClass} ${active === "ofertas" ? activeClass : inactiveClass}`}
         >
-          <BadgePercent className="h-5 w-5 text-red-400" />
-          <span className="text-[9px] font-medium leading-[1.05] text-center">
+          <BadgePercent className={`h-5 w-5 text-[#ff2d55] drop-shadow-[0_0_10px_rgba(255,45,85,0.85)] transition-all ${iconStateClass("ofertas")}`} />
+          <span className="text-[11px] font-normal leading-[1.5] text-center">
             Mural de
             <br />
             ofertas
