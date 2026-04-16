@@ -54,6 +54,27 @@ Exemplo de IP local (desta máquina): `192.168.1.70`, então ficaria `http://192
 
 3. Se não abrir, libere a porta 8080 no firewall do Windows para rede privada e confirme que PC e celular estão na mesma rede.
 
+## Deploy no Android/iOS: por que nao atualiza sozinho
+
+Por padrao, o Capacitor abre o `dist` que foi empacotado dentro do app.
+Isso significa:
+
+- Deploy web novo nao atualiza automaticamente o app nativo.
+- Para refletir mudancas no app nativo, rode:
+
+```sh
+npm run mobile:bundle
+```
+
+Depois gere um novo build no Android Studio/Xcode.
+
+Se quiser que Android/iOS carreguem a mesma URL da web publicada em tempo real, configure a variavel `CAP_SERVER_URL` antes do `cap sync`.
+Exemplo (Windows):
+
+```powershell
+$env:CAP_SERVER_URL="https://seu-dominio.com"; npm run mobile:sync
+```
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

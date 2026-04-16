@@ -9,6 +9,8 @@
     "dev:stable:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/dev-stable-stop.ps1",
     "dev:mobile": "vite --host 0.0.0.0 --port 8080 --strictPort",
     "build": "vite build",
+    "mobile:sync": "npx cap sync",
+    "mobile:bundle": "npm run build && npx cap sync",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
