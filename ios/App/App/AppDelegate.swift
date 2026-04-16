@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,7 +8,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // Limpa cache do WKWebView para garantir que o iOS carregue a versao mais recente
+        let dataStore = WKWebsiteDataStore.default()
+        let dataTypes: Set<String> = [
+            WKWebsiteDataTypeDiskCache,
+            WKWebsiteDataTypeMemoryCache,
+            WKWebsiteDataTypeOfflineWebApplicationCache
+        ]
+        dataStore.removeData(ofTypes: dataTypes, modifiedSince: Date.distantPast) {
+            print("[GvCity] Cache WKWebView limpo com sucesso")
+        }
         return true
     }
 
