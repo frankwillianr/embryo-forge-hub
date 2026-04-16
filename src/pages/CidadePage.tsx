@@ -291,7 +291,7 @@ const CidadePage = () => {
     }
   };
 
-  const bottomNavActive = activeTab === "prefeitura" ? undefined : activeTab;
+  const bottomNavActive = (activeTab === "home" || activeTab === "cinema") ? activeTab : undefined;
 
   return (
     <IonPage className="flex flex-col min-h-screen bg-background overflow-visible [contain:none]">

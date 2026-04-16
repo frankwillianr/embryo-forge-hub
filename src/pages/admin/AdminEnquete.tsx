@@ -241,7 +241,7 @@ const AdminEnquete = () => {
               .update({ texto: item.texto, ordem: index })
               .eq("id", item.id as string);
           })
-          .filter((item): item is PromiseLike<any> => !!item);
+          .filter((item): item is NonNullable<typeof item> => !!item);
 
         const inserts = normalizedOptions
           .filter((item) => !item.id)

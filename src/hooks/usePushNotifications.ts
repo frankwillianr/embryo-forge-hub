@@ -159,7 +159,7 @@ export function usePushNotifications({
         // Listener para erros de registro
         const registrationErrorListener = await PushNotifications.addListener('registrationError', (error) => {
           console.error('Erro ao registrar push:', error);
-          const errorMessage = error?.error || error?.message || JSON.stringify(error);
+          const errorMessage = (error as any)?.error || (error as any)?.message || JSON.stringify(error);
           setLastError(errorMessage);
           void logPushDebug("push_registration_error", {
             rawError: error,
