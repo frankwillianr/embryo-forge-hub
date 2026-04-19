@@ -178,7 +178,7 @@ const AdminCinema = ({ forcedCidadeId }: AdminCinemaProps) => {
       horarios: filme.horarios?.join(", ") || "",
       duracao: filme.duracao || "",
       genero: filme.genero || "",
-      status: filme.status || "em_cartaz",
+      status: (filme.status === "em_cartaz" || filme.status === "em_breve") ? filme.status : "em_cartaz",
     });
     setDialogOpen(true);
   };
