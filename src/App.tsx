@@ -81,6 +81,7 @@ import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
 import SuportePage from "@/pages/SuportePage";
 import EnquetesHistoricoPage from "@/pages/EnquetesHistoricoPage";
 import TesteTokenPage from "@/pages/TesteTokenPage";
+import AnuncioDiretoPage from "@/pages/AnuncioDiretoPage";
 
 const QUERY_CACHE_STORAGE_KEY = "gc:offline-query-cache:v2";
 
@@ -226,6 +227,7 @@ const App = () => (
             <Route element={<MobileLayout />}>
               <Route path="/politica-privacidade" element={<PoliticaPrivacidadePage />} />
               <Route path="/suporte" element={<SuportePage />} />
+              <Route path="/Anuncio" element={<AnuncioDiretoPage />} />
             </Route>
 
             {/* Admin routes without max-width constraint */}

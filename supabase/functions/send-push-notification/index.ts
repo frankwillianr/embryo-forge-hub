@@ -58,6 +58,7 @@ interface ApnsSendResult {
 let cachedAccessToken: { token: string; exp: number } | null = null;
 let cachedApnsJwt: { token: string; exp: number } | null = null;
 let cachedApnsKey: CryptoKey | null = null;
+let pendingApnsJwt: Promise<string> | null = null;
 
 const textEncoder = new TextEncoder();
 
@@ -70,7 +71,12 @@ function toBase64Url(input: Uint8Array): string {
 }
 
 function decodePemPrivateKey(pem: string): ArrayBuffer {
-  const content = pem
+  const normalizedPem = pem
+    .trim()
+    .replace(/^"|"$/g, "")
+    .replace(/\\n/g, "\n");
+
+  const content = normalizedPem
     .replace("-----BEGIN PRIVATE KEY-----", "")
     .replace("-----END PRIVATE KEY-----", "")
     .replace(/\s/g, "");
@@ -180,71 +186,82 @@ async function getApnsJwt(): Promise<string> {
     return cachedApnsJwt.token;
   }
 
-  const apnsKeyP8 = Deno.env.get("APNS_KEY_P8");
-  if (!apnsKeyP8) {
-    throw new Error("APNS_KEY_P8 nao configurada");
+  if (pendingApnsJwt) {
+    return pendingApnsJwt;
   }
 
-  const apnsKeyId = Deno.env.get("APNS_KEY_ID") || "TGVSQS36VH";
-  const apnsTeamId = Deno.env.get("APNS_TEAM_ID") || "P5T8N69HM9";
+  pendingApnsJwt = (async () => {
+    const apnsKeyP8 = Deno.env.get("APNS_KEY_P8");
+    if (!apnsKeyP8) {
+      throw new Error("APNS_KEY_P8 nao configurada");
+    }
 
-  if (!cachedApnsKey) {
-    cachedApnsKey = await crypto.subtle.importKey(
-      "pkcs8",
-      decodePemPrivateKey(apnsKeyP8),
-      { name: "ECDSA", namedCurve: "P-256" },
-      false,
-      ["sign"],
+    const apnsKeyId = Deno.env.get("APNS_KEY_ID") || "3V3A7CN6BX";
+    const apnsTeamId = Deno.env.get("APNS_TEAM_ID") || "P5T8N69HM9";
+
+    if (!cachedApnsKey) {
+      cachedApnsKey = await crypto.subtle.importKey(
+        "pkcs8",
+        decodePemPrivateKey(apnsKeyP8),
+        { name: "ECDSA", namedCurve: "P-256" },
+        false,
+        ["sign"],
+      );
+    }
+
+    const iatNow = Math.floor(Date.now() / 1000);
+    const header = { alg: "ES256", kid: apnsKeyId };
+    const payload = { iss: apnsTeamId, iat: iatNow };
+
+    const encodedHeader = toBase64Url(textEncoder.encode(JSON.stringify(header)));
+    const encodedPayload = toBase64Url(textEncoder.encode(JSON.stringify(payload)));
+    const unsigned = `${encodedHeader}.${encodedPayload}`;
+
+    const signatureBuffer = await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      cachedApnsKey,
+      textEncoder.encode(unsigned),
     );
-  }
 
-  const header = { alg: "ES256", kid: apnsKeyId };
-  const payload = { iss: apnsTeamId, iat: now };
+    const signatureBytes = new Uint8Array(signatureBuffer);
+    let rawSig: Uint8Array;
 
-  const encodedHeader = toBase64Url(textEncoder.encode(JSON.stringify(header)));
-  const encodedPayload = toBase64Url(textEncoder.encode(JSON.stringify(payload)));
-  const unsigned = `${encodedHeader}.${encodedPayload}`;
+    if (signatureBytes[0] === 0x30) {
+      let offset = 2;
+      const rLen = signatureBytes[offset + 1];
+      let r = signatureBytes.slice(offset + 2, offset + 2 + rLen);
+      offset = offset + 2 + rLen;
+      const sLen = signatureBytes[offset + 1];
+      let s = signatureBytes.slice(offset + 2, offset + 2 + sLen);
 
-  const signatureBuffer = await crypto.subtle.sign(
-    { name: "ECDSA", hash: "SHA-256" },
-    cachedApnsKey,
-    textEncoder.encode(unsigned),
-  );
+      if (r.length > 32) r = r.slice(r.length - 32);
+      if (s.length > 32) s = s.slice(s.length - 32);
+      if (r.length < 32) {
+        const padded = new Uint8Array(32);
+        padded.set(r, 32 - r.length);
+        r = padded;
+      }
+      if (s.length < 32) {
+        const padded = new Uint8Array(32);
+        padded.set(s, 32 - s.length);
+        s = padded;
+      }
 
-  const signatureBytes = new Uint8Array(signatureBuffer);
-  let rawSig: Uint8Array;
-
-  if (signatureBytes[0] === 0x30) {
-    let offset = 2;
-    const rLen = signatureBytes[offset + 1];
-    let r = signatureBytes.slice(offset + 2, offset + 2 + rLen);
-    offset = offset + 2 + rLen;
-    const sLen = signatureBytes[offset + 1];
-    let s = signatureBytes.slice(offset + 2, offset + 2 + sLen);
-
-    if (r.length > 32) r = r.slice(r.length - 32);
-    if (s.length > 32) s = s.slice(s.length - 32);
-    if (r.length < 32) {
-      const padded = new Uint8Array(32);
-      padded.set(r, 32 - r.length);
-      r = padded;
-    }
-    if (s.length < 32) {
-      const padded = new Uint8Array(32);
-      padded.set(s, 32 - s.length);
-      s = padded;
+      rawSig = new Uint8Array(64);
+      rawSig.set(r, 0);
+      rawSig.set(s, 32);
+    } else {
+      rawSig = signatureBytes;
     }
 
-    rawSig = new Uint8Array(64);
-    rawSig.set(r, 0);
-    rawSig.set(s, 32);
-  } else {
-    rawSig = signatureBytes;
-  }
+    const token = `${unsigned}.${toBase64Url(rawSig)}`;
+    cachedApnsJwt = { token, exp: iatNow + 1800 };
+    return token;
+  })().finally(() => {
+    pendingApnsJwt = null;
+  });
 
-  const token = `${unsigned}.${toBase64Url(rawSig)}`;
-  cachedApnsJwt = { token, exp: now + 1800 };
-  return token;
+  return pendingApnsJwt;
 }
 
 async function sendViaApns(params: {
@@ -254,8 +271,9 @@ async function sendViaApns(params: {
   data?: Record<string, string>;
   bundleId: string;
   sandbox: boolean;
+  providerJwt?: string;
 }): Promise<ApnsSendResult> {
-  const { deviceToken, title, body, data, bundleId, sandbox } = params;
+  const { deviceToken, title, body, data, bundleId, sandbox, providerJwt } = params;
 
   const host = sandbox
     ? "https://api.sandbox.push.apple.com"
@@ -271,7 +289,7 @@ async function sendViaApns(params: {
     ...(data || {}),
   };
 
-  const jwt = await getApnsJwt();
+  const jwt = providerJwt || await getApnsJwt();
 
   const resp = await fetch(url, {
     method: "POST",
@@ -503,6 +521,7 @@ serve(async (req: Request): Promise<Response> => {
     const apnsResults: ApnsSendResult[] = [];
 
     if (iosRows.length > 0) {
+      const providerJwt = await getApnsJwt();
       const results = await Promise.all(
         iosRows.map(async (row) => {
           try {
@@ -513,6 +532,7 @@ serve(async (req: Request): Promise<Response> => {
               data,
               bundleId: iosBundleId,
               sandbox: iosSandbox,
+              providerJwt,
             });
 
             if (!r.ok && r.reason) {

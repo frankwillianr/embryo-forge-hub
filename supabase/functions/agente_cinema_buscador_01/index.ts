@@ -109,6 +109,7 @@ const decodeEntities = (raw: string) =>
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&nbsp;/g, " ")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(Number.parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
 
 const stripHtml = (raw: string) =>
@@ -147,6 +148,10 @@ const normalizeDia = (value: string): string | null => {
   const v = value.trim();
   const compact = v.match(/^(\d{2})(\d{2})(\d{4})$/);
   if (compact) return `${compact[3]}-${compact[2]}-${compact[1]}`;
+  const compactIso = v.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (compactIso) return `${compactIso[1]}-${compactIso[2]}-${compactIso[3]}`;
+  const br = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
   const iso = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
   return null;
@@ -163,6 +168,17 @@ const dedupeDias = (values: string[]): string[] => {
     out.push(normalized);
   }
   return out.sort();
+};
+
+const extractDiaFromDateTimeLike = (value: string): string | null => {
+  const v = value.trim();
+  const iso = v.match(/^(\d{4}-\d{2}-\d{2})(?:[T\s].*)?$/);
+  if (iso) return iso[1];
+  const compactIso = v.match(/^(\d{4})(\d{2})(\d{2})(?:\d{2,6})?$/);
+  if (compactIso) return `${compactIso[1]}-${compactIso[2]}-${compactIso[3]}`;
+  const br = v.match(/^(\d{2})\/(\d{2})\/(\d{4})(?:\s+.*)?$/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  return null;
 };
 
 const asArray = <T>(value: T | T[] | null | undefined): T[] => {
@@ -243,7 +259,7 @@ const isLikelyGenericTitle = (title: string): boolean => {
 const isLikelyMovieUrl = (url: string): boolean => {
   const lower = url.toLowerCase();
   if (BLOCKED_URL_PARTS.some((part) => lower.includes(part))) return false;
-  return /\/filme(s)?(\/|$)|\/movie(s)?(\/|$)|\/cartaz(\/|$)|\/programacao\/filmes(\/|$)|[?&](filme|movie)=/i.test(
+  return /\/filme(s)?(\/|$)|\/movie(s)?(\/|$)|\/cartaz(\/|$)|\/programacao\/filmes(\/|$)/i.test(
     lower,
   );
 };
@@ -397,20 +413,25 @@ const inferSituacaoExibicao = (params: {
   pageHtml?: string | null;
   contextHtml?: string | null;
 }): "em_cartaz" | "em_breve" | "pre_venda" | "desconhecido" => {
+  const sourceUrlRaw = (params.sourceUrl || "").toLowerCase();
+  if (/\/pre-venda(\/|$)/i.test(sourceUrlRaw)) return "pre_venda";
+  if (/\/programacao(\/|$)|\/cartaz(\/|$)/i.test(sourceUrlRaw)) return "em_cartaz";
+
   const joined = normalizeText(
     `${params.sourceUrl || ""} ${params.pageHtml || ""} ${params.contextHtml || ""}`,
   );
 
-  if (joined.includes("pre venda") || joined.includes("prevenda")) return "pre_venda";
-  if (joined.includes("em breve")) return "em_breve";
-  if (
+  const hasEmCartaz =
     joined.includes("programacao") ||
     joined.includes("programacao em cartaz") ||
     joined.includes("em cartaz") ||
-    joined.includes("/cartaz")
-  ) {
-    return "em_cartaz";
-  }
+    joined.includes("/cartaz");
+  const hasPreVenda = joined.includes("pre venda") || joined.includes("prevenda");
+  const hasEmBreve = joined.includes("em breve");
+
+  if (hasEmCartaz) return "em_cartaz";
+  if (hasPreVenda) return "pre_venda";
+  if (hasEmBreve) return "em_breve";
   return "desconhecido";
 };
 
@@ -433,24 +454,30 @@ const extractTitleFromHtml = (html: string): string | null => {
 const extractHorariosFromHtml = (html: string): string[] => {
   const raw: string[] = [];
 
-  // Extrai apenas de anchors de sessão para evitar horários falsos de metadados (created_at etc).
-  for (const anchorMatch of html.matchAll(/<a\b[^>]*>[\s\S]{0,280}?<\/a>/gi)) {
-    const anchorHtml = anchorMatch[0];
-    if (!/btn-horario/i.test(anchorHtml)) continue;
-
-    const href = anchorHtml.match(/href=["']([^"']+)["']/i)?.[1] || "";
+  for (const hrefMatch of html.matchAll(/href=["']([^"']+)["']/gi)) {
+    const href = decodeEntities(hrefMatch[1] || "");
     if (!/sessao=/i.test(href)) continue;
 
-    const sessaoMatch = href.match(/[?&]sessao=[^"'&\s]*?_(\d{2})(\d{2})/i);
-    if (sessaoMatch) {
-      raw.push(`${sessaoMatch[1]}:${sessaoMatch[2]}`);
+    const sessaoValue = href.match(/[?&]sessao=([^&#"'\s]+)/i)?.[1] || "";
+    const sessaoCompact = sessaoValue.match(/(?:_|%5f)?([01]\d|2[0-3])([0-5]\d)$/i);
+    if (sessaoCompact) {
+      raw.push(`${sessaoCompact[1]}:${sessaoCompact[2]}`);
+      continue;
     }
 
+    const sessaoClock = sessaoValue.match(/([01]?\d|2[0-3])[:h]([0-5]\d)/i);
+    if (sessaoClock) {
+      raw.push(`${sessaoClock[1]}:${sessaoClock[2]}`);
+    }
+  }
+
+  // Fallback no texto visível para casos sem querystring de sessão.
+  for (const anchorMatch of html.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/gi)) {
+    const anchorHtml = anchorMatch[0];
+    if (!/btn-horario/i.test(anchorHtml)) continue;
     const text = stripHtml(anchorHtml);
     const textMatch = text.match(/\b([01]?\d|2[0-3])[:h]([0-5]\d)\b/i);
-    if (textMatch) {
-      raw.push(`${textMatch[1]}:${textMatch[2]}`);
-    }
+    if (textMatch) raw.push(`${textMatch[1]}:${textMatch[2]}`);
   }
 
   return dedupeHorarios(raw);
@@ -459,15 +486,91 @@ const extractHorariosFromHtml = (html: string): string[] => {
 const extractDiasFromHtml = (html: string): string[] => {
   const raw: string[] = [];
 
-  for (const anchorMatch of html.matchAll(/<a\b[^>]*>[\s\S]{0,320}?<\/a>/gi)) {
-    const anchorHtml = anchorMatch[0];
-    const href = anchorHtml.match(/href=["']([^"']+)["']/i)?.[1] || "";
-    if (!/dia=\d{8}/i.test(href)) continue;
-    const diaMatch = href.match(/[?&]dia=(\d{8})/i);
+  for (const hrefMatch of html.matchAll(/href=["']([^"']+)["']/gi)) {
+    const href = decodeEntities(hrefMatch[1] || "");
+    if (!/dia=/i.test(href)) continue;
+    const diaMatch = href.match(/[?&]dia=(\d{8}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/i);
     if (diaMatch) raw.push(diaMatch[1]);
   }
 
+  if (raw.length > 0) return dedupeDias(raw);
+
+  const monthMap: Record<string, number> = {
+    jan: 1,
+    fev: 2,
+    mar: 3,
+    abr: 4,
+    mai: 5,
+    jun: 6,
+    jul: 7,
+    ago: 8,
+    set: 9,
+    out: 10,
+    nov: 11,
+    dez: 12,
+  };
+
+  const today = new Date();
+  let inferredYear = today.getUTCFullYear();
+  let previousMonth = today.getUTCMonth() + 1;
+
+  for (const tabMatch of html.matchAll(
+    /<div[^>]+class=["'][^"']*date-tab[^"']*["'][^>]*>[\s\S]{0,220}?<div[^>]+class=["'][^"']*day[^"']*["'][^>]*>\s*(\d{1,2})\s*<\/div>[\s\S]{0,220}?<div[^>]+class=["'][^"']*month[^"']*["'][^>]*>\s*([A-Za-zÀ-ÿ]{3,})\s*<\/div>/gi,
+  )) {
+    const day = Number(tabMatch[1]);
+    const monthToken = normalizeText(tabMatch[2] || "").slice(0, 3);
+    const month = monthMap[monthToken];
+    if (!day || !month) continue;
+
+    if (month < previousMonth) inferredYear += 1;
+    previousMonth = month;
+    raw.push(`${String(day).padStart(2, "0")}${String(month).padStart(2, "0")}${inferredYear}`);
+  }
+
   return dedupeDias(raw);
+};
+
+const extractFilmIdFromUrl = (url: string): string | null => {
+  const byPath = url.match(/\/filme\/(\d+)(?:\/|$)/i)?.[1];
+  if (byPath) return byPath;
+  const byQuery = url.match(/[?&]filme=(\d+)/i)?.[1];
+  if (byQuery) return byQuery;
+  return null;
+};
+
+const buildIngressosMap = (
+  html: string,
+): Map<string, { dias: string[]; horarios: string[] }> => {
+  const map = new Map<string, { dias: string[]; horarios: string[] }>();
+
+  for (const hrefMatch of html.matchAll(/href=["']([^"']+)["']/gi)) {
+    const href = decodeEntities(hrefMatch[1] || "");
+    if (!/ingressoplus/i.test(href)) continue;
+
+    const filmId = extractFilmIdFromUrl(href);
+    if (!filmId) continue;
+
+    const diaRaw = href.match(/[?&]dia=(\d{8}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/i)?.[1] || null;
+    const sessaoValue = href.match(/[?&]sessao=([^&#"'\s]+)/i)?.[1] || "";
+    const horarioRaw =
+      sessaoValue.match(/(?:_|%5f)?([01]\d|2[0-3])([0-5]\d)$/i)?.slice(1).join(":") ||
+      sessaoValue.match(/([01]?\d|2[0-3])[:h]([0-5]\d)/i)?.slice(1).join(":") ||
+      null;
+
+    const current = map.get(filmId) || { dias: [], horarios: [] };
+    if (diaRaw) current.dias.push(diaRaw);
+    if (horarioRaw) current.horarios.push(horarioRaw);
+    map.set(filmId, current);
+  }
+
+  for (const [filmId, value] of map.entries()) {
+    map.set(filmId, {
+      dias: dedupeDias(value.dias),
+      horarios: dedupeHorarios(value.horarios),
+    });
+  }
+
+  return map;
 };
 
 const collectJsonLdObjects = (html: string): unknown[] => {
@@ -538,17 +641,27 @@ const extractMoviesFromJsonLd = (html: string, siteUrl: string): FilmeExtraido[]
       const trailer = firstString(trailerObj?.url, trailerObj?.embedUrl);
 
       const horariosRaw: string[] = [];
+      const diasRaw: string[] = [];
       const offers = asArray(obj.offers as unknown);
       for (const offer of offers) {
         if (offer && typeof offer === "object") {
           const offerObj = offer as Record<string, unknown>;
           const starts = firstString(offerObj.availabilityStarts, offerObj.validFrom);
-          if (starts) horariosRaw.push(starts);
+          if (starts) {
+            horariosRaw.push(starts);
+            const dia = extractDiaFromDateTimeLike(starts);
+            if (dia) diasRaw.push(dia);
+          }
           const startDate = firstString(offerObj.startDate, offerObj.startTime);
-          if (startDate) horariosRaw.push(startDate);
+          if (startDate) {
+            horariosRaw.push(startDate);
+            const dia = extractDiaFromDateTimeLike(startDate);
+            if (dia) diasRaw.push(dia);
+          }
         }
       }
       const horarios = dedupeHorarios(horariosRaw);
+      const diasExibicao = dedupeDias(diasRaw);
 
       const urlOrigem = normalizeUrl(firstString(obj.url) || siteUrl, siteUrl);
 
@@ -563,7 +676,7 @@ const extractMoviesFromJsonLd = (html: string, siteUrl: string): FilmeExtraido[]
         poster_url: !isBadPosterUrl(poster) ? poster : extractPosterFromHtml(html, siteUrl),
         trailer_url: normalizeYouTubeUrl(trailer) || extractTrailerFromHtml(html),
         horarios,
-        dias_exibicao: [],
+        dias_exibicao: diasExibicao,
         situacao_exibicao: inferSituacaoExibicao({ sourceUrl: siteUrl, pageHtml: html }),
         url_origem: urlOrigem,
         dados_brutos: obj,
@@ -579,6 +692,7 @@ const extractMoviesFromAnchors = async (html: string, siteUrl: string): Promise<
   const re = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]{1,220})<\/a>/gi;
   const seenHref = new Set<string>();
   const candidates: Array<{ href: string; anchorText: string; contextHtml: string }> = [];
+  const ingressosMap = buildIngressosMap(html);
 
   for (const match of html.matchAll(re)) {
     const href = normalizeUrl(match[1] || "", siteUrl);
@@ -603,12 +717,20 @@ const extractMoviesFromAnchors = async (html: string, siteUrl: string): Promise<
   }
 
   for (const candidate of candidates.slice(0, 80)) {
+    const candidateFilmId = extractFilmIdFromUrl(candidate.href);
+    const ingressosForMovie = candidateFilmId ? ingressosMap.get(candidateFilmId) : undefined;
     const detailHtml = await fetchHtml(candidate.href);
     const detailJsonLd = detailHtml ? extractMoviesFromJsonLd(detailHtml, candidate.href) : [];
     const detailMeta = detailHtml ? extractMovieMetaFromHtml(detailHtml) : extractMovieMetaFromHtml(candidate.contextHtml);
     const posterFromContext = extractPosterFromHtml(candidate.contextHtml, siteUrl);
-    const horariosFromListing = extractHorariosFromHtml(candidate.contextHtml);
-    const diasFromListing = extractDiasFromHtml(candidate.contextHtml);
+    const horariosFromListing = dedupeHorarios([
+      ...extractHorariosFromHtml(candidate.contextHtml),
+      ...(ingressosForMovie?.horarios || []),
+    ]);
+    const diasFromListing = dedupeDias([
+      ...extractDiasFromHtml(candidate.contextHtml),
+      ...(ingressosForMovie?.dias || []),
+    ]);
 
     if (detailJsonLd.length > 0) {
       const first = detailJsonLd[0];

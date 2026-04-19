@@ -30,10 +30,52 @@ interface NoticiaRow {
   jornal_postado_at: string | null;
 }
 
+interface CidadeRow {
+  id: string;
+  nome: string | null;
+  apelido: string | null;
+}
+
 function shortDesc(raw: string | null | undefined): string | null {
   const text = (raw ?? "").replace(/\s+/g, " ").trim();
   if (!text) return null;
   return text.slice(0, 320);
+}
+
+async function invokeEdge(
+  baseUrl: string,
+  apikey: string,
+  bearer: string,
+  fnName: string,
+  body: unknown,
+) {
+  const res = await fetch(`${baseUrl}/functions/v1/${fnName}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey,
+      Authorization: bearer,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const raw = await res.text();
+  let parsed: unknown = null;
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch {
+    parsed = raw;
+  }
+
+  if (!res.ok) {
+    throw new Error(
+      `${fnName} HTTP ${res.status}: ${
+        typeof parsed === "string" ? parsed.slice(0, 300) : JSON.stringify(parsed).slice(0, 300)
+      }`,
+    );
+  }
+
+  return parsed;
 }
 
 Deno.serve(async (req) => {
@@ -55,6 +97,21 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const edgeApiKey = anonKey || serviceRoleKey;
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const edgeBearer = authHeader.startsWith("Bearer ") ? authHeader : `Bearer ${edgeApiKey}`;
+
+    const { data: cidadeData, error: cidadeErr } = await supabase
+      .from("cidade")
+      .select("id, nome, apelido")
+      .eq("id", cidade_id)
+      .maybeSingle();
+    if (cidadeErr) throw cidadeErr;
+    const cidade = (cidadeData ?? null) as CidadeRow | null;
+    const cidadeApelido = (cidade?.apelido ?? "").trim() || (cidade?.nome ?? "").trim() || "Cidade";
 
     const { data, error } = await supabase
       .from("tabela_agente_buscador")
@@ -89,6 +146,7 @@ Deno.serve(async (req) => {
     let total_publicado = 0;
     let total_ja_existia = 0;
     let total_erros = 0;
+    let primeiroTituloPublicado: string | null = null;
 
     for (const n of rows) {
       try {
@@ -152,6 +210,9 @@ Deno.serve(async (req) => {
           .eq("id", n.id);
 
         total_publicado++;
+        if (!primeiroTituloPublicado) {
+          primeiroTituloPublicado = ((n.titulo ?? "").trim() || payload.titulo).trim();
+        }
         itens.push({ id: n.id, ok: true, modo: "publicado", jornal_id: novoJornal.id });
       } catch (e) {
         total_erros++;
@@ -164,6 +225,39 @@ Deno.serve(async (req) => {
       }
     }
 
+    let push_result: Record<string, unknown> | null = null;
+    if (total_publicado > 0) {
+      if (!supabaseUrl || !edgeApiKey) {
+        push_result = {
+          ok: false,
+          skipped: true,
+          reason: "SUPABASE_URL/SUPABASE_ANON_KEY ausentes para disparo push",
+        };
+      } else {
+        const pushTitle = `${cidadeApelido} - Nova noticia postada`;
+        const pushBody = (primeiroTituloPublicado ?? "").trim() || "Nova noticia publicada";
+
+        try {
+          const pushResp = await invokeEdge(
+            supabaseUrl,
+            edgeApiKey,
+            edgeBearer,
+            "send-push-notification",
+            {
+              cidadeId: cidade_id,
+              title: pushTitle,
+              body: pushBody,
+            },
+          );
+          push_result = { ok: true, payload: pushResp };
+        } catch (pushErr) {
+          push_result = { ok: false, error: String(pushErr) };
+        }
+      }
+    } else {
+      push_result = { ok: true, skipped: true, reason: "nenhuma_noticia_publicada" };
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -174,6 +268,7 @@ Deno.serve(async (req) => {
         total_ja_existia,
         total_erros,
         itens,
+        push_result,
       }),
       { headers: { ...CORS, "Content-Type": "application/json" } },
     );

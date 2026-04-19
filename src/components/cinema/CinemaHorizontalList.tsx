@@ -49,11 +49,43 @@ const normalizeIsoDate = (value: string): string | null => {
   return `${m[1]}-${m[2]}-${m[3]}`;
 };
 
+const normalizeDateAny = (value?: string | null): string | null => {
+  if (!value) return null;
+  const raw = value.trim();
+  if (!raw) return null;
+
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+
+  const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+
+  return null;
+};
+
 const getSortedDias = (filme: Cinema): string[] =>
   (filme.dias_exibicao || [])
     .map(normalizeIsoDate)
     .filter((d): d is string => !!d)
     .sort();
+
+const getSituacao = (filme: Cinema): string => {
+  const situacao = cleanText(filme.situacao_exibicao || filme.status || "").toLowerCase();
+  return situacao;
+};
+
+const isEmCartazHoje = (filme: Cinema, todayIso: string): boolean => {
+  const dias = getSortedDias(filme);
+  if (dias.length > 0) return dias.includes(todayIso);
+
+  const situacao = getSituacao(filme);
+  if (situacao === "em_cartaz") return true;
+  if (situacao === "em_breve" || situacao === "pre_venda") return false;
+
+  const estreia = normalizeDateAny(filme.data_estreia);
+  if (!estreia) return false;
+  return estreia <= todayIso;
+};
 
 const toBrDate = (iso: string): string => {
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -92,7 +124,7 @@ const CinemaHorizontalList = ({ cidadeSlug }: CinemaHorizontalListProps) => {
 
   const todayIso = toLocalTodayIso();
   const filmesEmCartazHoje = filmes
-    .filter((f) => getSortedDias(f).includes(todayIso))
+    .filter((f) => isEmCartazHoje(f, todayIso))
     .slice(0, 10);
 
   const getYouTubeEmbedUrl = (url: string) => {

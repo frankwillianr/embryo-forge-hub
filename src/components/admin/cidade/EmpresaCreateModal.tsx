@@ -21,6 +21,15 @@ interface UserProfile {
   cpf: string | null;
 }
 
+const isFunctionParamMismatch = (error: unknown, functionName: string, paramName: string) => {
+  const message = (error as { message?: string } | null)?.message?.toLowerCase() || "";
+  return (
+    message.includes("could not find the function") &&
+    message.includes(`public.${functionName}`.toLowerCase()) &&
+    message.includes(`(${paramName.toLowerCase()})`)
+  );
+};
+
 const formatCpf = (cpf: string | null) => {
   const d = (cpf || "").replace(/\D/g, "");
   if (d.length !== 11) return cpf || "";
@@ -40,23 +49,45 @@ const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModal
   const normalizedTerm = useMemo(() => userSearch.trim(), [userSearch]);
 
   const { data: userResults = [], isFetching: searchingUsers } = useQuery({
-    queryKey: ["admin-empresa-user-search", normalizedTerm],
+    queryKey: ["admin-empresa-user-search", cidadeId, normalizedTerm],
     queryFn: async () => {
-      const filters: string[] = [];
-      if (normalizedTerm.length >= 3) {
-        filters.push(`email.ilike.%${normalizedTerm}%`, `nome.ilike.%${normalizedTerm}%`);
+      const term = normalizedTerm || cpfDigits;
+      if (!term) return [] as UserProfile[];
+      const termLower = normalizedTerm.toLowerCase();
+      const cpfTerm = cpfDigits.length >= 3 ? cpfDigits : "";
+      const isEmailSearch = normalizedTerm.includes("@");
+
+      const strictMatch = (u: UserProfile) => {
+        const email = (u.email || "").toLowerCase();
+        const nome = (u.nome || "").toLowerCase();
+        const cpf = (u.cpf || "").replace(/\D/g, "");
+        const matchText = termLower.length >= 3 && (isEmailSearch ? email.includes(termLower) : (email.includes(termLower) || nome.includes(termLower)));
+        const matchCpf = cpfTerm.length >= 3 && cpf.includes(cpfTerm);
+        return matchText || matchCpf;
+      };
+
+      const { data, error } = await supabase.rpc("admin_buscar_usuarios", {
+        p_cidade_id: cidadeId,
+        p_busca: term,
+        p_limit: 30,
+      });
+
+      if (error) {
+        if (isFunctionParamMismatch(error, "admin_buscar_usuarios", "p_cidade_id")) {
+          const fallback = await supabase.rpc("admin_buscar_usuarios", {
+            cidade_id: cidadeId,
+            busca: term,
+            limit: 30,
+          });
+          if (fallback.error) throw fallback.error;
+          const rows = (fallback.data || []) as UserProfile[];
+          return rows.filter(strictMatch).slice(0, 8);
+        }
+        throw error;
       }
-      if (cpfDigits.length >= 3) filters.push(`cpf.ilike.%${cpfDigits}%`);
-      if (filters.length === 0) return [] as UserProfile[];
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, nome, email, cpf")
-        .or(filters.join(","))
-        .limit(8);
-
-      if (error) throw error;
-      return (data || []) as UserProfile[];
+      const rows = (data || []) as UserProfile[];
+      return rows.filter(strictMatch).slice(0, 8);
     },
     enabled: open && (normalizedTerm.length >= 3 || cpfDigits.length >= 3),
   });
@@ -128,6 +159,7 @@ const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModal
   });
 
   const isValid = !!selectedUser?.id && nome.trim().length >= 3 && Number(valor.replace(",", ".")) > 0;
+  const canSearchUser = normalizedTerm.length >= 3 || cpfDigits.length >= 3;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -152,6 +184,16 @@ const EmpresaCreateModal = ({ cidadeId, open, onOpenChange }: EmpresaCreateModal
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Buscando usuarios...
+              </div>
+            )}
+            {!searchingUsers && canSearchUser && !selectedUser && userResults.length > 0 && (
+              <div className="text-xs text-emerald-600 font-medium">
+                Usuario encontrado ({userResults.length}). Selecione abaixo.
+              </div>
+            )}
+            {!searchingUsers && canSearchUser && !selectedUser && userResults.length === 0 && (
+              <div className="text-xs text-amber-700 font-medium">
+                Nenhum usuario encontrado para essa busca.
               </div>
             )}
             {!selectedUser && userResults.length > 0 && (

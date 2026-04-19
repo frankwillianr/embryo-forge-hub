@@ -200,7 +200,39 @@ const AdminCidadePushNotifications = ({ cidadeId }: AdminCidadePushNotifications
       }
 
       if ((data?.failureCount ?? 0) > 0) {
-        toast.warning(`Push parcial. Sucesso: ${data.successCount ?? 0} | Falhas: ${data.failureCount ?? 0}`);
+        const failureReasons = Array.isArray(data?.failureReasons)
+          ? data.failureReasons.filter((reason: unknown) => typeof reason === "string" && reason.trim().length > 0)
+          : [];
+
+        const firstAndroidFailure = Array.isArray(data?.android?.results)
+          ? data.android.results.find((result: any) => result && result.ok === false)
+          : null;
+
+        const firstIosFailure = Array.isArray(data?.ios?.results)
+          ? data.ios.results.find((result: any) => result && result.ok === false)
+          : null;
+
+        const failureDetail =
+          failureReasons[0] ||
+          firstAndroidFailure?.fcmErrorCode ||
+          firstAndroidFailure?.errorMessage ||
+          firstIosFailure?.reason ||
+          null;
+
+        console.warn("[PushAdmin] envio parcial", {
+          successCount: data.successCount ?? 0,
+          failureCount: data.failureCount ?? 0,
+          failureReasons,
+          firstAndroidFailure,
+          firstIosFailure,
+          invalidTokensRemoved: data?.invalidTokensRemoved ?? 0,
+        });
+
+        toast.warning(
+          `Push parcial. Sucesso: ${data.successCount ?? 0} | Falhas: ${data.failureCount ?? 0}${
+            failureDetail ? ` | Motivo: ${failureDetail}` : ""
+          }`,
+        );
       } else {
         toast.success(`Push enviado. Sucesso: ${data.successCount ?? 0} | Falhas: ${data.failureCount ?? 0}`);
       }

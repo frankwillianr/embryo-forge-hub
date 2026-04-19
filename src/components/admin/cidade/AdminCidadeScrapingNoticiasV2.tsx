@@ -160,10 +160,11 @@ const parseInvokeError = async (err: unknown): Promise<string> => {
 const isInvalidJwtError = async (err: unknown): Promise<boolean> => {
   const e = err as { status?: number; context?: Response; message?: string };
   if (e?.status === 401 && /invalid jwt/i.test(e?.message ?? "")) return true;
+  if (e?.status === 401 && /unsupported token algorithm|unauthorized/i.test(e?.message ?? "")) return true;
   if (e?.context?.status !== 401) return false;
   try {
     const raw = await e.context.clone().text();
-    return /invalid jwt/i.test(raw);
+    return /invalid jwt|unsupported token algorithm|unauthorized/i.test(raw);
   } catch {
     return false;
   }
@@ -446,7 +447,30 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
     setAgent3({ status: "running" });
     try {
       const payload = { cidade_id: cidadeId, limit: 120 };
-      let { data, error } = await invokeEdgeWithSession("agente_texto_03", payload);
+      let data: any = null;
+      let error: any = null;
+      let tentativasRede = 0;
+
+      while (tentativasRede < 3) {
+        try {
+          ({ data, error } = await invokeEdgeWithSession("agente_texto_03", payload));
+          break;
+        } catch (netErr) {
+          if (!isTransientFetchError(netErr)) throw netErr;
+          tentativasRede++;
+          setAgent3({
+            status: "running",
+            erro: `Reconectando com o agente 3... (${tentativasRede}/3)`,
+          });
+          if (tentativasRede >= 3) {
+            data = await invokeEdgeWithAnonKey("agente_texto_03", payload);
+            error = null;
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1800));
+        }
+      }
+
       if (error && await isInvalidJwtError(error)) {
         const refreshed = await supabase.auth.refreshSession();
         if (refreshed.data.session) {

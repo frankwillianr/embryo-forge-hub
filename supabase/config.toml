@@ -48,3 +48,18 @@ verify_jwt = false
 
 [functions.agente_cinema_buscador_01]
 verify_jwt = false
+
+[functions.agente_buscador_01]
+verify_jwt = false
+
+[functions.agente_conferencia_02]
+verify_jwt = false
+
+[functions.agente_texto_03]
+verify_jwt = false
+
+[functions.agente_imagem_04]
+verify_jwt = false
+
+[functions.agente_publicador_05]
+verify_jwt = false
