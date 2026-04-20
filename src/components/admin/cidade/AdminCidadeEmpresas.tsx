@@ -155,7 +155,8 @@ const AdminCidadeEmpresas = ({ cidadeId }: AdminCidadeEmpresasProps) => {
     },
     onError: (error) => {
       console.error("Erro ao atualizar status:", error);
-      toast.error("Erro ao atualizar status");
+      const message = (error as Error)?.message || "Erro ao atualizar status";
+      toast.error(message);
     },
   });
 

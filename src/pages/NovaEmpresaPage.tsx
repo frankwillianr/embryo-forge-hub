@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Clock, Search, X } from "lucide-react";
@@ -40,11 +40,14 @@ const diasSemana = [
   "Domingo",
 ];
 
-const categoriasOrdenadas = Object.entries(CATEGORIAS_SERVICO).sort((a, b) =>
-  a[1].localeCompare(b[1], "pt-BR")
-);
-
 const MAX_CATEGORIAS = 3;
+
+const isTableNotFound = (error: unknown) => {
+  const e = error as { code?: string; message?: string } | null;
+  if (!e) return false;
+  if (e.code === "42P01" || e.code === "PGRST205") return true;
+  return (e.message || "").toLowerCase().includes("could not find the table");
+};
 
 const NovaEmpresaPage = () => {
   const { slug, categoriaId } = useParams<{ slug: string; categoriaId?: string }>();
@@ -52,6 +55,42 @@ const NovaEmpresaPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  const { data: subcategoriasCatalogo = [] } = useQuery({
+    queryKey: ["servicos-subcategorias-form"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("servico_subcategoria")
+        .select("slug, nome, ativo")
+        .eq("ativo", true)
+        .order("nome", { ascending: true });
+      if (error) {
+        if (isTableNotFound(error)) return [];
+        throw error;
+      }
+      return (data || []) as Array<{ slug: string; nome: string; ativo: boolean }>;
+    },
+  });
+
+  const categoriasDisponiveis = useMemo(() => {
+    if (subcategoriasCatalogo.length > 0) {
+      return subcategoriasCatalogo.map((item) => ({ id: item.slug, nome: item.nome }));
+    }
+    return Object.entries(CATEGORIAS_SERVICO)
+      .filter(([id]) => id !== "geral" && id !== "outros")
+      .map(([id, nome]) => ({ id, nome }))
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }, [subcategoriasCatalogo]);
+
+  const categoriasOrdenadas = useMemo(
+    () => [...categoriasDisponiveis].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+    [categoriasDisponiveis],
+  );
+
+  const categoriasNomePorId = useMemo(
+    () => Object.fromEntries(categoriasOrdenadas.map((item) => [item.id, item.nome])),
+    [categoriasOrdenadas],
+  );
 
   // Categorias: até 3; se veio da página do serviço, já vem uma pré-selecionada
   const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<string[]>(() =>
@@ -77,9 +116,9 @@ const NovaEmpresaPage = () => {
   const categoriasParaBusca =
     buscaNorm.length >= 1
       ? categoriasOrdenadas.filter(
-          ([id, nome]) =>
-            !categoriasSelecionadas.includes(id) &&
-            (nome.toLowerCase().includes(buscaNorm) || id.toLowerCase().includes(buscaNorm))
+          (item) =>
+            !categoriasSelecionadas.includes(item.id) &&
+            (item.nome.toLowerCase().includes(buscaNorm) || item.id.toLowerCase().includes(buscaNorm))
         )
       : [];
   const mostrarSugestoes =
@@ -344,14 +383,14 @@ const NovaEmpresaPage = () => {
             />
             {mostrarSugestoes && (
               <div className="absolute z-10 top-full left-0 right-0 mt-1 py-1 rounded-lg border border-border bg-card shadow-lg max-h-48 overflow-y-auto">
-                {categoriasParaBusca.slice(0, 12).map(([id, nomeCat]) => (
+                {categoriasParaBusca.slice(0, 12).map((item) => (
                   <button
-                    key={id}
+                    key={item.id}
                     type="button"
-                    onClick={() => toggleCategoria(id)}
+                    onClick={() => toggleCategoria(item.id)}
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors"
                   >
-                    {nomeCat}
+                    {item.nome}
                   </button>
                 ))}
               </div>
@@ -368,7 +407,7 @@ const NovaEmpresaPage = () => {
                     key={id}
                     className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground pl-3 pr-1.5 py-1 text-sm"
                   >
-                    {CATEGORIAS_SERVICO[id] || id}
+                    {categoriasNomePorId[id] || CATEGORIAS_SERVICO[id] || id}
                     <button
                       type="button"
                       onClick={() => removerCategoria(id)}

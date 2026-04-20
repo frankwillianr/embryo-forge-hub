@@ -105,6 +105,20 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
     mutationFn: async () => {
       if (!empresaId) throw new Error("ID da empresa não encontrado");
 
+      let resolvedDataInicio = dataInicio;
+      let resolvedDataFim = dataFim;
+
+      if (status === "ativo") {
+        if (!resolvedDataInicio) {
+          resolvedDataInicio = new Date();
+        }
+        if (!resolvedDataFim) {
+          const fim = new Date(resolvedDataInicio);
+          fim.setFullYear(fim.getFullYear() + 1);
+          resolvedDataFim = fim;
+        }
+      }
+
       const updateData = {
         nome: nome.trim(),
         descricao: descricao.trim() || null,
@@ -117,8 +131,8 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
         endereco_numero: numero || null,
         endereco_bairro: bairro || null,
         endereco_complemento: complemento || null,
-        data_inicio: dataInicio ? dataInicio.toISOString().split("T")[0] : null,
-        data_fim: dataFim ? dataFim.toISOString().split("T")[0] : null,
+        data_inicio: resolvedDataInicio ? resolvedDataInicio.toISOString().split("T")[0] : null,
+        data_fim: resolvedDataFim ? resolvedDataFim.toISOString().split("T")[0] : null,
       };
 
       console.log("Updating empresa with:", updateData);

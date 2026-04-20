@@ -1,18 +1,20 @@
-﻿import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Icon } from "@iconify/react";
 import { supabase } from "@/integrations/supabase/client";
 import { Search, Car, ShoppingBag, ChevronRight, Briefcase, Gift } from "lucide-react";
-
-// Import icons para grid
-import veiculosIcon from "@/assets/icons/veiculos.png";
-import desapegaIcon from "@/assets/icons/desapega.png";
-import entregadorIcon from "@/assets/icons/entregador.png";
-import salaoIcon from "@/assets/icons/salao.png";
-import reparosIcon from "@/assets/icons/reparos.png";
-import limpezaIcon from "@/assets/icons/limpeza.png";
-import petIcon from "@/assets/icons/pet.png";
-import obrasIcon from "@/assets/icons/obras.png";
+import {
+  getFluent3dNameFromKey,
+  DEFAULT_SERVICO_CATEGORIAS,
+  DEFAULT_SERVICOS_AUTOCOMPLETE_EXTRAS,
+  getIconifyNameFromKey,
+  getServicoAssetByIconKey,
+  isFluent3dIconKey,
+  isIconifyIconKey,
+  type ServicoCategoria,
+} from "@/lib/servicosCatalog";
+import { FLUENT_EMOJI_3D_BY_SLUG } from "@/lib/fluentEmoji3dLibrary";
 
 interface ServicosSectionProps {
   cidadeSlug?: string;
@@ -20,190 +22,13 @@ interface ServicosSectionProps {
   onlyHighlights?: boolean;
 }
 
-type Servico = { id: string; nome: string; icon?: string; emoji?: string };
-
-// Mapeamento: categoria do app -> categorias no banco
-const categoriaBancoMap: Record<string, string[]> = {
-  bares: ["bares", "bar", "restaurantes", "lanchonete", "pizzaria", "hamburgueria", "sushi", "cafeteria"],
-  beleza: ["salao", "barbeiro", "manicure", "estetica", "maquiagem", "sobrancelha", "depilacao", "cosmeticos"],
-  servicos: ["reparos", "eletricista", "encanador", "obras", "limpeza", "dedetizacao", "chaveiro", "pintor", "marceneiro", "serralheria", "vidraceiro", "ar-condicionado", "jardinagem", "mudancas", "diarista", "costura"],
-  profissionais: ["advogado", "contador", "despachante", "engenheiro", "arquiteto", "corretor", "fotografo", "aulas", "idiomas", "informatica", "eventos"],
-  saude: ["clinica", "dentista", "psicologo", "fisioterapeuta", "nutricionista", "personal", "academia", "massagista", "farmacia"],
-  comercio: ["desapega", "lojas", "promocoes", "restaurantes", "entregador", "moda", "eletronicos"],
-  veiculos: ["mecanico", "lava-jato", "auto-pecas", "guincho", "funilaria", "borracharia", "vistoria", "motorista"],
-  pets: ["veterinario", "pet", "petshop", "adestrador", "hotel-pet", "passeador"],
+const isTableNotFound = (error: unknown) => {
+  const e = error as { code?: string; message?: string } | null;
+  if (!e) return false;
+  if (e.code === "42P01" || e.code === "PGRST205") return true;
+  return (e.message || "").toLowerCase().includes("could not find the table");
 };
 
-// Categorias de serviços
-const categorias: Array<{ id: string; titulo: string; emoji: string; servicos: Servico[] }> = [
-  {
-    id: "bares",
-    titulo: "Bares e Restaurantes",
-    emoji: "🍽️",
-    servicos: [
-      { id: "restaurantes", nome: "Restaurantes", emoji: "🍽️" },
-      { id: "bares", nome: "Bares", emoji: "🍻" },
-      { id: "lanchonete", nome: "Lanchonete", emoji: "🍔" },
-      { id: "pizzaria", nome: "Pizzaria", emoji: "🍕" },
-      { id: "hamburgueria", nome: "Hamburgueria", emoji: "🍟" },
-      { id: "sushi", nome: "Sushi", emoji: "🍣" },
-      { id: "cafeteria", nome: "Cafeteria", emoji: "☕" },
-      { id: "doceria", nome: "Doceria", emoji: "🍰" },
-    ],
-  },
-  {
-    id: "beleza",
-    titulo: "Beleza",
-    emoji: "💇",
-    servicos: [
-      { id: "salao", nome: "Salão", icon: salaoIcon },
-      { id: "barbeiro", nome: "Barbeiro", emoji: "💈" },
-      { id: "manicure", nome: "Manicure", emoji: "💅" },
-      { id: "estetica", nome: "Estética", emoji: "✨" },
-      { id: "maquiagem", nome: "Maquiagem", emoji: "💄" },
-      { id: "sobrancelha", nome: "Sobrancelha", emoji: "🪮" },
-      { id: "depilacao", nome: "Depilação", emoji: "🌸" },
-      { id: "cosmeticos", nome: "Cosméticos", emoji: "💄" },
-    ],
-  },
-  {
-    id: "servicos",
-    titulo: "Serviços",
-    emoji: "🛠️",
-    servicos: [
-      { id: "reparos", nome: "Reparos", icon: reparosIcon },
-      { id: "eletricista", nome: "Eletricista", emoji: "⚡" },
-      { id: "encanador", nome: "Encanador", emoji: "🚿" },
-      { id: "obras", nome: "Obras", icon: obrasIcon },
-      { id: "limpeza", nome: "Limpeza", icon: limpezaIcon },
-      { id: "dedetizacao", nome: "Dedetização", emoji: "🪲" },
-      { id: "chaveiro", nome: "Chaveiro", emoji: "🔑" },
-      { id: "pintor", nome: "Pintor", emoji: "🎨" },
-      { id: "marceneiro", nome: "Marceneiro", emoji: "🪑" },
-      { id: "serralheria", nome: "Serralheria", emoji: "⚙️" },
-      { id: "vidraceiro", nome: "Vidraceiro", emoji: "🪟" },
-      { id: "ar-condicionado", nome: "Ar Cond.", emoji: "❄️" },
-      { id: "jardinagem", nome: "Jardinagem", emoji: "🌳" },
-      { id: "mudancas", nome: "Mudanças", emoji: "🚚" },
-      { id: "diarista", nome: "Diarista", emoji: "🏠" },
-      { id: "costura", nome: "Costura", emoji: "🧵" },
-    ],
-  },
-  {
-    id: "profissionais",
-    titulo: "Profissionais",
-    emoji: "👔",
-    servicos: [
-      { id: "advogado", nome: "Advogado", emoji: "⚖️" },
-      { id: "contador", nome: "Contador", emoji: "📊" },
-      { id: "despachante", nome: "Despachante", emoji: "📄" },
-      { id: "engenheiro", nome: "Engenheiro", emoji: "🏗️" },
-      { id: "arquiteto", nome: "Arquiteto", emoji: "📐" },
-      { id: "corretor", nome: "Corretor", emoji: "🏡" },
-      { id: "fotografo", nome: "Fotógrafo", emoji: "📷" },
-      { id: "aulas", nome: "Aulas", emoji: "📚" },
-      { id: "idiomas", nome: "Idiomas", emoji: "🌎" },
-      { id: "informatica", nome: "Informática", emoji: "💻" },
-      { id: "eventos", nome: "Eventos", emoji: "🎉" },
-    ],
-  },
-  {
-    id: "saude",
-    titulo: "Saúde",
-    emoji: "🏥",
-    servicos: [
-      { id: "clinica", nome: "Clínica", emoji: "🏥" },
-      { id: "dentista", nome: "Dentista", emoji: "🦷" },
-      { id: "psicologo", nome: "Psicólogo", emoji: "🧠" },
-      { id: "fisioterapeuta", nome: "Fisio", emoji: "🦴" },
-      { id: "nutricionista", nome: "Nutrição", emoji: "🍎" },
-      { id: "personal", nome: "Personal", emoji: "🏋️" },
-      { id: "academia", nome: "Academia", emoji: "💪" },
-      { id: "massagista", nome: "Massagem", emoji: "💆" },
-      { id: "farmacia", nome: "Farmácia", emoji: "💊" },
-    ],
-  },
-  {
-    id: "comercio",
-    titulo: "Comércio",
-    emoji: "🛍️",
-    servicos: [
-      { id: "desapega", nome: "Marketplace local", icon: desapegaIcon },
-      { id: "lojas", nome: "Lojas", emoji: "🏪" },
-      { id: "promocoes", nome: "Promoções", emoji: "🏷️" },
-      { id: "restaurantes", nome: "Restaurantes", emoji: "🍽️" },
-      { id: "entregador", nome: "Delivery", icon: entregadorIcon },
-      { id: "moda", nome: "Moda", emoji: "👗" },
-      { id: "eletronicos", nome: "Eletrônicos", emoji: "📱" },
-    ],
-  },
-  {
-    id: "veiculos",
-    titulo: "Veículos",
-    emoji: "🚗",
-    servicos: [
-      { id: "mecanico", nome: "Mecânico", emoji: "🔧" },
-      { id: "lava-jato", nome: "Lava Jato", emoji: "🚿" },
-      { id: "auto-pecas", nome: "Auto Peças", emoji: "⚙️" },
-      { id: "guincho", nome: "Guincho", emoji: "🏗️" },
-      { id: "funilaria", nome: "Funilaria", emoji: "🔨" },
-      { id: "borracharia", nome: "Borracharia", emoji: "🔄" },
-      { id: "vistoria", nome: "Vistoria", emoji: "📋" },
-      { id: "motorista", nome: "Motorista", emoji: "🚙" },
-    ],
-  },
-  {
-    id: "pets",
-    titulo: "Pets",
-    emoji: "🐶",
-    servicos: [
-      { id: "veterinario", nome: "Veterinário", emoji: "🩺" },
-      { id: "pet", nome: "Banho e Tosa", icon: petIcon },
-      { id: "petshop", nome: "Pet Shop", emoji: "🐾" },
-      { id: "adestrador", nome: "Adestrador", emoji: "🐕" },
-      { id: "hotel-pet", nome: "Hotel Pet", emoji: "🏨" },
-      { id: "passeador", nome: "Passeador", emoji: "🐕" },
-    ],
-  },
-];
-
-// Lista completa para autocomplete
-const todosServicosAutocomplete = [
-  { id: "restaurantes", nome: "Restaurantes" },
-  { id: "bares", nome: "Bares" },
-  { id: "lanchonete", nome: "Lanchonete" },
-  { id: "pizzaria", nome: "Pizzaria" },
-  { id: "hamburgueria", nome: "Hamburgueria" },
-  { id: "sushi", nome: "Sushi" },
-  { id: "cafeteria", nome: "Cafeteria" },
-  { id: "veiculos", nome: "Veículos" },
-  { id: "desapega", nome: "Marketplace local" },
-  { id: "influenciadores", nome: "Influenciadores" },
-  { id: "entregador", nome: "Entregador / Delivery" },
-  { id: "salao", nome: "Salão de Beleza" },
-  { id: "reparos", nome: "Reparos" },
-  { id: "limpeza", nome: "Limpeza" },
-  { id: "pet", nome: "Banho e Tosa / Pet" },
-  { id: "obras", nome: "Obras e Construção" },
-  { id: "eletricista", nome: "Eletricista" },
-  { id: "encanador", nome: "Encanador" },
-  { id: "mecanico", nome: "Mecânico" },
-  { id: "pintor", nome: "Pintor" },
-  { id: "jardinagem", nome: "Jardineiro / Jardinagem" },
-  { id: "personal", nome: "Personal Trainer" },
-  { id: "fotografo", nome: "Fotógrafo" },
-  { id: "idiomas", nome: "Idiomas" },
-  { id: "dentista", nome: "Dentista" },
-  { id: "psicologo", nome: "Psicólogo" },
-  { id: "barbeiro", nome: "Barbeiro" },
-  { id: "manicure", nome: "Manicure" },
-  { id: "cosmeticos", nome: "Cosméticos" },
-  { id: "advogado", nome: "Advogado" },
-  { id: "contador", nome: "Contador" },
-  { id: "veterinario", nome: "Veterinário" },
-];
-
-// Componente de banner carrossel
 const BannerCarousel = ({
   banners,
   cidadeSlug,
@@ -256,9 +81,7 @@ const BannerCarousel = ({
               {banners.map((_, i) => (
                 <div
                   key={i}
-                  className={`h-1 rounded-full transition-all ${
-                    i === currentIndex ? "w-4 bg-white" : "w-1 bg-white/50"
-                  }`}
+                  className={`h-1 rounded-full transition-all ${i === currentIndex ? "w-4 bg-white" : "w-1 bg-white/50"}`}
                 />
               ))}
             </div>
@@ -273,15 +96,12 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [categoriaSelecionada, setCategoriaSelecionada] = useState("bares");
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState(DEFAULT_SERVICO_CATEGORIAS[0]?.slug || "bares");
   const gridScrollRef = useRef<HTMLDivElement>(null);
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const tabRefsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const isScrollingByUserRef = useRef(false);
 
-  const categoriaAtual = categorias.find((c) => c.id === categoriaSelecionada) || categorias[0];
-
-  // Buscar cidade_id pelo slug
   const { data: cidade } = useQuery({
     queryKey: ["cidade", cidadeSlug],
     queryFn: async () => {
@@ -296,7 +116,81 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
     enabled: !!cidadeSlug,
   });
 
-  // Buscar todas empresas ativas com banner de oferta
+  const { data: categorias = DEFAULT_SERVICO_CATEGORIAS } = useQuery({
+    queryKey: ["servicos-catalogo-v2"],
+    queryFn: async () => {
+      const { data: categoriasData, error: categoriasError } = await supabase
+        .from("servico_categoria")
+        .select("id, slug, titulo, emoji, ordem, ativo, categorias_banco")
+        .eq("ativo", true)
+        .order("ordem", { ascending: true })
+        .order("created_at", { ascending: true });
+
+      if (categoriasError) {
+        if (isTableNotFound(categoriasError)) return DEFAULT_SERVICO_CATEGORIAS;
+        throw categoriasError;
+      }
+
+      if (!categoriasData || categoriasData.length === 0) return DEFAULT_SERVICO_CATEGORIAS;
+
+      const categoriaIds = categoriasData.map((item) => item.id);
+      const { data: subcategoriasData, error: subcategoriasError } = await supabase
+        .from("servico_subcategoria")
+        .select("id, categoria_id, slug, nome, emoji, icon_key, ordem, ativo")
+        .in("categoria_id", categoriaIds)
+        .eq("ativo", true)
+        .order("ordem", { ascending: true })
+        .order("created_at", { ascending: true });
+
+      if (subcategoriasError) {
+        if (isTableNotFound(subcategoriasError)) return DEFAULT_SERVICO_CATEGORIAS;
+        throw subcategoriasError;
+      }
+
+      const subsPorCategoria = (subcategoriasData || []).reduce(
+        (acc, sub) => {
+          if (!acc[sub.categoria_id]) acc[sub.categoria_id] = [];
+          acc[sub.categoria_id].push({
+            id: sub.id,
+            categoria_id: sub.categoria_id,
+            slug: sub.slug,
+            nome: sub.nome,
+            emoji: sub.emoji,
+            icon_key: sub.icon_key,
+            ordem: sub.ordem ?? 0,
+            ativo: sub.ativo ?? true,
+          });
+          return acc;
+        },
+        {} as Record<string, ServicoCategoria["subcategorias"]>,
+      );
+
+      const categoriasFormatadas = categoriasData
+        .map((categoria) => ({
+          id: categoria.id,
+          slug: categoria.slug,
+          titulo: categoria.titulo,
+          emoji: categoria.emoji || "📌",
+          ordem: categoria.ordem ?? 0,
+          ativo: categoria.ativo ?? true,
+          categorias_banco: Array.isArray(categoria.categorias_banco) ? categoria.categorias_banco : [],
+          subcategorias: subsPorCategoria[categoria.id] || [],
+        }))
+        .filter((categoria) => categoria.subcategorias.length > 0);
+
+      return categoriasFormatadas.length ? categoriasFormatadas : DEFAULT_SERVICO_CATEGORIAS;
+    },
+  });
+
+  useEffect(() => {
+    if (!categorias.length) return;
+    if (!categorias.some((categoria) => categoria.slug === categoriaSelecionada)) {
+      setCategoriaSelecionada(categorias[0].slug);
+    }
+  }, [categorias, categoriaSelecionada]);
+
+  const categoriaAtual = categorias.find((c) => c.slug === categoriaSelecionada) || categorias[0];
+
   const { data: todasOfertas } = useQuery({
     queryKey: ["servicos-banners", cidade?.id],
     queryFn: async () => {
@@ -314,22 +208,40 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
     enabled: !!cidade?.id,
   });
 
-  // Filtrar banners pela categoria selecionada
   const bannersCategoria = useMemo(() => {
-    if (!todasOfertas) return [];
-    const categoriasDB = categoriaBancoMap[categoriaSelecionada] || [];
-    return todasOfertas.filter(
-      (o) => categoriasDB.includes(o.categoria) && o.banner_oferta_url
-    ) as Array<{ id: string; nome: string; banner_oferta_url: string; categoria: string }>;
-  }, [todasOfertas, categoriaSelecionada]);
+    if (!todasOfertas || !categoriaAtual) return [];
+    const categoriasDB = categoriaAtual.categorias_banco.length
+      ? categoriaAtual.categorias_banco
+      : categoriaAtual.subcategorias.map((sub) => sub.slug);
+    return todasOfertas.filter((o) => categoriasDB.includes(o.categoria) && o.banner_oferta_url) as Array<{
+      id: string;
+      nome: string;
+      banner_oferta_url: string;
+      categoria: string;
+    }>;
+  }, [todasOfertas, categoriaAtual]);
 
-  // Filtra serviços para autocomplete
+  const todosServicosAutocomplete = useMemo(() => {
+    const base = categorias.flatMap((categoria) =>
+      categoria.subcategorias.map((sub) => ({
+        id: sub.slug,
+        nome: sub.nome,
+      })),
+    );
+    const joined = [...base, ...DEFAULT_SERVICOS_AUTOCOMPLETE_EXTRAS];
+    const unique = new Map<string, { id: string; nome: string }>();
+    joined.forEach((item) => {
+      if (!unique.has(item.id)) unique.set(item.id, item);
+    });
+    return Array.from(unique.values());
+  }, [categorias]);
+
   const servicosFiltrados = useMemo(() => {
     if (!searchTerm.trim()) return [];
     return todosServicosAutocomplete.filter((s) =>
-      s.nome.toLowerCase().includes(searchTerm.toLowerCase())
+      s.nome.toLowerCase().includes(searchTerm.toLowerCase()),
     );
-  }, [searchTerm]);
+  }, [searchTerm, todosServicosAutocomplete]);
 
   const handleClick = (servicoId: string) => {
     if (servicoId === "veiculos") {
@@ -407,22 +319,22 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
     const w = el.offsetWidth;
     const index = Math.round(el.scrollLeft / w);
     const i = Math.max(0, Math.min(index, categorias.length - 1));
-    if (categorias[i] && categorias[i].id !== categoriaSelecionada) {
-      setCategoriaSelecionada(categorias[i].id);
+    if (categorias[i] && categorias[i].slug !== categoriaSelecionada) {
+      setCategoriaSelecionada(categorias[i].slug);
     }
-  }, [categoriaSelecionada]);
+  }, [categoriaSelecionada, categorias]);
 
-  const handleTabClick = useCallback((catId: string) => {
-    const index = categorias.findIndex((c) => c.id === catId);
+  const handleTabClick = useCallback((catSlug: string) => {
+    const index = categorias.findIndex((c) => c.slug === catSlug);
     if (index < 0) return;
-    setCategoriaSelecionada(catId);
+    setCategoriaSelecionada(catSlug);
     const el = gridScrollRef.current;
     if (el) {
       isScrollingByUserRef.current = true;
       el.scrollTo({ left: index * el.offsetWidth, behavior: "smooth" });
       setTimeout(() => { isScrollingByUserRef.current = false; }, 400);
     }
-  }, []);
+  }, [categorias]);
 
   useEffect(() => {
     const el = gridScrollRef.current;
@@ -435,9 +347,8 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
     return <div className="pt-2 pb-1">{highlightsBlock}</div>;
   }
 
-  // Ao mudar a categoria, centraliza a aba no container SEM rolar a página
   useEffect(() => {
-    const index = categorias.findIndex((c) => c.id === categoriaSelecionada);
+    const index = categorias.findIndex((c) => c.slug === categoriaSelecionada);
     const tabEl = tabRefsRef.current[index];
     const container = tabsScrollRef.current;
     if (!tabEl || !container) return;
@@ -446,11 +357,18 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
     const containerWidth = container.offsetWidth;
     const targetScroll = tabLeft - containerWidth / 2 + tabWidth / 2;
     container.scrollTo({ left: targetScroll, behavior: "smooth" });
-  }, [categoriaSelecionada]);
+  }, [categoriaSelecionada, categorias]);
+
+  if (!categorias.length) {
+    return (
+      <div className="pt-6 pb-2 px-5">
+        <p className="text-sm text-muted-foreground">Nenhuma categoria de serviços ativa.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-6 pb-2">
-      {/* Header com busca integrada */}
       <div className="px-5 mb-5">
         <h2 className="text-[14px] font-semibold text-foreground tracking-tight flex items-center gap-1.5 mb-0.5">
           <Briefcase className="h-4 w-4 text-primary" />
@@ -460,7 +378,6 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
           Profissionais e empresas para o que você precisar.
         </p>
 
-        {/* Campo de Busca */}
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50 pointer-events-none" />
           <input
@@ -497,23 +414,20 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
 
       {highlightsBlock}
 
-      {/* Categorias - Tabs + banner + grid (sempre visíveis) */}
       <div ref={tabsScrollRef} className="overflow-x-auto scrollbar-hide mt-[15px] mb-[15px] scroll-smooth">
         <div className="flex px-5 border-b border-border/30" style={{ gap: "15px" }}>
           {categorias.map((cat, index) => (
             <button
-              key={cat.id}
+              key={cat.slug}
               ref={(el) => { tabRefsRef.current[index] = el; }}
-              onClick={() => handleTabClick(cat.id)}
+              onClick={() => handleTabClick(cat.slug)}
               className={`flex-shrink-0 flex items-center gap-1 px-4 pb-2.5 text-[13px] font-medium transition-all relative ${
-                categoriaSelecionada === cat.id
-                  ? "text-foreground"
-                  : "text-muted-foreground/60"
+                categoriaSelecionada === cat.slug ? "text-foreground" : "text-muted-foreground/60"
               }`}
             >
               <span>{cat.emoji}</span>
               <span>{cat.titulo}</span>
-              {categoriaSelecionada === cat.id && (
+              {categoriaSelecionada === cat.slug && (
                 <div className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-primary" />
               )}
             </button>
@@ -527,7 +441,6 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
         cidadeSlug={cidadeSlug}
       />
 
-      {/* Grid de serviços */}
       <div
         ref={gridScrollRef}
         className="overflow-x-auto overflow-y-hidden scrollbar-hide snap-x snap-mandatory scroll-smooth"
@@ -536,32 +449,42 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
         <div className="flex" style={{ width: `${categorias.length * 100}%` }}>
           {categorias.map((cat) => (
             <div
-              key={cat.id}
+              key={cat.slug}
               className="flex-shrink-0 snap-start px-5 pb-2"
               style={{ width: `${100 / categorias.length}%`, minWidth: `${100 / categorias.length}%` }}
             >
               <div className="grid grid-cols-4 gap-y-4 gap-x-3">
-                {cat.servicos.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleClick(item.id)}
-                    className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
-                  >
-                    {item.icon ? (
-                      <img
-                        src={item.icon}
-                        alt={item.nome}
-                        loading="lazy"
-                        className="w-11 h-11 object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
-                      />
-                    ) : (
-                      <span className="text-[32px] leading-none">{item.emoji}</span>
-                    )}
-                    <span className="text-[11px] text-muted-foreground text-center leading-tight line-clamp-2">
-                      {item.nome}
-                    </span>
-                  </button>
-                ))}
+                {cat.subcategorias.map((item) => {
+                  const iconSrc = getServicoAssetByIconKey(item.icon_key);
+                  const iconifyName = getIconifyNameFromKey(item.icon_key);
+                  const fluent3dName = getFluent3dNameFromKey(item.icon_key);
+                  const fluent3dSrc = FLUENT_EMOJI_3D_BY_SLUG.get(fluent3dName);
+                  return (
+                    <button
+                      key={item.slug}
+                      onClick={() => handleClick(item.slug)}
+                      className="flex flex-col items-center gap-1.5 active:scale-95 transition-transform"
+                    >
+                      {iconSrc ? (
+                        <img
+                          src={iconSrc}
+                          alt={item.nome}
+                          loading="lazy"
+                          className="w-11 h-11 object-contain mix-blend-multiply dark:mix-blend-screen dark:invert"
+                        />
+                      ) : item.icon_key && isFluent3dIconKey(item.icon_key) && fluent3dSrc ? (
+                        <img src={fluent3dSrc} alt={item.nome} loading="lazy" className="w-11 h-11 object-contain" />
+                      ) : item.icon_key && isIconifyIconKey(item.icon_key) && iconifyName ? (
+                        <Icon icon={iconifyName} className="h-11 w-11 text-foreground/85" />
+                      ) : (
+                        <span className="text-[32px] leading-none">{item.emoji || "📌"}</span>
+                      )}
+                      <span className="text-[11px] text-muted-foreground text-center leading-tight line-clamp-2">
+                        {item.nome}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -572,5 +495,3 @@ const ServicosSection = ({ cidadeSlug, showHighlights = true, onlyHighlights = f
 };
 
 export default ServicosSection;
-
-

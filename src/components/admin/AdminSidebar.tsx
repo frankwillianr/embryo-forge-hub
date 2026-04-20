@@ -18,6 +18,7 @@
   Search,
   Briefcase,
   Smartphone,
+  FolderTree,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const cidadeMenuItems = [
   { id: "verificar-ios", title: "Verificar iOS", icon: Smartphone, route: "/admin/verificar-ios" },
   { id: "scarping-cinema", title: "Scarping cinema", icon: Film, route: "/admin/scarping-cinema" },
   { id: "scraping-emprego", title: "Scraping emprego", icon: Briefcase, route: "/admin/scraping-emprego" },
+  { id: "categorias-servicos", title: "Categorias de serviços", icon: FolderTree, route: "/admin/categorias-servicos" },
   { id: "jornal", title: "Jornal", icon: Newspaper },
   { id: "cinema", title: "Cinema", icon: Film },
   { id: "alo-prefeitura", title: "Voz do Povo", icon: Phone },
