@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Clock, Search, X } from "lucide-react";
@@ -20,7 +20,6 @@ import ImageUpload from "@/components/shared/ImageUpload";
 import VideoUpload from "@/components/shared/VideoUpload";
 import EmpresaPricingInfo from "@/components/servicos/EmpresaPricingInfo";
 import EmpresaPreviewModal from "@/components/servicos/EmpresaPreviewModal";
-import { CATEGORIAS_SERVICO } from "@/lib/categoriasServico";
 import { geocodeEndereco } from "@/lib/geocode";
 
 interface HorarioFuncionamento {
@@ -72,15 +71,10 @@ const NovaEmpresaPage = () => {
     },
   });
 
-  const categoriasDisponiveis = useMemo(() => {
-    if (subcategoriasCatalogo.length > 0) {
-      return subcategoriasCatalogo.map((item) => ({ id: item.slug, nome: item.nome }));
-    }
-    return Object.entries(CATEGORIAS_SERVICO)
-      .filter(([id]) => id !== "geral" && id !== "outros")
-      .map(([id, nome]) => ({ id, nome }))
-      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  }, [subcategoriasCatalogo]);
+  const categoriasDisponiveis = useMemo(
+    () => subcategoriasCatalogo.map((item) => ({ id: item.slug, nome: item.nome })),
+    [subcategoriasCatalogo],
+  );
 
   const categoriasOrdenadas = useMemo(
     () => [...categoriasDisponiveis].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
@@ -91,12 +85,34 @@ const NovaEmpresaPage = () => {
     () => Object.fromEntries(categoriasOrdenadas.map((item) => [item.id, item.nome])),
     [categoriasOrdenadas],
   );
+  const categoriasDisponiveisIds = useMemo(
+    () => new Set(categoriasOrdenadas.map((item) => item.id)),
+    [categoriasOrdenadas],
+  );
 
   // Categorias: até 3; se veio da página do serviço, já vem uma pré-selecionada
-  const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<string[]>(() =>
-    categoriaId ? [categoriaId] : []
-  );
+  const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<string[]>([]);
   const [buscaCategoria, setBuscaCategoria] = useState("");
+  const categoriasSelecionadasRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    if (!categoriaId) return;
+    if (!categoriasDisponiveisIds.has(categoriaId)) return;
+    setCategoriasSelecionadas((prev) => {
+      if (prev.includes(categoriaId)) return prev;
+      return [categoriaId, ...prev].slice(0, MAX_CATEGORIAS);
+    });
+  }, [categoriaId, categoriasDisponiveisIds]);
+
+  useEffect(() => {
+    setCategoriasSelecionadas((prev) =>
+      prev.filter((id) => categoriasDisponiveisIds.has(id)).slice(0, MAX_CATEGORIAS),
+    );
+  }, [categoriasDisponiveisIds]);
+
+  useEffect(() => {
+    categoriasSelecionadasRef.current = categoriasSelecionadas;
+  }, [categoriasSelecionadas]);
 
   const toggleCategoria = (id: string) => {
     setCategoriasSelecionadas((prev) => {
@@ -237,10 +253,15 @@ const NovaEmpresaPage = () => {
     mutationFn: async () => {
       if (!cidade?.id) throw new Error("Cidade não encontrada");
       if (!user?.id) throw new Error("Usuário não autenticado");
-      if (categoriasSelecionadas.length === 0) throw new Error("Selecione ao menos um tipo de serviço");
+      const categoriasValidasSelecionadas = categoriasSelecionadas
+        .filter((id) => categoriasDisponiveisIds.has(id))
+        .slice(0, MAX_CATEGORIAS);
+      if (categoriasValidasSelecionadas.length === 0) {
+        throw new Error("Selecione ao menos um tipo de serviço cadastrado");
+      }
 
-      const categoriaPrincipal = categoriasSelecionadas[0];
-      const adicionais = categoriasSelecionadas.slice(1, MAX_CATEGORIAS);
+      const categoriaPrincipal = categoriasValidasSelecionadas[0];
+      const adicionais = categoriasValidasSelecionadas.slice(1, MAX_CATEGORIAS);
 
       const coords = await geocodeEndereco({
         cep: cep.replace(/\D/g, "") || undefined,
@@ -323,8 +344,8 @@ const NovaEmpresaPage = () => {
         title: "Empresa cadastrada!",
         description: "Você receberá o link de pagamento por e-mail em instantes.",
       });
-      const primeiraCat = categoriasSelecionadas[0];
-      if (categoriaId) {
+      const primeiraCat = categoriasSelecionadas.find((id) => categoriasDisponiveisIds.has(id));
+      if (categoriaId && categoriasDisponiveisIds.has(categoriaId)) {
         navigate(`/cidade/${slug}/servicos/${categoriaId}`);
       } else if (primeiraCat) {
         navigate(`/cidade/${slug}/servicos/${primeiraCat}`);
@@ -344,7 +365,7 @@ const NovaEmpresaPage = () => {
   const isValid =
     nome.trim().length >= 3 &&
     whatsapp.replace(/\D/g, "").length === 11 &&
-    categoriasSelecionadas.length >= 1;
+    categoriasSelecionadas.some((id) => categoriasDisponiveisIds.has(id));
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -379,6 +400,14 @@ const NovaEmpresaPage = () => {
               placeholder="Digite para buscar (ex: eletricista, salão...)"
               value={buscaCategoria}
               onChange={(e) => setBuscaCategoria(e.target.value)}
+              onBlur={() => {
+                window.setTimeout(() => {
+                  if (categoriasSelecionadasRef.current.length === 0) {
+                    setBuscaCategoria("");
+                  }
+                }, 120);
+              }}
+              disabled={categoriasOrdenadas.length === 0}
               className="pl-9"
             />
             {mostrarSugestoes && (
@@ -407,7 +436,7 @@ const NovaEmpresaPage = () => {
                     key={id}
                     className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground pl-3 pr-1.5 py-1 text-sm"
                   >
-                    {categoriasNomePorId[id] || CATEGORIAS_SERVICO[id] || id}
+                    {categoriasNomePorId[id] || id}
                     <button
                       type="button"
                       onClick={() => removerCategoria(id)}
@@ -747,3 +776,4 @@ const NovaEmpresaPage = () => {
 };
 
 export default NovaEmpresaPage;
+

@@ -18,7 +18,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ImageUpload from "@/components/shared/ImageUpload";
 import VideoUpload from "@/components/shared/VideoUpload";
-import { CATEGORIAS_SERVICO } from "@/lib/categoriasServico";
 import { geocodeEndereco } from "@/lib/geocode";
 
 const MAX_CATEGORIAS = 3;
@@ -70,15 +69,10 @@ const EditarEmpresaPage = () => {
     },
   });
 
-  const categoriasDisponiveis = useMemo(() => {
-    if (subcategoriasCatalogo.length > 0) {
-      return subcategoriasCatalogo.map((item) => ({ id: item.slug, nome: item.nome }));
-    }
-    return Object.entries(CATEGORIAS_SERVICO)
-      .filter(([id]) => id !== "geral" && id !== "outros")
-      .map(([id, nome]) => ({ id, nome }))
-      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  }, [subcategoriasCatalogo]);
+  const categoriasDisponiveis = useMemo(
+    () => subcategoriasCatalogo.map((item) => ({ id: item.slug, nome: item.nome })),
+    [subcategoriasCatalogo],
+  );
 
   const categoriasOrdenadas = useMemo(
     () => [...categoriasDisponiveis].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
@@ -87,6 +81,10 @@ const EditarEmpresaPage = () => {
 
   const categoriasNomePorId = useMemo(
     () => Object.fromEntries(categoriasOrdenadas.map((item) => [item.id, item.nome])),
+    [categoriasOrdenadas],
+  );
+  const categoriasDisponiveisIds = useMemo(
+    () => new Set(categoriasOrdenadas.map((item) => item.id)),
     [categoriasOrdenadas],
   );
 
@@ -107,6 +105,7 @@ const EditarEmpresaPage = () => {
   const [loadingCep, setLoadingCep] = useState(false);
   const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<string[]>([]);
   const [buscaCategoria, setBuscaCategoria] = useState("");
+  const categoriasSelecionadasRef = useRef<string[]>([]);
   const categoriasInicializadasRef = useRef(false);
   const fotosInicializadasRef = useRef(false);
   const saveInFlightRef = useRef(false);
@@ -233,6 +232,16 @@ const EditarEmpresaPage = () => {
     categoriasSelecionadas.length < MAX_CATEGORIAS;
 
   useEffect(() => {
+    setCategoriasSelecionadas((prev) =>
+      prev.filter((id) => categoriasDisponiveisIds.has(id)).slice(0, MAX_CATEGORIAS),
+    );
+  }, [categoriasDisponiveisIds]);
+
+  useEffect(() => {
+    categoriasSelecionadasRef.current = categoriasSelecionadas;
+  }, [categoriasSelecionadas]);
+
+  useEffect(() => {
     if (empresaFotos && !fotosInicializadasRef.current && !fotosAlteradas) {
       fotosInicializadasRef.current = true;
       setFotos(empresaFotos);
@@ -307,8 +316,14 @@ const EditarEmpresaPage = () => {
 
       saveInFlightRef.current = true;
       try {
-        const categoriaPrincipal = categoriasSelecionadas[0] ?? null;
-      const adicionais: string[] = categoriasSelecionadas.slice(1, MAX_CATEGORIAS);
+        const categoriasValidasSelecionadas = categoriasSelecionadas
+        .filter((id) => categoriasDisponiveisIds.has(id))
+        .slice(0, MAX_CATEGORIAS);
+      const categoriaPrincipal = categoriasValidasSelecionadas[0] ?? null;
+      if (!categoriaPrincipal) {
+        throw new Error("Selecione ao menos um tipo de serviço cadastrado");
+      }
+      const adicionais: string[] = categoriasValidasSelecionadas.slice(1, MAX_CATEGORIAS);
 
       const coords = await geocodeEndereco({
         cep: cep.replace(/\D/g, "") || undefined,
@@ -414,7 +429,7 @@ const EditarEmpresaPage = () => {
   const isValid =
     nome.trim().length >= 3 &&
     whatsapp.replace(/\D/g, "").length === 11 &&
-    categoriasSelecionadas.length >= 1;
+    categoriasSelecionadas.some((id) => categoriasDisponiveisIds.has(id));
 
   if (isLoading) {
     return (
@@ -453,6 +468,14 @@ const EditarEmpresaPage = () => {
               placeholder="Digite para buscar (ex: eletricista, salão...)"
               value={buscaCategoria}
               onChange={(e) => setBuscaCategoria(e.target.value)}
+              onBlur={() => {
+                window.setTimeout(() => {
+                  if (categoriasSelecionadasRef.current.length === 0) {
+                    setBuscaCategoria("");
+                  }
+                }, 120);
+              }}
+              disabled={categoriasOrdenadas.length === 0}
               className="pl-9"
             />
             {mostrarSugestoes && (
@@ -481,7 +504,7 @@ const EditarEmpresaPage = () => {
                     key={id}
                     className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground pl-3 pr-1.5 py-1 text-sm"
                   >
-                    {categoriasNomePorId[id] || CATEGORIAS_SERVICO[id] || id}
+                    {categoriasNomePorId[id] || id}
                     <button
                       type="button"
                       onClick={() => removerCategoria(id)}
