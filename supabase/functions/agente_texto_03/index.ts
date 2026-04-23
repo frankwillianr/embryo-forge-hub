@@ -6,8 +6,8 @@ const CORS = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const LIMIT_DEFAULT = 30;
-const LIMIT_MAX = 150;
+const LIMIT_DEFAULT = 20;
+const LIMIT_MAX = 30;
 const MODEL_DEFAULT = "gpt-4o-mini";
 const CONCURRENCY = 3;
 
@@ -27,6 +27,12 @@ interface NoticiaInput {
   created_at: string;
   titulo_original?: string | null;
   descricao_original?: string | null;
+  jornal_postado_at?: string | null;
+}
+
+interface JornalRow {
+  id: string;
+  id_externo: string | null;
 }
 
 interface RewriteResult {
@@ -479,25 +485,66 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase
       .from("tabela_agente_buscador")
-      .select("id, cidade_id, url, titulo, descricao, fonte_nome, status, created_at, titulo_original, descricao_original, is_duplicada")
+      .select("id, cidade_id, url, titulo, descricao, fonte_nome, status, created_at, titulo_original, descricao_original, is_duplicada, jornal_postado_at")
       .eq("cidade_id", cidade_id)
       .eq("is_duplicada", false)
-      .neq("status", "concluido")
-      .neq("status", "publicado")
+      .is("jornal_postado_at", null)
+      .in("status", ["coletado", "erro"])
       .order("created_at", { ascending: false })
       .limit(limit);
 
     if (error) throw error;
 
-    const noticias = (data ?? []) as NoticiaInput[];
+    const noticiasBase = (data ?? []) as NoticiaInput[];
+
+    // Guarda extra: se a URL já estiver no jornal da cidade, não reescreve novamente.
+    // Isso cobre casos antigos em que o status na tabela de scraping ficou desatualizado.
+    const urls = noticiasBase
+      .map((n) => (n.url ?? "").trim())
+      .filter((u) => !!u);
+
+    let publicadasPorUrl = new Map<string, string>();
+    if (urls.length) {
+      const { data: jornalRows, error: jornalErr } = await supabase
+        .from("rel_cidade_jornal")
+        .select("id, id_externo")
+        .eq("cidade_id", cidade_id)
+        .in("id_externo", urls);
+      if (jornalErr) throw jornalErr;
+
+      for (const row of ((jornalRows ?? []) as JornalRow[])) {
+        const key = (row.id_externo ?? "").trim();
+        if (key) publicadasPorUrl.set(key, row.id);
+      }
+    }
+
+    const noticiasJaPublicadas = noticiasBase.filter((n) =>
+      publicadasPorUrl.has((n.url ?? "").trim())
+    );
+    const noticias = noticiasBase.filter((n) =>
+      !publicadasPorUrl.has((n.url ?? "").trim())
+    );
+
+    if (noticiasJaPublicadas.length) {
+      await supabase
+        .from("tabela_agente_buscador")
+        .update({
+          status: "publicado",
+          jornal_postado_at: new Date().toISOString(),
+          jornal_post_erro: null,
+        })
+        .in("id", noticiasJaPublicadas.map((n) => n.id));
+    }
+
     if (!noticias.length) {
       return new Response(
         JSON.stringify({
           ok: true,
           agente: "agente_texto_03",
           cidade_id,
-          total_entrada: 0,
+          total_entrada: noticiasBase.length,
           total_processado: 0,
+          total_ja_publicadas: noticiasJaPublicadas.length,
           itens: [],
         }),
         { headers: { ...CORS, "Content-Type": "application/json" } }
@@ -568,7 +615,9 @@ Deno.serve(async (req) => {
         agente: "agente_texto_03",
         cidade_id,
         model,
-        total_entrada: noticias.length,
+        total_entrada: noticiasBase.length,
+        total_elegiveis: noticias.length,
+        total_ja_publicadas: noticiasJaPublicadas.length,
         total_processado,
         total_erros,
         itens: items,
