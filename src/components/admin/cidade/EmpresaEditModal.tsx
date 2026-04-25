@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef, useMemo } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -30,8 +30,10 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import ImageUpload from "@/components/shared/ImageUpload";
 
 type EmpresaStatus = "aguardando_pagamento" | "pendente" | "ativo" | "recusado";
+const MAX_CATEGORIAS = 3;
 
 interface EmpresaEditModalProps {
   empresaId: string | null;
@@ -42,13 +44,13 @@ interface EmpresaEditModalProps {
 
 const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEditModalProps) => {
   const queryClient = useQueryClient();
-  
-  // Form state
+
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [instagram, setInstagram] = useState("");
-  const [categoria, setCategoria] = useState("");
+  const [categoriasSelecionadas, setCategoriasSelecionadas] = useState<string[]>([]);
+  const [buscaCategoria, setBuscaCategoria] = useState("");
   const [status, setStatus] = useState<EmpresaStatus>("aguardando_pagamento");
   const [cep, setCep] = useState("");
   const [endereco, setEndereco] = useState("");
@@ -57,8 +59,41 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
   const [complemento, setComplemento] = useState("");
   const [dataInicio, setDataInicio] = useState<Date | undefined>();
   const [dataFim, setDataFim] = useState<Date | undefined>();
+  const [fotos, setFotos] = useState<string[]>([]);
+  const [bannerPrincipal, setBannerPrincipal] = useState<string[]>([]);
 
-  // Fetch empresa details
+  const fotosInicializadasRef = useRef(false);
+  const categoriasInicializadasRef = useRef(false);
+  const categoriasSelecionadasRef = useRef<string[]>([]);
+
+  const { data: subcategoriasCatalogo = [] } = useQuery({
+    queryKey: ["admin-servicos-subcategorias-form"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("servico_subcategoria")
+        .select("slug, nome, ativo")
+        .eq("ativo", true)
+        .order("nome", { ascending: true });
+      if (error) throw error;
+      return (data || []) as Array<{ slug: string; nome: string; ativo: boolean }>;
+    },
+  });
+
+  const categoriasOrdenadas = useMemo(
+    () => [...subcategoriasCatalogo].map((item) => ({ id: item.slug, nome: item.nome })).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+    [subcategoriasCatalogo],
+  );
+
+  const categoriasNomePorId = useMemo(
+    () => Object.fromEntries(categoriasOrdenadas.map((item) => [item.id, item.nome])),
+    [categoriasOrdenadas],
+  );
+
+  const categoriasDisponiveisIds = useMemo(
+    () => new Set(categoriasOrdenadas.map((item) => item.id)),
+    [categoriasOrdenadas],
+  );
+
   const { data: empresa, isLoading } = useQuery({
     queryKey: ["admin-empresa-detail", empresaId],
     queryFn: async () => {
@@ -74,44 +109,108 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
     enabled: !!empresaId && open,
   });
 
-  // Populate form when data loads
+  const { data: empresaFotos } = useQuery({
+    queryKey: ["admin-empresa-fotos", empresaId],
+    queryFn: async () => {
+      if (!empresaId) return [];
+      const { data, error } = await supabase
+        .from("rel_cidade_servico_empresa_foto")
+        .select("url")
+        .eq("empresa_id", empresaId)
+        .order("ordem");
+      if (error) throw error;
+      return (data || []).map((item) => item.url);
+    },
+    enabled: !!empresaId && open,
+  });
+
   useEffect(() => {
-    if (empresa) {
-      console.log("Empresa data loaded:", empresa);
-      setNome(empresa.nome || "");
-      setDescricao(empresa.descricao || "");
-      // Format whatsapp for display
-      const whatsappNumbers = (empresa.whatsapp || "").replace(/\D/g, "");
-      if (whatsappNumbers.length === 11) {
-        setWhatsapp(`(${whatsappNumbers.slice(0, 2)}) ${whatsappNumbers.slice(2, 7)}-${whatsappNumbers.slice(7)}`);
-      } else {
-        setWhatsapp(empresa.whatsapp || "");
-      }
-      setInstagram(empresa.instagram || "");
-      setCategoria(empresa.categoria || "");
-      setStatus((empresa.status as EmpresaStatus) || "aguardando_pagamento");
-      setCep(empresa.endereco_cep || "");
-      setEndereco(empresa.endereco_rua || "");
-      setNumero(empresa.endereco_numero || "");
-      setBairro(empresa.endereco_bairro || "");
-      setComplemento(empresa.endereco_complemento || "");
-      setDataInicio(empresa.data_inicio ? new Date(empresa.data_inicio + "T00:00:00") : undefined);
-      setDataFim(empresa.data_fim ? new Date(empresa.data_fim + "T00:00:00") : undefined);
+    if (!open) return;
+    fotosInicializadasRef.current = false;
+    categoriasInicializadasRef.current = false;
+    setFotos([]);
+    setCategoriasSelecionadas([]);
+    setBuscaCategoria("");
+  }, [empresaId, open]);
+
+  useEffect(() => {
+    if (!empresa) return;
+    setNome(empresa.nome || "");
+    setDescricao(empresa.descricao || "");
+
+    const whatsappNumbers = (empresa.whatsapp || "").replace(/\D/g, "");
+    if (whatsappNumbers.length === 11) {
+      setWhatsapp(`(${whatsappNumbers.slice(0, 2)}) ${whatsappNumbers.slice(2, 7)}-${whatsappNumbers.slice(7)}`);
+    } else {
+      setWhatsapp(empresa.whatsapp || "");
     }
+
+    if (!categoriasInicializadasRef.current) {
+      categoriasInicializadasRef.current = true;
+      const adicionais = (empresa.categorias_adicionais as string[] | null) || [];
+      setCategoriasSelecionadas(
+        empresa.categoria ? [empresa.categoria, ...adicionais].slice(0, MAX_CATEGORIAS) : adicionais.slice(0, MAX_CATEGORIAS),
+      );
+    }
+
+    setInstagram(empresa.instagram || "");
+    setStatus((empresa.status as EmpresaStatus) || "aguardando_pagamento");
+    setCep(empresa.endereco_cep || "");
+    setEndereco(empresa.endereco_rua || "");
+    setNumero(empresa.endereco_numero || "");
+    setBairro(empresa.endereco_bairro || "");
+    setComplemento(empresa.endereco_complemento || "");
+    setDataInicio(empresa.data_inicio ? new Date(`${empresa.data_inicio}T00:00:00`) : undefined);
+    setDataFim(empresa.data_fim ? new Date(`${empresa.data_fim}T00:00:00`) : undefined);
+    setBannerPrincipal(empresa.banner_oferta_url ? [empresa.banner_oferta_url] : []);
   }, [empresa]);
 
-  // Update mutation
+  useEffect(() => {
+    if (!empresaFotos || fotosInicializadasRef.current) return;
+    fotosInicializadasRef.current = true;
+    setFotos(empresaFotos);
+  }, [empresaFotos]);
+
+  useEffect(() => {
+    categoriasSelecionadasRef.current = categoriasSelecionadas;
+  }, [categoriasSelecionadas]);
+
+  const toggleCategoria = (id: string) => {
+    setCategoriasSelecionadas((prev) => {
+      if (prev.includes(id)) return prev.filter((c) => c !== id);
+      if (prev.length >= MAX_CATEGORIAS) return prev;
+      return [...prev, id];
+    });
+    setBuscaCategoria("");
+  };
+
+  const removerCategoria = (id: string) => {
+    setCategoriasSelecionadas((prev) => prev.filter((c) => c !== id));
+  };
+
+  const buscaNorm = buscaCategoria.trim().toLowerCase();
+  const categoriasParaBusca =
+    buscaNorm.length >= 1
+      ? categoriasOrdenadas.filter(
+          (item) =>
+            !categoriasSelecionadas.includes(item.id) &&
+            (item.nome.toLowerCase().includes(buscaNorm) || item.id.toLowerCase().includes(buscaNorm)),
+        )
+      : [];
+  const mostrarSugestoes =
+    buscaNorm.length >= 1 &&
+    categoriasParaBusca.length > 0 &&
+    categoriasSelecionadas.length < MAX_CATEGORIAS;
+
   const updateMutation = useMutation({
     mutationFn: async () => {
-      if (!empresaId) throw new Error("ID da empresa não encontrado");
+      if (!empresaId) throw new Error("ID da empresa nao encontrado");
 
       let resolvedDataInicio = dataInicio;
       let resolvedDataFim = dataFim;
 
       if (status === "ativo") {
-        if (!resolvedDataInicio) {
-          resolvedDataInicio = new Date();
-        }
+        if (!resolvedDataInicio) resolvedDataInicio = new Date();
         if (!resolvedDataFim) {
           const fim = new Date(resolvedDataInicio);
           fim.setFullYear(fim.getFullYear() + 1);
@@ -119,39 +218,61 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
         }
       }
 
+      const categoriasValidasSelecionadas = categoriasSelecionadas
+        .filter((id) => categoriasDisponiveisIds.has(id))
+        .slice(0, MAX_CATEGORIAS);
+      const categoriaPrincipal = categoriasValidasSelecionadas[0] ?? null;
+      if (!categoriaPrincipal) throw new Error("Selecione ao menos um servico");
+      const adicionais = categoriasValidasSelecionadas.slice(1, MAX_CATEGORIAS);
+
       const updateData = {
         nome: nome.trim(),
         descricao: descricao.trim() || null,
         whatsapp: whatsapp.replace(/\D/g, ""),
         instagram: instagram || null,
-        categoria,
+        categoria: categoriaPrincipal,
+        categorias_adicionais: adicionais,
         status,
         endereco_cep: cep.replace(/\D/g, "") || null,
         endereco_rua: endereco || null,
         endereco_numero: numero || null,
         endereco_bairro: bairro || null,
         endereco_complemento: complemento || null,
+        banner_oferta_url: bannerPrincipal[0] || null,
         data_inicio: resolvedDataInicio ? resolvedDataInicio.toISOString().split("T")[0] : null,
         data_fim: resolvedDataFim ? resolvedDataFim.toISOString().split("T")[0] : null,
       };
 
-      console.log("Updating empresa with:", updateData);
-
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("rel_cidade_servico_empresa")
         .update(updateData)
-        .eq("id", empresaId)
-        .select();
-
-      console.log("Update result:", { data, error });
-
+        .eq("id", empresaId);
       if (error) throw error;
-      return data;
+
+      const { error: deleteFotosError } = await supabase
+        .from("rel_cidade_servico_empresa_foto")
+        .delete()
+        .eq("empresa_id", empresaId);
+      if (deleteFotosError) throw deleteFotosError;
+
+      const fotosNormalizadas = fotos.map((url) => url.trim()).filter(Boolean);
+      const fotosUnicas = Array.from(new Set(fotosNormalizadas));
+      if (fotosUnicas.length > 0) {
+        const fotosData = fotosUnicas.map((url, index) => ({
+          empresa_id: empresaId,
+          url,
+          ordem: index,
+        }));
+        const { error: fotosError } = await supabase
+          .from("rel_cidade_servico_empresa_foto")
+          .insert(fotosData);
+        if (fotosError) throw fotosError;
+      }
     },
-    onSuccess: (data) => {
-      console.log("Update successful:", data);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-cidade-empresas", cidadeId] });
       queryClient.invalidateQueries({ queryKey: ["admin-empresa-detail", empresaId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-empresa-fotos", empresaId] });
       toast.success("Empresa atualizada com sucesso!");
       onOpenChange(false);
     },
@@ -173,7 +294,9 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
     setWhatsapp(formatted);
   };
 
-  const isValid = nome.trim().length >= 3;
+  const isValid =
+    nome.trim().length >= 3 &&
+    categoriasSelecionadas.some((id) => categoriasDisponiveisIds.has(id));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -188,45 +311,102 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
           </div>
         ) : (
           <div className="space-y-6 py-4">
-            {/* Info básica */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome da empresa *</Label>
-                <Input
-                  id="nome"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="categoria">Categoria</Label>
-                <Input
-                  id="categoria"
-                  value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome da empresa *</Label>
+              <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="descricao">Descrição</Label>
-              <Textarea
-                id="descricao"
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                rows={3}
+              <Label>Servicos selecionados (ate 3)</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Digite para buscar servicos..."
+                  value={buscaCategoria}
+                  onChange={(e) => setBuscaCategoria(e.target.value)}
+                  onBlur={() => {
+                    window.setTimeout(() => {
+                      if (categoriasSelecionadasRef.current.length === 0) {
+                        setBuscaCategoria("");
+                      }
+                    }, 120);
+                  }}
+                  disabled={categoriasOrdenadas.length === 0}
+                  className="pl-9"
+                />
+                {mostrarSugestoes && (
+                  <div className="absolute z-10 top-full left-0 right-0 mt-1 py-1 rounded-lg border border-border bg-card shadow-lg max-h-48 overflow-y-auto">
+                    {categoriasParaBusca.slice(0, 12).map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => toggleCategoria(item.id)}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors"
+                      >
+                        {item.nome}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {categoriasSelecionadas.length > 0 && (
+                <div className="pt-2">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Selecionados ({categoriasSelecionadas.length}/{MAX_CATEGORIAS})
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {categoriasSelecionadas.map((id) => (
+                      <span
+                        key={id}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground pl-3 pr-1.5 py-1 text-sm"
+                      >
+                        {categoriasNomePorId[id] || id}
+                        <button
+                          type="button"
+                          onClick={() => removerCategoria(id)}
+                          className="rounded-full p-0.5 hover:bg-primary-foreground/20"
+                          aria-label="Remover"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="descricao">Descricao</Label>
+              <Textarea id="descricao" value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Fotos da empresa</Label>
+              <ImageUpload
+                images={fotos}
+                onChange={setFotos}
+                maxImages={6}
+                bucket="servicos"
+                folder="empresas"
               />
             </div>
 
-            {/* Contato */}
+            <div className="space-y-2">
+              <Label>Banner principal</Label>
+              <ImageUpload
+                images={bannerPrincipal}
+                onChange={setBannerPrincipal}
+                maxImages={1}
+                bucket="servicos"
+                folder="banners"
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="whatsapp">WhatsApp</Label>
-                <Input
-                  id="whatsapp"
-                  value={whatsapp}
-                  onChange={(e) => handleWhatsappChange(e.target.value)}
-                />
+                <Input id="whatsapp" value={whatsapp} onChange={(e) => handleWhatsappChange(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="instagram">Instagram</Label>
@@ -242,10 +422,9 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
               </div>
             </div>
 
-            {/* Status e Datas */}
             <div className="p-4 bg-muted/50 rounded-lg space-y-4">
-              <h3 className="font-medium text-foreground">Status e Período de Ativação</h3>
-              
+              <h3 className="font-medium text-foreground">Status e Periodo de Ativacao</h3>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Status</Label>
@@ -263,14 +442,14 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Data Início</Label>
+                  <Label>Data Inicio</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !dataInicio && "text-muted-foreground"
+                          !dataInicio && "text-muted-foreground",
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -297,7 +476,7 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !dataFim && "text-muted-foreground"
+                          !dataFim && "text-muted-foreground",
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -318,53 +497,32 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
               </div>
             </div>
 
-            {/* Endereço */}
             <div className="space-y-4">
-              <h3 className="font-medium text-foreground">Endereço</h3>
-              
+              <h3 className="font-medium text-foreground">Endereco</h3>
+
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="cep">CEP</Label>
-                  <Input
-                    id="cep"
-                    value={cep}
-                    onChange={(e) => setCep(e.target.value)}
-                  />
+                  <Input id="cep" value={cep} onChange={(e) => setCep(e.target.value)} />
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label htmlFor="endereco">Rua</Label>
-                  <Input
-                    id="endereco"
-                    value={endereco}
-                    onChange={(e) => setEndereco(e.target.value)}
-                  />
+                  <Input id="endereco" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="numero">Número</Label>
-                  <Input
-                    id="numero"
-                    value={numero}
-                    onChange={(e) => setNumero(e.target.value)}
-                  />
+                  <Label htmlFor="numero">Numero</Label>
+                  <Input id="numero" value={numero} onChange={(e) => setNumero(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bairro">Bairro</Label>
-                  <Input
-                    id="bairro"
-                    value={bairro}
-                    onChange={(e) => setBairro(e.target.value)}
-                  />
+                  <Input id="bairro" value={bairro} onChange={(e) => setBairro(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="complemento">Complemento</Label>
-                  <Input
-                    id="complemento"
-                    value={complemento}
-                    onChange={(e) => setComplemento(e.target.value)}
-                  />
+                  <Input id="complemento" value={complemento} onChange={(e) => setComplemento(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -375,17 +533,14 @@ const EmpresaEditModal = ({ empresaId, cidadeId, open, onOpenChange }: EmpresaEd
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button
-            onClick={() => updateMutation.mutate()}
-            disabled={!isValid || updateMutation.isPending}
-          >
+          <Button onClick={() => updateMutation.mutate()} disabled={!isValid || updateMutation.isPending}>
             {updateMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 Salvando...
               </>
             ) : (
-              "Salvar alterações"
+              "Salvar alteracoes"
             )}
           </Button>
         </DialogFooter>

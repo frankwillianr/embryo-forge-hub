@@ -77,7 +77,7 @@ const BottomNavBar = ({
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 w-auto bg-[#1a1a2e]/95 rounded-t-2xl shadow-2xl backdrop-blur-sm">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 w-auto bg-[#1a1a2e]/95 rounded-t-2xl shadow-2xl backdrop-blur-sm pb-[7px]">
       <div className="grid grid-cols-5 items-center w-full">
         <button
           onClick={goJornal}
