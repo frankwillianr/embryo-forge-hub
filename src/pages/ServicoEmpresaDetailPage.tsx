@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
 import {
@@ -34,7 +34,9 @@ const ServicoEmpresaDetailPage = () => {
     empresaId: string;
   }>();
   const navigate = useNavigate();
-  useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
+  const location = useLocation();
+  const backTo = (location.state as { backTo?: string } | null)?.backTo || `/cidade/${slug}/servicos/${categoriaId}`;
+  useSwipeBack({ onBack: () => navigate(backTo) });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAllHours, setShowAllHours] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -164,7 +166,7 @@ const ServicoEmpresaDetailPage = () => {
       <div className="min-h-screen bg-background flex flex-col">
         <header className="flex items-center gap-4 p-4 pt-safe">
           <button
-            onClick={() => navigate(`/cidade/${slug}/servicos/${categoriaId}`)}
+            onClick={() => navigate(backTo)}
             className="p-2 -m-2 hover:bg-muted rounded-full transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -175,7 +177,7 @@ const ServicoEmpresaDetailPage = () => {
             <p className="text-muted-foreground">Empresa não encontrada</p>
             <Button 
               variant="outline" 
-              onClick={() => navigate(`/cidade/${slug}/servicos/${categoriaId}`)}
+              onClick={() => navigate(backTo)}
             >
               Voltar
             </Button>
@@ -190,7 +192,7 @@ const ServicoEmpresaDetailPage = () => {
       {/* Header flutuante */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center p-4 pt-safe">
         <button
-          onClick={() => navigate(`/cidade/${slug}/servicos/${categoriaId}`)}
+          onClick={() => navigate(backTo)}
           className="p-2.5 bg-background/80 backdrop-blur-md rounded-full shadow-sm border border-border/50 hover:bg-background transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />

@@ -13,7 +13,7 @@ interface BottomNavBarProps {
   onOfertasClick?: () => void;
 }
 
-const baseItemClass = "mx-1 my-1 flex flex-col items-center justify-center gap-1.5 rounded-xl py-2 transition-all";
+const baseItemClass = "mx-1 my-1 flex flex-col items-center justify-center gap-0.5 rounded-xl py-2 transition-all";
 const activeClass = "bg-white/25 text-white border border-white/30 shadow-[0_0_0_1px_rgba(255,255,255,0.12)]";
 const inactiveClass = "text-white hover:bg-white/5";
 
@@ -77,7 +77,7 @@ const BottomNavBar = ({
   };
 
   return (
-    <nav className="fixed bottom-[20px] left-[2px] right-[2px] z-50 w-auto bg-[#1a1a2e]/95 border border-white/8 rounded-2xl shadow-2xl backdrop-blur-sm">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 w-auto bg-[#1a1a2e]/95 rounded-t-2xl shadow-2xl backdrop-blur-sm">
       <div className="grid grid-cols-5 items-center w-full">
         <button
           onClick={goJornal}
