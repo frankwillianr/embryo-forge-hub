@@ -1,7 +1,7 @@
 ﻿import { useMemo } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign, MessageCircle, Users, Building2, CalendarDays, Rss, Bell, Music2 } from "lucide-react";
+import { ArrowLeft, Newspaper, Film, Phone, Megaphone, DollarSign, MessageCircle, Users, Building2, CalendarDays, Rss, Bell, Music2, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Cidade } from "@/types/cidade";
@@ -20,6 +20,7 @@ import AdminCidadeScrapingEventos from "@/components/admin/cidade/AdminCidadeScr
 import AdminCidadePushNotifications from "@/components/admin/cidade/AdminCidadePushNotifications";
 import AdminCidadeAdmins from "@/components/admin/cidade/AdminCidadeAdmins";
 import AdminCidadeMusicaAoVivo from "@/components/admin/cidade/AdminCidadeMusicaAoVivo";
+import AdminCidadeMarketplace from "@/components/admin/cidade/AdminCidadeMarketplace";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -29,6 +30,7 @@ const tabs = [
   { id: "banners", label: "Banners", icon: Megaphone },
   { id: "eventos", label: "Eventos", icon: CalendarDays },
   { id: "musica-ao-vivo", label: "Musica ao vivo", icon: Music2 },
+  { id: "marketplace", label: "Marketplace", icon: ShoppingBag },
   { id: "empresas", label: "Empresas", icon: Building2 },
   { id: "comentarios", label: "Comentarios", icon: MessageCircle },
   { id: "usuarios", label: "Usuarios", icon: Users },
@@ -114,6 +116,7 @@ const AdminCidadeDetail = () => {
         {activeTab === "banners" && <AdminCidadeBanners cidadeId={cidadeId!} />}
         {activeTab === "eventos" && <AdminCidadeEventos cidadeId={cidadeId!} />}
         {activeTab === "musica-ao-vivo" && <AdminCidadeMusicaAoVivo cidadeId={cidadeId!} />}
+        {activeTab === "marketplace" && <AdminCidadeMarketplace cidadeId={cidadeId!} />}
         {activeTab === "empresas" && <AdminCidadeEmpresas cidadeId={cidadeId!} />}
         {activeTab === "comentarios" && <AdminCidadeComentarios cidadeId={cidadeId!} />}
         {activeTab === "usuarios" && <AdminCidadeUsuarios cidadeId={cidadeId!} />}

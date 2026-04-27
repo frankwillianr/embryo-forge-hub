@@ -43,7 +43,7 @@ const DesapegaListPage = () => {
           imagens:rel_cidade_desapega_imagem(id, url, ordem)
         `)
         .eq("cidade_id", cidade!.id)
-        .in("status", ["ativo", "vendido"])
+        .eq("status", "aprovado")
         .order("created_at", { ascending: false });
 
       if (categoriaId) {

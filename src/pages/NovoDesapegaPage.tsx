@@ -76,7 +76,7 @@ const NovoDesapegaPage = () => {
           preco: parseFloat(preco.replace(/\D/g, "")) / 100,
           condicao,
           whatsapp: whatsapp.replace(/\D/g, ""),
-          status: "ativo",
+          status: "aguardando_aprovacao",
         })
         .select()
         .single();
@@ -100,8 +100,8 @@ const NovoDesapegaPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["desapega"] });
       toast({
-        title: "Anuncio criado",
-        description: "Seu anuncio foi publicado com sucesso.",
+        title: "Anuncio enviado",
+        description: "Seu anuncio esta aguardando aprovacao antes de aparecer no marketplace.",
       });
       navigate(`/cidade/${slug}/desapega`);
     },

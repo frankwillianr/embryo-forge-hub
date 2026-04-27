@@ -19,6 +19,7 @@
   Briefcase,
   Smartphone,
   FolderTree,
+  ShoppingBag,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -49,6 +50,7 @@ const cidadeMenuItems = [
   { id: "banners", title: "Banners", icon: Megaphone },
   { id: "eventos", title: "Eventos", icon: CalendarDays },
   { id: "musica-ao-vivo", title: "Musica ao vivo", icon: Music2 },
+  { id: "marketplace", title: "Marketplace", icon: ShoppingBag },
   { id: "empresas", title: "Empresas", icon: Building2 },
   { id: "comentarios", title: "Comentarios", icon: MessageCircle },
   { id: "usuarios", title: "Usuarios", icon: Users },

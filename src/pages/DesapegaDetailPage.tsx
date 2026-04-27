@@ -24,6 +24,7 @@ const DesapegaDetailPage = () => {
           imagens:rel_cidade_desapega_imagem(id, url, ordem)
         `)
         .eq("id", anuncioId)
+        .eq("status", "aprovado")
         .maybeSingle();
 
       if (error) throw error;

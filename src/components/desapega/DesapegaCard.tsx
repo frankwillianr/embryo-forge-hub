@@ -59,7 +59,7 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
   const [descricao, setDescricao] = useState(anuncio.descricao ?? "");
   const [preco, setPreco] = useState("");
   const [categoriaId, setCategoriaId] = useState(anuncio.categoria_id ?? "");
-  const [status, setStatus] = useState(anuncio.status === "vendido" ? "vendido" : "ativo");
+  const [status, setStatus] = useState(anuncio.status === "vendido" ? "vendido" : "aprovado");
   const [condicao, setCondicao] = useState(anuncio.condicao ?? "usado");
   const [whatsapp, setWhatsapp] = useState(anuncio.whatsapp ?? "");
   const [imagens, setImagens] = useState<string[]>(
@@ -98,7 +98,7 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
       }).format(Number(anuncio.preco) || 0),
     );
     setCategoriaId(anuncio.categoria_id ?? "");
-    setStatus(anuncio.status === "vendido" ? "vendido" : "ativo");
+    setStatus(anuncio.status === "vendido" ? "vendido" : "aprovado");
     setCondicao(anuncio.condicao ?? "usado");
     setWhatsapp(anuncio.whatsapp ?? "");
     setImagens(
@@ -415,7 +415,7 @@ const DesapegaCard = ({ anuncio, cidadeSlug }: DesapegaCardProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="aprovado">Aprovado</SelectItem>
                   <SelectItem value="vendido">Vendido</SelectItem>
                 </SelectContent>
               </Select>
