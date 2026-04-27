@@ -148,7 +148,11 @@ queryClient.getQueryCache().subscribe(() => {
 
   persistTimer = setTimeout(() => {
     const dehydratedState = dehydrate(queryClient, {
-      shouldDehydrateQuery: (query) => query.state.status === "success",
+      shouldDehydrateQuery: (query) => {
+        const [queryName] = query.queryKey;
+        if (queryName === "ofertas" || queryName === "todas-ofertas") return false;
+        return query.state.status === "success";
+      },
     });
     safeSaveCache(dehydratedState);
   }, 400);

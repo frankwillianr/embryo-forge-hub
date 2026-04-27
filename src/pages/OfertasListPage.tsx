@@ -7,6 +7,7 @@ import {
   Search,
   BadgePercent,
   Eye,
+  Flame,
   Tag,
   Scissors,
   Wrench,
@@ -47,6 +48,93 @@ const CATEGORIA_MAP: Record<string, string[]> = {
   comercio: ["desapega", "lojas", "promocoes", "restaurantes", "entregador", "moda", "eletronicos"],
   veiculos: ["mecanico", "lava-jato", "auto-pecas", "guincho", "funilaria", "borracharia", "vistoria", "motorista"],
   pets: ["veterinario", "pet", "petshop", "adestrador", "hotel-pet", "passeador"],
+};
+
+const CATEGORIA_LABELS: Record<string, string> = {
+  salao: "Beleza",
+  barbeiro: "Barbearia",
+  manicure: "Manicure",
+  estetica: "Estética",
+  maquiagem: "Maquiagem",
+  sobrancelha: "Sobrancelha",
+  depilacao: "Depilação",
+  reparos: "Reparos",
+  eletricista: "Eletricista",
+  encanador: "Encanador",
+  obras: "Obras",
+  limpeza: "Limpeza",
+  dedetizacao: "Dedetização",
+  chaveiro: "Chaveiro",
+  pintor: "Pintor",
+  marceneiro: "Marcenaria",
+  serralheria: "Serralheria",
+  vidraceiro: "Vidraceiro",
+  "ar-condicionado": "Ar-condicionado",
+  jardinagem: "Jardinagem",
+  mudancas: "Mudanças",
+  diarista: "Diarista",
+  costura: "Costura",
+  advogado: "Advocacia",
+  contador: "Contabilidade",
+  despachante: "Despachante",
+  engenheiro: "Engenharia",
+  arquiteto: "Arquitetura",
+  corretor: "Imóveis",
+  fotografo: "Fotografia",
+  aulas: "Aulas",
+  idiomas: "Idiomas",
+  informatica: "Informática",
+  eventos: "Eventos",
+  clinica: "Clínica",
+  dentista: "Dentista",
+  psicologo: "Psicologia",
+  fisioterapeuta: "Fisioterapia",
+  nutricionista: "Nutrição",
+  personal: "Personal",
+  academia: "Academia",
+  massagista: "Massagem",
+  farmacia: "Farmácia",
+  desapega: "Desapega",
+  lojas: "Loja",
+  promocoes: "Promoções",
+  restaurantes: "Restaurante",
+  entregador: "Delivery",
+  moda: "Moda",
+  eletronicos: "Eletrônicos",
+  mecanico: "Mecânica",
+  "lava-jato": "Lava-jato",
+  "auto-pecas": "Autopeças",
+  guincho: "Guincho",
+  funilaria: "Funilaria",
+  borracharia: "Borracharia",
+  vistoria: "Vistoria",
+  motorista: "Motorista",
+  veterinario: "Veterinário",
+  pet: "Pet",
+  petshop: "Petshop",
+  adestrador: "Adestrador",
+  "hotel-pet": "Hotel pet",
+  passeador: "Passeador",
+};
+
+const formatarCategoriaLabel = (categoria: string) => {
+  const labelMapeada = CATEGORIA_LABELS[categoria];
+  if (labelMapeada) return labelMapeada;
+
+  return categoria
+    .split("-")
+    .filter(Boolean)
+    .map((parte) => parte.charAt(0).toUpperCase() + parte.slice(1))
+    .join(" ");
+};
+
+const shuffleArray = <T,>(items: T[]): T[] => {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 };
 
 const OFERTA_IMPRESSAO_STORAGE_KEY = "ofertas-impressao-cooldown-v1";
@@ -140,6 +228,7 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
   }, [oferta.id, onImpressaoQualificada]);
 
   const labelVisualizacao = visualizacoes <= 1 ? "visualiza\u00E7\u00E3o" : "visualiza\u00E7\u00F5es";
+  const categoriaLabel = formatarCategoriaLabel(oferta.categoria);
 
   return (
     <button
@@ -149,23 +238,37 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
           state: { backTo: `/cidade/${slug}/ofertas` },
         })
       }
-      className="group relative overflow-hidden rounded-[15px] border border-border/30 bg-card shadow-sm transition-all hover:shadow-lg active:scale-[0.98] text-left"
+      className="group relative overflow-hidden rounded-[17px] border border-border/30 bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition-all hover:shadow-xl active:scale-[0.985] text-left"
     >
-      <div className="relative aspect-[0.78] w-full">
+      <div className="relative aspect-[2.85] w-full">
         <img
           src={oferta.banner_oferta_url || ""}
           alt={oferta.nome}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/15 to-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
 
-        <div className="absolute right-2 top-2">
-          <span className="inline-flex items-center rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-semibold text-foreground backdrop-blur-sm">
+        <div className="absolute right-3 top-3">
+          <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow-sm backdrop-blur-sm">
+            <Flame className="h-3 w-3 text-orange-500" />
+            {categoriaLabel}
+          </span>
+        </div>
+
+        <div className="absolute left-0 top-0 flex w-[58%] flex-col px-4 py-3 text-white">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/85 line-clamp-1">
+            {oferta.nome}
+          </p>
+        </div>
+
+        <div className="absolute bottom-3 left-3">
+          <span className="mt-3 inline-flex w-fit items-center rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-900 shadow-sm">
             Ver oferta
           </span>
         </div>
-        <div className="absolute bottom-2 left-2">
-          <span className="inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-normal text-white backdrop-blur-sm">
+
+        <div className="absolute bottom-3 right-3">
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/45 px-2 py-1 text-[10px] font-normal text-white backdrop-blur-sm">
             <Eye className="h-3 w-3" />
             {visualizacoes} {labelVisualizacao}
           </span>
@@ -207,12 +310,16 @@ const OfertasListPage = () => {
         .select("id, nome, categoria, banner_oferta_url, descricao, visualizacoes")
         .eq("cidade_id", cidade!.id)
         .eq("status", "ativo")
-        .not("banner_oferta_url", "is", null)
-        .order("nome", { ascending: true });
+        .not("banner_oferta_url", "is", null);
       if (error) throw error;
       return (data || []) as Oferta[];
     },
     enabled: !!cidade?.id,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
@@ -271,15 +378,16 @@ const OfertasListPage = () => {
     pendingIncrementRef.current.delete(ofertaId);
   }, []);
 
+  const ofertasEmOrdemAleatoria = useMemo(() => shuffleArray(ofertas || []), [ofertas]);
+
   const ofertasFiltradas = useMemo(() => {
-    if (!ofertas) return [];
-    return ofertas.filter((oferta) => {
+    return ofertasEmOrdemAleatoria.filter((oferta) => {
       const matchSearch = !searchTerm || oferta.nome.toLowerCase().includes(searchTerm.toLowerCase());
       if (categoriaAtiva === "todas") return matchSearch;
       const dbCats = CATEGORIA_MAP[categoriaAtiva] || [];
       return dbCats.includes(oferta.categoria) && matchSearch;
     });
-  }, [ofertas, categoriaAtiva, searchTerm]);
+  }, [ofertasEmOrdemAleatoria, categoriaAtiva, searchTerm]);
 
   return (
     <div id="swipe-back-page" className="flex flex-col min-h-screen bg-background">
@@ -341,13 +449,13 @@ const OfertasListPage = () => {
 
       <main className="flex-1 p-4 pb-32">
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-[10px]">
+          <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-[3/4] rounded-2xl bg-muted animate-pulse" />
+              <div key={i} className="aspect-[2.85] rounded-[17px] bg-muted animate-pulse" />
             ))}
           </div>
         ) : ofertasFiltradas.length > 0 ? (
-          <div className="grid grid-cols-2 gap-[10px]">
+          <div className="space-y-3">
             {ofertasFiltradas.map((oferta) => (
               <OfertaCard
                 key={oferta.id}
