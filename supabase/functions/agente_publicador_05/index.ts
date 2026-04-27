@@ -8,10 +8,12 @@ const CORS = {
 
 const LIMIT_DEFAULT = 20;
 const LIMIT_MAX = 100;
+const MAX_AGE_DAYS_DEFAULT = 10;
 
 interface RequestBody {
   cidade_id: string;
   limit?: number;
+  max_age_days?: number;
 }
 
 interface NoticiaRow {
@@ -85,6 +87,10 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as RequestBody;
     const cidade_id = body?.cidade_id;
     const limit = Math.min(Math.max(body?.limit ?? LIMIT_DEFAULT, 1), LIMIT_MAX);
+    const maxAgeDays = Math.min(Math.max(body?.max_age_days ?? MAX_AGE_DAYS_DEFAULT, 1), 30);
+    const minDataPublicacao = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
 
     if (!cidade_id) {
       return new Response(
@@ -120,7 +126,9 @@ Deno.serve(async (req) => {
       .not("imagem_refeita", "is", null)
       .neq("status", "concluido")
       .is("jornal_postado_at", null)
-      .order("created_at", { ascending: true })
+      .gte("data_publicacao", minDataPublicacao)
+      .order("data_publicacao", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
       .limit(limit);
 
     if (error) throw error;
@@ -159,7 +167,7 @@ Deno.serve(async (req) => {
         if (exErr) throw exErr;
 
         if (existente?.id) {
-          await supabase
+          const { error: markExistingErr } = await supabase
             .from("tabela_agente_buscador")
             .update({
               status: "publicado",
@@ -168,6 +176,7 @@ Deno.serve(async (req) => {
               jornal_post_erro: null,
             })
             .eq("id", n.id);
+          if (markExistingErr) throw markExistingErr;
 
           total_ja_existia++;
           itens.push({ id: n.id, ok: true, modo: "ja_existia", jornal_id: existente.id });
@@ -199,7 +208,7 @@ Deno.serve(async (req) => {
 
         if (insErr) throw insErr;
 
-        await supabase
+        const { error: markPublishedErr } = await supabase
           .from("tabela_agente_buscador")
           .update({
             status: "publicado",
@@ -208,6 +217,7 @@ Deno.serve(async (req) => {
             jornal_post_erro: null,
           })
           .eq("id", n.id);
+        if (markPublishedErr) throw markPublishedErr;
 
         total_publicado++;
         if (!primeiroTituloPublicado) {

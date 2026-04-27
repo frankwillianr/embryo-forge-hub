@@ -7,6 +7,10 @@ interface RequestBody {
   cidade_id: string;
 }
 
+const MAX_TOTAL_MS = 125_000;
+const IMAGE_PHASE_DEADLINE_MS = 102_000;
+const PUBLICADOR_LIMIT = 30;
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -70,6 +74,23 @@ Deno.serve(async (req) => {
     const bearer = authHeader.startsWith("Bearer ") ? authHeader : `Bearer ${anonKey}`;
 
     const steps: Array<Record<string, unknown>> = [];
+    const startedAt = Date.now();
+
+    const publicadorInicial = await invokeEdge(supabaseUrl, anonKey, bearer, "agente_publicador_05", {
+      cidade_id,
+      limit: PUBLICADOR_LIMIT,
+      max_age_days: 10,
+    });
+    steps.push({
+      agente: "5-pre",
+      nome: "agente_publicador_05",
+      ok: true,
+      resumo: {
+        publicado: publicadorInicial?.total_publicado ?? 0,
+        ja_existia: publicadorInicial?.total_ja_existia ?? 0,
+        erros: publicadorInicial?.total_erros ?? 0,
+      },
+    });
 
     const a1 = await invokeEdge(supabaseUrl, anonKey, bearer, "agente_buscador_01", {
       cidade_id,
@@ -102,8 +123,10 @@ Deno.serve(async (req) => {
     let a4Erros = 0;
     let a4Rodadas = 0;
     let workerLimitHits = 0;
-    const MAX_RODADAS = 220;
+    const MAX_RODADAS = 24;
+    let a4Erro: string | null = null;
     for (let i = 0; i < MAX_RODADAS; i++) {
+      if (Date.now() - startedAt >= IMAGE_PHASE_DEADLINE_MS) break;
       a4Rodadas++;
       try {
         const r = await invokeEdge(supabaseUrl, anonKey, bearer, "agente_imagem_04", {
@@ -121,29 +144,49 @@ Deno.serve(async (req) => {
 
         if (restantes <= 0) break;
         if (proc <= 0 && err <= 0) break;
+        if (Date.now() - startedAt >= IMAGE_PHASE_DEADLINE_MS) break;
 
         await sleep(1200);
       } catch (e) {
         const msg = String(e);
         if (msg.includes("HTTP 546") || msg.includes("WORKER_LIMIT")) {
           workerLimitHits++;
-          if (workerLimitHits >= 8) throw e;
+          if (workerLimitHits >= 4) {
+            a4Erro = msg;
+            break;
+          }
           await sleep(3000);
           continue;
         }
-        throw e;
+        a4Erro = msg;
+        break;
       }
     }
     steps.push({
       agente: "4",
       nome: "agente_imagem_04",
-      ok: true,
-      resumo: { processadas: a4Processadas, erros: a4Erros, rodadas: a4Rodadas },
+      ok: !a4Erro,
+      resumo: { processadas: a4Processadas, erros: a4Erros, rodadas: a4Rodadas, erro: a4Erro },
     });
+
+    if (Date.now() - startedAt >= MAX_TOTAL_MS) {
+      steps.push({
+        agente: "5",
+        nome: "agente_publicador_05",
+        ok: false,
+        resumo: { skipped: true, reason: "tempo_esgotado_antes_do_publicador_final" },
+      });
+
+      return new Response(
+        JSON.stringify({ ok: true, agente: "agente_fluxo_automatico_v2", cidade_id, steps }),
+        { headers: { ...CORS, "Content-Type": "application/json" } },
+      );
+    }
 
     const a5 = await invokeEdge(supabaseUrl, anonKey, bearer, "agente_publicador_05", {
       cidade_id,
-      limit: 150,
+      limit: PUBLICADOR_LIMIT,
+      max_age_days: 10,
     });
     steps.push({
       agente: "5",
