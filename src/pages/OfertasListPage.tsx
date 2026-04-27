@@ -7,7 +7,6 @@ import {
   Search,
   BadgePercent,
   Eye,
-  Flame,
   Tag,
   Scissors,
   Wrench,
@@ -249,20 +248,13 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
 
         <div className="absolute right-3 top-3">
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow-sm backdrop-blur-sm">
-            <Flame className="h-3 w-3 text-orange-500" />
+          <span className="inline-flex items-center rounded-full border border-white/20 bg-white/15 px-2.5 py-1 text-[10px] font-medium text-white/75 shadow-sm backdrop-blur-sm">
             {categoriaLabel}
           </span>
         </div>
 
-        <div className="absolute left-0 top-0 flex w-[58%] flex-col px-4 py-3 text-white">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/85 line-clamp-1">
-            {oferta.nome}
-          </p>
-        </div>
-
         <div className="absolute bottom-3 left-3">
-          <span className="mt-3 inline-flex w-fit items-center rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-900 shadow-sm">
+          <span className="mt-3 inline-flex w-fit items-center rounded-full border border-white/25 bg-white/15 px-3 py-1 text-[10px] font-semibold text-white/80 shadow-sm backdrop-blur-sm">
             Ver oferta
           </span>
         </div>
@@ -390,8 +382,8 @@ const OfertasListPage = () => {
   }, [ofertasEmOrdemAleatoria, categoriaAtiva, searchTerm]);
 
   return (
-    <div id="swipe-back-page" className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-0 z-10 p-4 pt-safe border-b border-border bg-card">
+    <div id="swipe-back-page" className="flex h-screen min-h-screen flex-col overflow-hidden bg-background">
+      <header className="z-10 flex-shrink-0 p-4 pt-safe border-b border-border bg-card">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate(`/cidade/${slug}`)}>
             <ArrowLeft className="h-5 w-5" />
@@ -403,7 +395,7 @@ const OfertasListPage = () => {
         </div>
       </header>
 
-      <div className="px-4 py-3 border-b border-border bg-card/50">
+      <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card/50">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -415,7 +407,7 @@ const OfertasListPage = () => {
         </div>
       </div>
 
-      <div className="border-b border-border bg-card/30">
+      <div className="flex-shrink-0 border-b border-border bg-card/30">
         <div className="overflow-x-auto scrollbar-hide">
           <div className="flex gap-1 px-4 py-3 w-max">
             {TODAS_CATEGORIAS.map((cat) => (
@@ -447,7 +439,7 @@ const OfertasListPage = () => {
         </div>
       </div>
 
-      <main className="flex-1 p-4 pb-32">
+      <main className="flex-1 overflow-y-auto overscroll-contain p-4 pb-32">
         {isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
