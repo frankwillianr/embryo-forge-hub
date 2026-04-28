@@ -7,6 +7,8 @@ import {
   Search,
   BadgePercent,
   Eye,
+  ImageIcon,
+  Video,
   Tag,
   Scissors,
   Wrench,
@@ -146,6 +148,8 @@ type Oferta = {
   nome: string;
   categoria: string;
   banner_oferta_url: string | null;
+  logomarca_url: string | null;
+  video_url: string | null;
   descricao: string | null;
   visualizacoes: number | null;
 };
@@ -228,6 +232,7 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
 
   const labelVisualizacao = visualizacoes <= 1 ? "visualiza\u00E7\u00E3o" : "visualiza\u00E7\u00F5es";
   const categoriaLabel = formatarCategoriaLabel(oferta.categoria);
+  const imagemOferta = oferta.banner_oferta_url || oferta.logomarca_url || "";
 
   return (
     <button
@@ -240,11 +245,15 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
       className="group relative overflow-hidden rounded-[17px] border border-border/30 bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition-all hover:shadow-xl active:scale-[0.985] text-left"
     >
       <div className="relative aspect-[2.85] w-full">
-        <img
-          src={oferta.banner_oferta_url || ""}
-          alt={oferta.nome}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-        />
+        {imagemOferta ? (
+          <img
+            src={imagemOferta}
+            alt={oferta.nome}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          />
+        ) : (
+          <div className="h-full w-full bg-gradient-to-br from-muted to-muted/60" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
 
         <div className="absolute right-3 top-3">
@@ -270,6 +279,52 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
   );
 };
 
+const OfertaVideoCard = ({ oferta, slug, visualizacoes }: Omit<OfertaCardProps, "onImpressaoQualificada">) => {
+  const navigate = useNavigate();
+  const labelVisualizacao = visualizacoes <= 1 ? "visualiza\u00E7\u00E3o" : "visualiza\u00E7\u00F5es";
+  const categoriaLabel = formatarCategoriaLabel(oferta.categoria);
+
+  return (
+    <article className="overflow-hidden rounded-[17px] border border-border/30 bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)]">
+      <div className="relative bg-black">
+        <video
+          src={oferta.video_url || ""}
+          controls
+          playsInline
+          preload="metadata"
+          className="h-[420px] max-h-[70vh] w-full bg-black object-contain"
+        />
+        <div className="pointer-events-none absolute right-3 top-3">
+          <span className="inline-flex items-center rounded-full border border-white/20 bg-black/35 px-2.5 py-1 text-[10px] font-medium text-white/85 shadow-sm backdrop-blur-sm">
+            {categoriaLabel}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 p-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-foreground">{oferta.nome}</p>
+          <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+            <Eye className="h-3 w-3" />
+            {visualizacoes} {labelVisualizacao}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            navigate(`/cidade/${slug}/servicos/${oferta.categoria}/${oferta.id}`, {
+              state: { backTo: `/cidade/${slug}/ofertas` },
+            })
+          }
+          className="flex-shrink-0 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-neutral-100"
+        >
+          Ver oferta
+        </button>
+      </div>
+    </article>
+  );
+};
+
 const OfertasListPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -277,6 +332,7 @@ const OfertasListPage = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
+  const [modoVisualizacao, setModoVisualizacao] = useState<"imagem" | "video">("imagem");
   const [visualizacoesById, setVisualizacoesById] = useState<Record<string, number>>({});
   const pendingIncrementRef = useRef<Set<string>>(new Set());
 
@@ -299,10 +355,9 @@ const OfertasListPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rel_cidade_servico_empresa")
-        .select("id, nome, categoria, banner_oferta_url, descricao, visualizacoes")
+        .select("id, nome, categoria, banner_oferta_url, logomarca_url, video_url, descricao, visualizacoes")
         .eq("cidade_id", cidade!.id)
-        .eq("status", "ativo")
-        .not("banner_oferta_url", "is", null);
+        .eq("status", "ativo");
       if (error) throw error;
       return (data || []) as Oferta[];
     },
@@ -381,6 +436,11 @@ const OfertasListPage = () => {
     });
   }, [ofertasEmOrdemAleatoria, categoriaAtiva, searchTerm]);
 
+  const ofertasVisiveis = useMemo(
+    () => (modoVisualizacao === "video" ? ofertasFiltradas.filter((oferta) => !!oferta.video_url) : ofertasFiltradas),
+    [modoVisualizacao, ofertasFiltradas],
+  );
+
   return (
     <div id="swipe-back-page" className="flex h-screen min-h-screen flex-col overflow-hidden bg-background">
       <header className="z-10 flex-shrink-0 p-4 pt-safe border-b border-border bg-card">
@@ -396,14 +456,40 @@ const OfertasListPage = () => {
       </header>
 
       <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card/50">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar ofertas..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar ofertas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setModoVisualizacao("imagem")}
+            className={`flex h-10 flex-shrink-0 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition-colors ${
+              modoVisualizacao === "imagem"
+                ? "border-[#1f2937] bg-[#1f2937] text-white"
+                : "border-border bg-background text-muted-foreground hover:bg-muted"
+            }`}
+            aria-label="Ver imagens"
+          >
+            Imagem
+          </button>
+          <button
+            type="button"
+            onClick={() => setModoVisualizacao("video")}
+            className={`flex h-10 flex-shrink-0 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition-colors ${
+              modoVisualizacao === "video"
+                ? "border-[#1f2937] bg-[#1f2937] text-white"
+                : "border-border bg-background text-muted-foreground hover:bg-muted"
+            }`}
+            aria-label="Ver vídeos"
+          >
+            Vídeo
+          </button>
         </div>
       </div>
 
@@ -446,23 +532,36 @@ const OfertasListPage = () => {
               <div key={i} className="aspect-[2.85] rounded-[17px] bg-muted animate-pulse" />
             ))}
           </div>
-        ) : ofertasFiltradas.length > 0 ? (
+        ) : ofertasVisiveis.length > 0 ? (
           <div className="space-y-3">
-            {ofertasFiltradas.map((oferta) => (
-              <OfertaCard
-                key={oferta.id}
-                oferta={oferta}
-                slug={slug || ""}
-                visualizacoes={Number(visualizacoesById[oferta.id] ?? oferta.visualizacoes ?? 0)}
-                onImpressaoQualificada={registrarImpressaoQualificada}
-              />
-            ))}
+            {ofertasVisiveis.map((oferta) =>
+              modoVisualizacao === "video" ? (
+                <OfertaVideoCard
+                  key={oferta.id}
+                  oferta={oferta}
+                  slug={slug || ""}
+                  visualizacoes={Number(visualizacoesById[oferta.id] ?? oferta.visualizacoes ?? 0)}
+                />
+              ) : (
+                <OfertaCard
+                  key={oferta.id}
+                  oferta={oferta}
+                  slug={slug || ""}
+                  visualizacoes={Number(visualizacoesById[oferta.id] ?? oferta.visualizacoes ?? 0)}
+                  onImpressaoQualificada={registrarImpressaoQualificada}
+                />
+              ),
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <BadgePercent className="h-12 w-12 text-muted-foreground/30 mb-4" />
-            <h3 className="font-semibold text-foreground mb-1">Nenhuma oferta nessa categoria</h3>
-            <p className="text-sm text-muted-foreground mb-6">Seja o primeiro a anunciar aqui!</p>
+            <h3 className="font-semibold text-foreground mb-1">
+              {modoVisualizacao === "video" ? "Nenhum vídeo nessa categoria" : "Nenhuma oferta nessa categoria"}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              {modoVisualizacao === "video" ? "Apenas empresas com vídeo aparecem aqui." : "Seja o primeiro a anunciar aqui!"}
+            </p>
             <button
               onClick={() => navigate(`/cidade/${slug}/empresa/novo`)}
               className="px-5 py-2.5 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"

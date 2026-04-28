@@ -6,18 +6,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import ImageUpload from "@/components/shared/ImageUpload";
 import VideoUpload from "@/components/shared/VideoUpload";
+import EmpresaCatalogoProdutosEditor, {
+  CatalogoProdutoForm,
+  formatPrecoProdutoFromValue,
+  prepararProdutosParaSalvar,
+} from "@/components/servicos/EmpresaCatalogoProdutosEditor";
+import HorarioFuncionamentoInput from "@/components/servicos/HorarioFuncionamentoInput";
 import { geocodeEndereco } from "@/lib/geocode";
 
 const MAX_CATEGORIAS = 3;
@@ -110,9 +109,8 @@ const EditarEmpresaPage = () => {
   const fotosInicializadasRef = useRef(false);
   const saveInFlightRef = useRef(false);
   const [fotosAlteradas, setFotosAlteradas] = useState(false);
-  const [cupomNome, setCupomNome] = useState("");
-  const [cupomValor, setCupomValor] = useState("");
-  const [cupomTipo, setCupomTipo] = useState<"real" | "porcentagem">("porcentagem");
+  const [catalogoProdutos, setCatalogoProdutos] = useState<CatalogoProdutoForm[]>([]);
+  const produtosInicializadosRef = useRef(false);
   const [horarios, setHorarios] = useState<HorarioFuncionamento[]>(
     diasSemana.map((dia) => ({
       dia,
@@ -168,6 +166,21 @@ const EditarEmpresaPage = () => {
     enabled: !!empresaId,
   });
 
+  const { data: empresaProdutos } = useQuery({
+    queryKey: ["empresa-produtos", empresaId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("rel_cidade_servico_empresa_produto")
+        .select("id, nome, descricao, preco, foto_url, ativo, ordem, created_at")
+        .eq("empresa_id", empresaId)
+        .order("ordem", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!empresaId,
+  });
+
   // Populate form only once when empresa loads (evita sobrescrever categorias ao refetch)
   useEffect(() => {
     if (!empresa || empresa.id !== empresaId) return;
@@ -192,16 +205,15 @@ const EditarEmpresaPage = () => {
     if (empresa.horario_funcionamento) {
       setHorarios(empresa.horario_funcionamento as HorarioFuncionamento[]);
     }
-    setCupomNome(empresa.cupom_nome || "");
-    setCupomValor(empresa.cupom_valor != null ? String(empresa.cupom_valor) : "");
-    setCupomTipo((empresa.cupom_tipo === "real" ? "real" : "porcentagem") as "real" | "porcentagem");
   }, [empresa, empresaId]);
 
   // Reset flags ao trocar de empresa
   useEffect(() => {
     categoriasInicializadasRef.current = false;
     fotosInicializadasRef.current = false;
+    produtosInicializadosRef.current = false;
     setFotosAlteradas(false);
+    setCatalogoProdutos([]);
   }, [empresaId]);
 
   const toggleCategoria = (id: string) => {
@@ -247,6 +259,22 @@ const EditarEmpresaPage = () => {
       setFotos(empresaFotos);
     }
   }, [empresaFotos, fotosAlteradas]);
+
+  useEffect(() => {
+    if (!empresaProdutos || produtosInicializadosRef.current) return;
+    produtosInicializadosRef.current = true;
+    setCatalogoProdutos(
+      empresaProdutos.map((produto) => ({
+        id: produto.id,
+        localId: produto.id,
+        nome: produto.nome || "",
+        descricao: produto.descricao || "",
+        preco: formatPrecoProdutoFromValue(produto.preco),
+        fotoUrl: produto.foto_url || "",
+        ativo: produto.ativo !== false,
+      })),
+    );
+  }, [empresaProdutos]);
 
   const formatWhatsapp = (phone: string) => {
     const numbers = phone.replace(/\D/g, "");
@@ -353,9 +381,6 @@ const EditarEmpresaPage = () => {
           logomarca_url: logomarca[0] || null,
           banner_oferta_url: bannerOferta[0] || null,
           video_url: videoUrl || null,
-          cupom_nome: cupomNome.trim() || null,
-          cupom_valor: cupomNome.trim() && cupomValor ? parseFloat(cupomValor.replace(",", ".")) : null,
-          cupom_tipo: cupomNome.trim() && cupomValor ? cupomTipo : null,
         })
         .eq("id", empresaId)
         .select("id");
@@ -401,6 +426,20 @@ const EditarEmpresaPage = () => {
 
         if (fotosError) throw fotosError;
       }
+
+      const { error: deleteProdutosError } = await supabase
+        .from("rel_cidade_servico_empresa_produto")
+        .delete()
+        .eq("empresa_id", empresaId);
+      if (deleteProdutosError) throw deleteProdutosError;
+
+      const produtosData = prepararProdutosParaSalvar(catalogoProdutos, empresaId);
+      if (produtosData.length > 0) {
+        const { error: produtosError } = await supabase
+          .from("rel_cidade_servico_empresa_produto")
+          .insert(produtosData);
+        if (produtosError) throw produtosError;
+      }
       } finally {
         saveInFlightRef.current = false;
       }
@@ -410,12 +449,12 @@ const EditarEmpresaPage = () => {
       queryClient.invalidateQueries({ queryKey: ["servico-empresas"] });
       queryClient.invalidateQueries({ queryKey: ["empresa-editar", empresaId] });
       queryClient.invalidateQueries({ queryKey: ["empresa-fotos", empresaId] });
+      queryClient.invalidateQueries({ queryKey: ["empresa-produtos", empresaId] });
       queryClient.invalidateQueries({ queryKey: ["mapa-empresas"] });
       toast({
         title: "Empresa atualizada!",
         description: "As informações foram salvas com sucesso.",
       });
-      navigate(`/cidade/${slug}/minhas-empresas`);
     },
     onError: (error) => {
       toast({
@@ -634,50 +673,6 @@ const EditarEmpresaPage = () => {
           </div>
         </div>
 
-        {/* Cupom de desconto */}
-        <div className="space-y-4 pt-4 border-t border-border">
-          <h3 className="font-medium text-foreground">Cupom de desconto (opcional)</h3>
-          <div className="space-y-2">
-            <Label htmlFor="cupom_nome">Nome do cupom</Label>
-            <Input
-              id="cupom_nome"
-              placeholder="Ex: PRIMEIRACOMPRA"
-              value={cupomNome}
-              onChange={(e) => setCupomNome(e.target.value)}
-              maxLength={50}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="cupom_valor">Valor do desconto</Label>
-              <Input
-                id="cupom_valor"
-                placeholder={cupomTipo === "porcentagem" ? "Ex: 10" : "Ex: 50"}
-                value={cupomValor}
-                onChange={(e) => setCupomValor(e.target.value.replace(/[^0-9,.]/g, ""))}
-                inputMode="decimal"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Tipo</Label>
-              <Select value={cupomTipo} onValueChange={(v: "real" | "porcentagem") => setCupomTipo(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="real">Real (R$)</SelectItem>
-                  <SelectItem value="porcentagem">Porcentagem (%)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {cupomTipo === "porcentagem"
-              ? "Desconto em % sobre o valor do serviço (ex: 10 = 10%)."
-              : "Desconto em reais (ex: 50 = R$ 50,00)."}
-          </p>
-        </div>
-
         {/* Endereço */}
         <div className="space-y-4 pt-4 border-t border-border">
           <h3 className="font-medium text-foreground">Endereço</h3>
@@ -777,22 +772,20 @@ const EditarEmpresaPage = () => {
 
                 {horario.aberto ? (
                   <div className="flex items-center gap-2">
-                    <Input
-                      type="time"
+                    <HorarioFuncionamentoInput
                       value={horario.abertura}
-                      onChange={(e) =>
-                        updateHorario(index, "abertura", e.target.value)
+                      onChange={(value) =>
+                        updateHorario(index, "abertura", value)
                       }
-                      className="w-24 h-8 text-sm"
+                      ariaLabel={`Abertura ${horario.dia}`}
                     />
                     <span className="text-muted-foreground">às</span>
-                    <Input
-                      type="time"
+                    <HorarioFuncionamentoInput
                       value={horario.fechamento}
-                      onChange={(e) =>
-                        updateHorario(index, "fechamento", e.target.value)
+                      onChange={(value) =>
+                        updateHorario(index, "fechamento", value)
                       }
-                      className="w-24 h-8 text-sm"
+                      ariaLabel={`Fechamento ${horario.dia}`}
                     />
                   </div>
                 ) : (
@@ -802,6 +795,11 @@ const EditarEmpresaPage = () => {
             ))}
           </div>
         </div>
+
+        <EmpresaCatalogoProdutosEditor
+          produtos={catalogoProdutos}
+          onChange={setCatalogoProdutos}
+        />
       </main>
 
       {/* Footer */}

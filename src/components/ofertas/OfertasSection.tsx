@@ -102,7 +102,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
         .eq("status", "ativo")
         .limit(60);
       if (error) throw error;
-      return (data || []) as Oferta[];
+      return ((data || []) as Oferta[]).filter((oferta) => oferta.banner_oferta_url || oferta.logomarca_url);
     },
     enabled: !!cidade?.id,
   });

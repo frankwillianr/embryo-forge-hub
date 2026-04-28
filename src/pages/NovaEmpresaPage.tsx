@@ -6,13 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,6 +13,11 @@ import ImageUpload from "@/components/shared/ImageUpload";
 import VideoUpload from "@/components/shared/VideoUpload";
 import EmpresaPricingInfo from "@/components/servicos/EmpresaPricingInfo";
 import EmpresaPreviewModal from "@/components/servicos/EmpresaPreviewModal";
+import EmpresaCatalogoProdutosEditor, {
+  CatalogoProdutoForm,
+  prepararProdutosParaSalvar,
+} from "@/components/servicos/EmpresaCatalogoProdutosEditor";
+import HorarioFuncionamentoInput from "@/components/servicos/HorarioFuncionamentoInput";
 import { geocodeEndereco } from "@/lib/geocode";
 
 interface HorarioFuncionamento {
@@ -167,9 +165,7 @@ const NovaEmpresaPage = () => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [loadingCep, setLoadingCep] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [cupomNome, setCupomNome] = useState("");
-  const [cupomValor, setCupomValor] = useState("");
-  const [cupomTipo, setCupomTipo] = useState<"real" | "porcentagem">("porcentagem");
+  const [catalogoProdutos, setCatalogoProdutos] = useState<CatalogoProdutoForm[]>([]);
   const [horarios, setHorarios] = useState<HorarioFuncionamento[]>(
     diasSemana.map((dia) => ({
       dia,
@@ -293,15 +289,20 @@ const NovaEmpresaPage = () => {
           logomarca_url: logomarca[0] || null,
           banner_oferta_url: bannerOferta[0] || null,
           video_url: videoUrl || null,
-          cupom_nome: cupomNome.trim() || null,
-          cupom_valor: cupomNome.trim() && cupomValor ? parseFloat(cupomValor.replace(",", ".")) : null,
-          cupom_tipo: cupomNome.trim() && cupomValor ? cupomTipo : null,
           status: "aguardando_pagamento",
         })
         .select()
         .single();
 
       if (empresaError) throw empresaError;
+
+      const produtosData = prepararProdutosParaSalvar(catalogoProdutos, empresa.id);
+      if (produtosData.length > 0) {
+        const { error: produtosError } = await supabase
+          .from("rel_cidade_servico_empresa_produto")
+          .insert(produtosData);
+        if (produtosError) throw produtosError;
+      }
 
       // Inserir fotos
       if (fotos.length > 0) {
@@ -563,50 +564,6 @@ const NovaEmpresaPage = () => {
           </div>
         </div>
 
-        {/* Cupom de desconto */}
-        <div className="space-y-4 pt-4 border-t border-border">
-          <h3 className="font-medium text-foreground">Cupom de desconto (opcional)</h3>
-          <div className="space-y-2">
-            <Label htmlFor="cupom_nome">Nome do cupom</Label>
-            <Input
-              id="cupom_nome"
-              placeholder="Ex: PRIMEIRACOMPRA"
-              value={cupomNome}
-              onChange={(e) => setCupomNome(e.target.value)}
-              maxLength={50}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="cupom_valor">Valor do desconto</Label>
-              <Input
-                id="cupom_valor"
-                placeholder={cupomTipo === "porcentagem" ? "Ex: 10" : "Ex: 50"}
-                value={cupomValor}
-                onChange={(e) => setCupomValor(e.target.value.replace(/[^0-9,.]/g, ""))}
-                inputMode="decimal"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Tipo</Label>
-              <Select value={cupomTipo} onValueChange={(v: "real" | "porcentagem") => setCupomTipo(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="real">Real (R$)</SelectItem>
-                  <SelectItem value="porcentagem">Porcentagem (%)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {cupomTipo === "porcentagem"
-              ? "Desconto em % sobre o valor do serviço (ex: 10 = 10%)."
-              : "Desconto em reais (ex: 50 = R$ 50,00)."}
-          </p>
-        </div>
-
         {/* Endereço */}
         <div className="space-y-4 pt-4 border-t border-border">
           <h3 className="font-medium text-foreground">Endereço</h3>
@@ -706,22 +663,20 @@ const NovaEmpresaPage = () => {
 
                 {horario.aberto ? (
                   <div className="flex items-center gap-2">
-                    <Input
-                      type="time"
+                    <HorarioFuncionamentoInput
                       value={horario.abertura}
-                      onChange={(e) =>
-                        updateHorario(index, "abertura", e.target.value)
+                      onChange={(value) =>
+                        updateHorario(index, "abertura", value)
                       }
-                      className="w-24 h-8 text-sm"
+                      ariaLabel={`Abertura ${horario.dia}`}
                     />
                     <span className="text-muted-foreground">às</span>
-                    <Input
-                      type="time"
+                    <HorarioFuncionamentoInput
                       value={horario.fechamento}
-                      onChange={(e) =>
-                        updateHorario(index, "fechamento", e.target.value)
+                      onChange={(value) =>
+                        updateHorario(index, "fechamento", value)
                       }
-                      className="w-24 h-8 text-sm"
+                      ariaLabel={`Fechamento ${horario.dia}`}
                     />
                   </div>
                 ) : (
@@ -731,6 +686,11 @@ const NovaEmpresaPage = () => {
             ))}
           </div>
         </div>
+
+        <EmpresaCatalogoProdutosEditor
+          produtos={catalogoProdutos}
+          onChange={setCatalogoProdutos}
+        />
 
         {/* Pricing Info Card */}
         <EmpresaPricingInfo />
