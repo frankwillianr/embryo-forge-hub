@@ -138,10 +138,7 @@ const shuffleArray = <T,>(items: T[]): T[] => {
   return result;
 };
 
-const OFERTA_IMPRESSAO_STORAGE_KEY = "ofertas-impressao-cooldown-v1";
-const IMPRESSAO_COOLDOWN_MS = 30 * 60 * 1000;
-const IMPRESSAO_MIN_VISIVEL_MS = 1000;
-const IMPRESSAO_THRESHOLD = 0.5;
+const IMPRESSAO_THRESHOLD = 0.08;
 
 type Oferta = {
   id: string;
@@ -154,25 +151,6 @@ type Oferta = {
   visualizacoes: number | null;
 };
 
-const getImpressaoMap = (): Record<string, number> => {
-  try {
-    const raw = localStorage.getItem(OFERTA_IMPRESSAO_STORAGE_KEY);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-};
-
-const setImpressaoMap = (value: Record<string, number>) => {
-  try {
-    localStorage.setItem(OFERTA_IMPRESSAO_STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // Ignora falha de storage (navegacao privada/cota).
-  }
-};
-
 type OfertaCardProps = {
   oferta: Oferta;
   slug: string;
@@ -180,26 +158,20 @@ type OfertaCardProps = {
   onImpressaoQualificada: (ofertaId: string) => void;
 };
 
-const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: OfertaCardProps) => {
-  const navigate = useNavigate();
-  const cardRef = useRef<HTMLButtonElement | null>(null);
-  const timeoutRef = useRef<number | null>(null);
+const useRegistrarImpressaoAoAparecer = <T extends HTMLElement>(
+  ofertaId: string,
+  onImpressaoQualificada: (ofertaId: string) => void,
+) => {
+  const elementRef = useRef<T | null>(null);
   const disparouRef = useRef(false);
 
   useEffect(() => {
     disparouRef.current = false;
-  }, [oferta.id]);
+  }, [ofertaId]);
 
   useEffect(() => {
-    const node = cardRef.current;
+    const node = elementRef.current;
     if (!node || typeof IntersectionObserver === "undefined") return;
-
-    const clearTimer = () => {
-      if (timeoutRef.current != null) {
-        window.clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
-    };
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -207,28 +179,56 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
         if (!entry || disparouRef.current) return;
 
         if (entry.isIntersecting && entry.intersectionRatio >= IMPRESSAO_THRESHOLD) {
-          if (timeoutRef.current == null) {
-            timeoutRef.current = window.setTimeout(() => {
-              disparouRef.current = true;
-              timeoutRef.current = null;
-              onImpressaoQualificada(oferta.id);
-            }, IMPRESSAO_MIN_VISIVEL_MS);
-          }
-          return;
+          disparouRef.current = true;
+          onImpressaoQualificada(ofertaId);
+          observer.unobserve(node);
         }
-
-        clearTimer();
       },
-      { threshold: [0, IMPRESSAO_THRESHOLD, 1] },
+      { threshold: [0, IMPRESSAO_THRESHOLD] },
     );
 
     observer.observe(node);
 
-    return () => {
-      clearTimer();
-      observer.disconnect();
-    };
-  }, [oferta.id, onImpressaoQualificada]);
+    return () => observer.disconnect();
+  }, [ofertaId, onImpressaoQualificada]);
+
+  return elementRef;
+};
+
+const incrementarVisualizacaoOferta = async (ofertaId: string) => {
+  const { data: rpcData, error: rpcError } = await supabase.rpc("incrementar_visualizacao_oferta", {
+    p_empresa_id: ofertaId,
+  });
+
+  if (rpcError) throw rpcError;
+  if (typeof rpcData === "number" && rpcData > 0) return rpcData;
+
+  const { data: atual, error: fetchError } = await supabase
+    .from("rel_cidade_servico_empresa")
+    .select("visualizacoes")
+    .eq("id", ofertaId)
+    .eq("status", "ativo")
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const proximoTotal = Number(atual?.visualizacoes || 0) + 1;
+  const { data: updated, error: updateError } = await supabase
+    .from("rel_cidade_servico_empresa")
+    .update({ visualizacoes: proximoTotal })
+    .eq("id", ofertaId)
+    .eq("status", "ativo")
+    .select("visualizacoes")
+    .single();
+
+  if (updateError) throw updateError;
+
+  return Number(updated?.visualizacoes || proximoTotal);
+};
+
+const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: OfertaCardProps) => {
+  const navigate = useNavigate();
+  const cardRef = useRegistrarImpressaoAoAparecer<HTMLButtonElement>(oferta.id, onImpressaoQualificada);
 
   const labelVisualizacao = visualizacoes <= 1 ? "visualiza\u00E7\u00E3o" : "visualiza\u00E7\u00F5es";
   const categoriaLabel = formatarCategoriaLabel(oferta.categoria);
@@ -279,13 +279,14 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
   );
 };
 
-const OfertaVideoCard = ({ oferta, slug, visualizacoes }: Omit<OfertaCardProps, "onImpressaoQualificada">) => {
+const OfertaVideoCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: OfertaCardProps) => {
   const navigate = useNavigate();
+  const cardRef = useRegistrarImpressaoAoAparecer<HTMLElement>(oferta.id, onImpressaoQualificada);
   const labelVisualizacao = visualizacoes <= 1 ? "visualiza\u00E7\u00E3o" : "visualiza\u00E7\u00F5es";
   const categoriaLabel = formatarCategoriaLabel(oferta.categoria);
 
   return (
-    <article className="overflow-hidden rounded-[17px] border border-border/30 bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)]">
+    <article ref={cardRef} className="overflow-hidden rounded-[17px] border border-border/30 bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)]">
       <div className="relative bg-black">
         <video
           src={oferta.video_url || ""}
@@ -334,6 +335,7 @@ const OfertasListPage = () => {
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
   const [modoVisualizacao, setModoVisualizacao] = useState<"imagem" | "video">("imagem");
   const [visualizacoesById, setVisualizacoesById] = useState<Record<string, number>>({});
+  const visualizacoesRegistradasNaTelaRef = useRef<Set<string>>(new Set());
   const pendingIncrementRef = useRef<Set<string>>(new Set());
 
   const { data: cidade } = useQuery({
@@ -383,43 +385,30 @@ const OfertasListPage = () => {
   }, [ofertas]);
 
   const registrarImpressaoQualificada = useCallback(async (ofertaId: string) => {
-    const now = Date.now();
-    const impressaoMap = getImpressaoMap();
-    const ultima = impressaoMap[ofertaId] || 0;
-
-    if (now - ultima < IMPRESSAO_COOLDOWN_MS) return;
+    if (visualizacoesRegistradasNaTelaRef.current.has(ofertaId)) return;
     if (pendingIncrementRef.current.has(ofertaId)) return;
 
-    impressaoMap[ofertaId] = now;
-    setImpressaoMap(impressaoMap);
-
+    visualizacoesRegistradasNaTelaRef.current.add(ofertaId);
     pendingIncrementRef.current.add(ofertaId);
     setVisualizacoesById((prev) => ({
       ...prev,
       [ofertaId]: Number(prev[ofertaId] || 0) + 1,
     }));
 
-    const { data, error } = await supabase.rpc("incrementar_visualizacao_oferta", {
-      p_empresa_id: ofertaId,
-    });
-
-    if (error) {
-      const rollbackMap = getImpressaoMap();
-      delete rollbackMap[ofertaId];
-      setImpressaoMap(rollbackMap);
+    try {
+      const totalAtualizado = await incrementarVisualizacaoOferta(ofertaId);
+      setVisualizacoesById((prev) => ({
+        ...prev,
+        [ofertaId]: totalAtualizado,
+      }));
+    } catch {
+      visualizacoesRegistradasNaTelaRef.current.delete(ofertaId);
       setVisualizacoesById((prev) => ({
         ...prev,
         [ofertaId]: Math.max(0, Number(prev[ofertaId] || 0) - 1),
       }));
       pendingIncrementRef.current.delete(ofertaId);
       return;
-    }
-
-    if (typeof data === "number") {
-      setVisualizacoesById((prev) => ({
-        ...prev,
-        [ofertaId]: data,
-      }));
     }
 
     pendingIncrementRef.current.delete(ofertaId);
@@ -541,6 +530,7 @@ const OfertasListPage = () => {
                   oferta={oferta}
                   slug={slug || ""}
                   visualizacoes={Number(visualizacoesById[oferta.id] ?? oferta.visualizacoes ?? 0)}
+                  onImpressaoQualificada={registrarImpressaoQualificada}
                 />
               ) : (
                 <OfertaCard

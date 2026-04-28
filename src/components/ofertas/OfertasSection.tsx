@@ -1,9 +1,9 @@
-﻿import { useState, useEffect, useRef, useMemo } from "react";
+﻿import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BadgePercent } from "lucide-react";
+import { BadgePercent, Eye, Instagram } from "lucide-react";
 
 interface OfertasSectionProps {
   cidadeSlug?: string;
@@ -16,6 +16,8 @@ type Oferta = {
   categorias_adicionais: string[] | null;
   banner_oferta_url: string | null;
   logomarca_url: string | null;
+  instagram: string | null;
+  visualizacoes: number | null;
 };
 
 const CATEGORIAS = [
@@ -62,6 +64,19 @@ const parseCategoriasAdicionais = (value: unknown): string[] => {
   return [];
 };
 
+const formatCategoriaLabel = (value?: string | null) => {
+  const label = String(value || "Oferta")
+    .replace(/[-_]/g, " ")
+    .trim();
+
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+const formatInstagram = (value?: string | null) => {
+  const handle = String(value || "").replace(/^@/, "").trim();
+  return handle ? `@${handle}` : "";
+};
+
 const shuffleArray = <T,>(items: T[]): T[] => {
   const arr = [...items];
   for (let i = arr.length - 1; i > 0; i -= 1) {
@@ -71,12 +86,152 @@ const shuffleArray = <T,>(items: T[]): T[] => {
   return arr;
 };
 
+
+const IMPRESSAO_THRESHOLD = 0.08;
+
+const useRegistrarImpressaoAoAparecer = <T extends HTMLElement>(
+  ofertaId: string,
+  onImpressao: (ofertaId: string) => void,
+) => {
+  const elementRef = useRef<T | null>(null);
+  const disparouRef = useRef(false);
+
+  useEffect(() => {
+    disparouRef.current = false;
+  }, [ofertaId]);
+
+  useEffect(() => {
+    const node = elementRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry || disparouRef.current) return;
+
+        if (entry.isIntersecting && entry.intersectionRatio >= IMPRESSAO_THRESHOLD) {
+          disparouRef.current = true;
+          onImpressao(ofertaId);
+          observer.unobserve(node);
+        }
+      },
+      { threshold: [0, IMPRESSAO_THRESHOLD] },
+    );
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [ofertaId, onImpressao]);
+
+  return elementRef;
+};
+
+const incrementarVisualizacaoOferta = async (ofertaId: string) => {
+  const { data: rpcData, error: rpcError } = await supabase.rpc("incrementar_visualizacao_oferta", {
+    p_empresa_id: ofertaId,
+  });
+
+  if (rpcError) throw rpcError;
+  if (typeof rpcData === "number" && rpcData > 0) return rpcData;
+
+  const { data: atual, error: fetchError } = await supabase
+    .from("rel_cidade_servico_empresa")
+    .select("visualizacoes")
+    .eq("id", ofertaId)
+    .eq("status", "ativo")
+    .single();
+
+  if (fetchError) throw fetchError;
+
+  const proximoTotal = Number(atual?.visualizacoes || 0) + 1;
+  const { error: updateError } = await supabase
+    .from("rel_cidade_servico_empresa")
+    .update({ visualizacoes: proximoTotal })
+    .eq("id", ofertaId)
+    .eq("status", "ativo");
+
+  if (updateError) throw updateError;
+
+  return proximoTotal;
+};
+
+type OfertaHomeCardProps = {
+  oferta: Oferta;
+  cidadeSlug?: string;
+  visualizacoes: number;
+  onImpressao: (ofertaId: string) => void;
+};
+
+const OfertaHomeCard = ({ oferta, cidadeSlug, visualizacoes, onImpressao }: OfertaHomeCardProps) => {
+  const navigate = useNavigate();
+  const cardRef = useRegistrarImpressaoAoAparecer<HTMLDivElement>(oferta.id, onImpressao);
+  const labelVisualizacao = visualizacoes === 1 ? "visualizacao" : "visualizacoes";
+
+  return (
+    <div
+      ref={cardRef}
+      role="button"
+      tabIndex={0}
+      onClick={() => navigate(`/cidade/${cidadeSlug}/servicos/${oferta.categoria}/${oferta.id}`)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          navigate(`/cidade/${cidadeSlug}/servicos/${oferta.categoria}/${oferta.id}`);
+        }
+      }}
+      className="flex-shrink-0 w-[190px] overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-transform active:scale-[0.98]"
+    >
+      <div className="relative h-[105px] w-full bg-muted/40">
+        {oferta.banner_oferta_url || oferta.logomarca_url ? (
+          <img
+            src={oferta.banner_oferta_url || oferta.logomarca_url || ""}
+            alt={oferta.nome}
+            loading="lazy"
+            className={`h-full w-full ${
+              oferta.banner_oferta_url ? "object-cover" : "object-contain p-4"
+            }`}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-muted/60">
+            <BadgePercent className="h-8 w-8 text-muted-foreground/35" />
+          </div>
+        )}
+        <span className="absolute left-2 top-2 rounded-full bg-background/95 px-2.5 py-1 text-[10px] font-semibold text-foreground shadow-sm">
+          Oferta
+        </span>
+      </div>
+      <div className="space-y-1.5 p-3">
+        <h3 className="line-clamp-2 min-h-[32px] text-[12px] font-semibold leading-tight text-foreground">
+          {oferta.nome}
+        </h3>
+        <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+          <BadgePercent className="h-3 w-3 text-primary" />
+          <span className="truncate">{formatCategoriaLabel(oferta.categoria)}</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+          <Eye className="h-3 w-3 text-slate-500" />
+          <span className="truncate">{visualizacoes} {labelVisualizacao}</span>
+        </div>
+        {formatInstagram(oferta.instagram) && (
+          <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+            <Instagram className="h-3 w-3 text-[#C13584]" />
+            <span className="truncate">{formatInstagram(oferta.instagram)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
   const navigate = useNavigate();
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
+  const [visualizacoesById, setVisualizacoesById] = useState<Record<string, number>>({});
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const tabRefsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const ofertasScrollRef = useRef<HTMLDivElement>(null);
+  const visualizacoesRegistradasNaTelaRef = useRef<Set<string>>(new Set());
+  const pendingIncrementRef = useRef<Set<string>>(new Set());
 
   const { data: cidade } = useQuery({
     queryKey: ["cidade-id", cidadeSlug],
@@ -97,7 +252,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("rel_cidade_servico_empresa")
-        .select("id, nome, categoria, categorias_adicionais, banner_oferta_url, logomarca_url")
+        .select("id, nome, categoria, categorias_adicionais, banner_oferta_url, logomarca_url, instagram, visualizacoes")
         .eq("cidade_id", cidade!.id)
         .eq("status", "ativo")
         .limit(60);
@@ -106,6 +261,20 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
     },
     enabled: !!cidade?.id,
   });
+
+  useEffect(() => {
+    if (!ofertas?.length) return;
+
+    setVisualizacoesById((current) => {
+      const next = { ...current };
+      for (const oferta of ofertas) {
+        if (next[oferta.id] === undefined) {
+          next[oferta.id] = Number(oferta.visualizacoes || 0);
+        }
+      }
+      return next;
+    });
+  }, [ofertas]);
 
   const categoriasComOfertas = CATEGORIAS.map((c) => c.id);
 
@@ -151,8 +320,8 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
     const intervalId = window.setInterval(() => {
       if (!ofertasFiltradas.length) return;
 
-      const firstCard = container.querySelector("button");
-      const cardWidth = firstCard ? (firstCard as HTMLElement).offsetWidth + 12 : 162; // largura + gap
+      const firstCard = container.querySelector("[role='button'], button");
+      const cardWidth = firstCard ? (firstCard as HTMLElement).offsetWidth + 12 : 202; // largura + gap
       const maxScroll = container.scrollWidth - container.clientWidth;
 
       if (maxScroll <= 0) return;
@@ -168,6 +337,35 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
     return () => window.clearInterval(intervalId);
   }, [categoriaAtiva, ofertasFiltradas.length]);
 
+
+  const registrarImpressao = useCallback(async (ofertaId: string) => {
+    if (visualizacoesRegistradasNaTelaRef.current.has(ofertaId)) return;
+    if (pendingIncrementRef.current.has(ofertaId)) return;
+
+    visualizacoesRegistradasNaTelaRef.current.add(ofertaId);
+    pendingIncrementRef.current.add(ofertaId);
+    setVisualizacoesById((current) => ({
+      ...current,
+      [ofertaId]: Number(current[ofertaId] || 0) + 1,
+    }));
+
+    try {
+      const total = await incrementarVisualizacaoOferta(ofertaId);
+      setVisualizacoesById((current) => ({
+        ...current,
+        [ofertaId]: Number(total || current[ofertaId] || 0),
+      }));
+    } catch {
+      visualizacoesRegistradasNaTelaRef.current.delete(ofertaId);
+      setVisualizacoesById((current) => ({
+        ...current,
+        [ofertaId]: Math.max(Number(current[ofertaId] || 1) - 1, 0),
+      }));
+    } finally {
+      pendingIncrementRef.current.delete(ofertaId);
+    }
+  }, []);
+
   if (isLoading) {
     return (
       <div className="py-6">
@@ -176,7 +374,7 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
         </div>
         <div className="flex gap-3 px-5">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="w-[150px] h-[84px] rounded-2xl flex-shrink-0" />
+            <Skeleton key={i} className="w-[190px] h-[178px] rounded-2xl flex-shrink-0" />
           ))}
         </div>
       </div>
@@ -239,39 +437,18 @@ const OfertasSection = ({ cidadeSlug }: OfertasSectionProps) => {
         <div className="flex gap-3 px-5 pb-2">
           {ofertasFiltradas.length > 0 ? (
             ofertasFiltradas.map((oferta) => (
-              <div
+              <OfertaHomeCard
                 key={oferta.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => navigate(`/cidade/${cidadeSlug}/servicos/${oferta.categoria}/${oferta.id}`)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    navigate(`/cidade/${cidadeSlug}/servicos/${oferta.categoria}/${oferta.id}`);
-                  }
-                }}
-                className="relative flex-shrink-0 w-[150px] aspect-[1288/718] rounded-2xl overflow-hidden shadow-md transition-transform active:scale-[0.98]"
-              >
-                {oferta.banner_oferta_url || oferta.logomarca_url ? (
-                  <img
-                    src={oferta.banner_oferta_url || oferta.logomarca_url || ""}
-                    alt={oferta.nome}
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-muted to-muted/60" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <p className="text-white text-sm font-semibold truncate">{oferta.nome}</p>
-                </div>
-              </div>
+                oferta={oferta}
+                cidadeSlug={cidadeSlug}
+                visualizacoes={Number(visualizacoesById[oferta.id] ?? oferta.visualizacoes ?? 0)}
+                onImpressao={registrarImpressao}
+              />
             ))
           ) : (
             <button
               onClick={() => navigate(`/cidade/${cidadeSlug}/empresa/novo`)}
-              className="flex-shrink-0 w-[150px] aspect-[1288/718] rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center gap-2 transition-colors hover:bg-primary/10 active:scale-[0.98]"
+              className="flex-shrink-0 w-[190px] aspect-[1288/718] rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center gap-2 transition-colors hover:bg-primary/10 active:scale-[0.98]"
             >
               <BadgePercent className="h-8 w-8 text-primary/40" />
               <p className="text-sm font-medium text-primary/60">Coloque sua empresa aqui</p>
