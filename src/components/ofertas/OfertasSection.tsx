@@ -77,6 +77,8 @@ const formatInstagram = (value?: string | null) => {
   return handle ? `@${handle}` : "";
 };
 
+const formatVisualizacoes = (value: number) => Number(value || 0).toLocaleString("pt-BR");
+
 const shuffleArray = <T,>(items: T[]): T[] => {
   const arr = [...items];
   for (let i = arr.length - 1; i > 0; i -= 1) {
@@ -210,7 +212,7 @@ const OfertaHomeCard = ({ oferta, cidadeSlug, visualizacoes, onImpressao }: Ofer
         </div>
         <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
           <Eye className="h-3 w-3 text-slate-500" />
-          <span className="truncate">{visualizacoes} {labelVisualizacao}</span>
+          <span className="truncate">{formatVisualizacoes(visualizacoes)} {labelVisualizacao}</span>
         </div>
         {formatInstagram(oferta.instagram) && (
           <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">

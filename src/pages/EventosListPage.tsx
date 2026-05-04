@@ -38,7 +38,7 @@ const EventosListPage = () => {
         .select("*")
         .eq("cidade_id", cidade!.id)
         .eq("ativo", true)
-        .gte("data_evento", hoje)
+        .or(`data_evento.gte.${hoje},data_evento_fim.gte.${hoje}`)
         .order("data_evento", { ascending: true });
       if (error) throw error;
       return data || [];
@@ -46,16 +46,22 @@ const EventosListPage = () => {
     enabled: !!cidade?.id,
   });
 
-  const filtered = eventos.filter((e: any) =>
-    e.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.local_nome?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filtered = eventos.filter(
+    (e: any) =>
+      e.titulo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.local_nome?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
     <div id="swipe-back-page" className="min-h-screen bg-background pb-4">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 pt-safe border-b border-border/50 bg-background/95 backdrop-blur-sm">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}`)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={() => navigate(`/cidade/${slug}`)}
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-base font-semibold">Shows e Eventos</h1>
@@ -71,7 +77,9 @@ const EventosListPage = () => {
               Agenda da cidade
             </div>
             <div className="mt-2 flex items-end justify-between gap-2">
-              <h2 className="text-[22px] leading-tight font-black text-white">Próximos Eventos</h2>
+              <h2 className="text-[22px] leading-tight font-black text-white">
+                Próximos Eventos
+              </h2>
               <div className="h-8 min-w-8 px-2 rounded-full bg-white/20 border border-white/30 text-xs font-semibold text-white flex items-center justify-center">
                 {eventos.length}
               </div>
@@ -114,6 +122,8 @@ const EventosListPage = () => {
                 titulo={evento.titulo}
                 imagem_url={evento.imagem_url}
                 data_evento={evento.data_evento}
+                tipo_data={evento.tipo_data}
+                data_evento_fim={evento.data_evento_fim}
                 horario={evento.horario}
                 local_nome={evento.local_nome}
                 categoria={evento.categoria}
@@ -126,9 +136,13 @@ const EventosListPage = () => {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
               <CalendarDays className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="font-medium text-foreground mb-1">Nenhum evento encontrado</h3>
+            <h3 className="font-medium text-foreground mb-1">
+              Nenhum evento encontrado
+            </h3>
             <p className="text-sm text-muted-foreground">
-              {searchTerm ? "Tente buscar por outro termo" : "Não há eventos programados no momento"}
+              {searchTerm
+                ? "Tente buscar por outro termo"
+                : "Não há eventos programados no momento"}
             </p>
           </div>
         )}

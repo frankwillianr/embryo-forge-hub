@@ -2,7 +2,8 @@
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 const BROWSER_HEADERS = {
@@ -109,7 +110,9 @@ const decodeEntities = (raw: string) =>
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&nbsp;/g, " ")
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(Number.parseInt(h, 16)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) =>
+      String.fromCharCode(Number.parseInt(h, 16)),
+    )
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
 
 const stripHtml = (raw: string) =>
@@ -245,12 +248,40 @@ const fetchHtml = async (url: string): Promise<string | null> => {
   }
 };
 
+const expandCinemaSourceUrls = (sourceUrl: string): string[] => {
+  const urls = [sourceUrl];
+
+  try {
+    const parsed = new URL(sourceUrl);
+    const normalizedPath = parsed.pathname.replace(/\/+$/, "");
+
+    if (/\/programacao$/i.test(normalizedPath)) {
+      const emBreveUrl = new URL(parsed.toString());
+      emBreveUrl.pathname = normalizedPath.replace(
+        /\/programacao$/i,
+        "/em-breve",
+      );
+      emBreveUrl.search = "";
+      emBreveUrl.hash = "";
+      urls.push(emBreveUrl.toString());
+    }
+  } catch {
+    // Keep the original URL only.
+  }
+
+  return [...new Set(urls)];
+};
+
 const isLikelyGenericTitle = (title: string): boolean => {
   const norm = normalizeText(title);
   if (!norm || norm.length < 3) return true;
   if (GENERIC_TITLES.has(norm)) return true;
   if (/^(ver|saiba|clique|acesse)\b/.test(norm)) return true;
-  if (/^(bahia|espirito santo|minas gerais|paraiba|rio de janeiro|sergipe|sao paulo)$/.test(norm)) {
+  if (
+    /^(bahia|espirito santo|minas gerais|paraiba|rio de janeiro|sergipe|sao paulo)$/.test(
+      norm,
+    )
+  ) {
     return true;
   }
   return false;
@@ -264,8 +295,15 @@ const isLikelyMovieUrl = (url: string): boolean => {
   );
 };
 
-const extractMeta = (html: string, key: string, attr: "property" | "name" = "property"): string | null => {
-  const re = new RegExp(`<meta[^>]+${attr}=["']${key}["'][^>]+content=["']([^"']+)["'][^>]*>`, "i");
+const extractMeta = (
+  html: string,
+  key: string,
+  attr: "property" | "name" = "property",
+): string | null => {
+  const re = new RegExp(
+    `<meta[^>]+${attr}=["']${key}["'][^>]+content=["']([^"']+)["'][^>]*>`,
+    "i",
+  );
   const match = html.match(re);
   return match?.[1] ? stripHtml(match[1]) : null;
 };
@@ -281,16 +319,25 @@ const isBadPosterUrl = (url: string | null): boolean => {
   );
 };
 
-const extractPosterFromHtml = (html: string, baseUrl?: string): string | null => {
+const extractPosterFromHtml = (
+  html: string,
+  baseUrl?: string,
+): string | null => {
   const candidates: string[] = [];
 
-  for (const m of html.matchAll(/<img[^>]+class=["'][^"']*(?:filme-poster|poster-img)[^"']*["'][^>]+src=["']([^"']+)["']/gi)) {
+  for (const m of html.matchAll(
+    /<img[^>]+class=["'][^"']*(?:filme-poster|poster-img)[^"']*["'][^>]+src=["']([^"']+)["']/gi,
+  )) {
     if (m[1]) candidates.push(m[1]);
   }
-  for (const m of html.matchAll(/<img[^>]+src=["']([^"']*\/fotos\/filmes\/poster\/[^"']+)["']/gi)) {
+  for (const m of html.matchAll(
+    /<img[^>]+src=["']([^"']*\/fotos\/filmes\/poster\/[^"']+)["']/gi,
+  )) {
     if (m[1]) candidates.push(m[1]);
   }
-  for (const m of html.matchAll(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/gi)) {
+  for (const m of html.matchAll(
+    /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/gi,
+  )) {
     if (m[1]) candidates.push(m[1]);
   }
 
@@ -344,15 +391,21 @@ const normalizeYouTubeUrl = (raw: string | null | undefined): string | null => {
 };
 
 const extractTrailerFromHtml = (html: string): string | null => {
-  const direct = html.match(/https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[a-zA-Z0-9_?=&\-\/]+/i)?.[0];
+  const direct = html.match(
+    /https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[a-zA-Z0-9_?=&\-\/]+/i,
+  )?.[0];
   const directNorm = normalizeYouTubeUrl(direct);
   if (directNorm) return directNorm;
 
-  const embed = html.match(/<iframe[^>]+src=["']([^"']*(?:youtube\.com|youtu\.be)[^"']+)["']/i)?.[1];
+  const embed = html.match(
+    /<iframe[^>]+src=["']([^"']*(?:youtube\.com|youtu\.be)[^"']+)["']/i,
+  )?.[1];
   const embedNorm = normalizeYouTubeUrl(embed);
   if (embedNorm) return embedNorm;
 
-  const onclickId = html.match(/trailer\s*\(\s*['"]([a-zA-Z0-9_-]{8,15})['"]/i)?.[1];
+  const onclickId = html.match(
+    /trailer\s*\(\s*['"]([a-zA-Z0-9_-]{8,15})['"]/i,
+  )?.[1];
   const onclickNorm = normalizeYouTubeUrl(onclickId);
   if (onclickNorm) return onclickNorm;
 
@@ -369,31 +422,48 @@ const extractMovieMetaFromHtml = (html: string): ExtraMovieMeta => {
     trailer_url: null,
   };
 
-  const duracaoLabel = html.match(/<b>\s*Dura(?:ç|c)[aã]o:\s*<\/b>\s*([\s\S]{1,80}?)(?:<\/p>|<br|<div)/i)?.[1];
+  const duracaoLabel = html.match(
+    /<b>\s*Dura(?:ç|c)[aã]o:\s*<\/b>\s*([\s\S]{1,80}?)(?:<\/p>|<br|<div)/i,
+  )?.[1];
   if (duracaoLabel) result.duracao = stripHtml(duracaoLabel);
 
-  const generoLabel = html.match(/<b>\s*G(?:ê|e)nero:\s*<\/b>\s*([\s\S]{1,120}?)(?:<\/p>|<br|<div)/i)?.[1];
+  const generoLabel = html.match(
+    /<b>\s*G(?:ê|e)nero:\s*<\/b>\s*([\s\S]{1,120}?)(?:<\/p>|<br|<div)/i,
+  )?.[1];
   if (generoLabel) result.genero = stripHtml(generoLabel);
 
-  const estreiaLabel = html.match(/<b>\s*Data\s+de\s+Lan(?:ç|c)amento:\s*<\/b>\s*([\s\S]{1,60}?)(?:<\/p>|<br|<div)/i)?.[1];
+  const estreiaLabel = html.match(
+    /<b>\s*Data\s+de\s+Lan(?:ç|c)amento:\s*<\/b>\s*([\s\S]{1,60}?)(?:<\/p>|<br|<div)/i,
+  )?.[1];
   if (estreiaLabel) {
     const cleaned = stripHtml(estreiaLabel);
     const dmY = cleaned.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     result.data_estreia = dmY ? `${dmY[3]}-${dmY[2]}-${dmY[1]}` : cleaned;
   }
 
-  const classifAria = html.match(/aria-label=["']Classifica(?:ç|c)[aã]o\s+Indicativa\s+([^"']+)["']/i)?.[1];
+  const classifAria = html.match(
+    /aria-label=["']Classifica(?:ç|c)[aã]o\s+Indicativa\s+([^"']+)["']/i,
+  )?.[1];
   if (classifAria) {
-    result.classificacao = stripHtml(classifAria).replace(/^indicativa\s*/i, "").trim();
+    result.classificacao = stripHtml(classifAria)
+      .replace(/^indicativa\s*/i, "")
+      .trim();
   } else {
-    const classifSpan = html.match(/class=["'][^"']*classificacao-indicativa[^"']*["'][\s\S]{0,220}?<span[^>]*>\s*([^<]{1,10})\s*<\/span>/i)?.[1];
+    const classifSpan = html.match(
+      /class=["'][^"']*classificacao-indicativa[^"']*["'][\s\S]{0,220}?<span[^>]*>\s*([^<]{1,10})\s*<\/span>/i,
+    )?.[1];
     if (classifSpan) result.classificacao = stripHtml(classifSpan);
   }
 
-  const cardMeta = html.match(/<h3[^>]*class=["'][^"']*card-text[^"']*["'][^>]*>\s*([^<]{2,120})\s*<\/h3>/i)?.[1];
+  const cardMeta = html.match(
+    /<h3[^>]*class=["'][^"']*card-text[^"']*["'][^>]*>\s*([^<]{2,120})\s*<\/h3>/i,
+  )?.[1];
   if (cardMeta) {
     const clean = stripHtml(cardMeta);
-    const parts = clean.split("•").map((p) => p.trim()).filter(Boolean);
+    const parts = clean
+      .split("•")
+      .map((p) => p.trim())
+      .filter(Boolean);
     if (!result.duracao && parts[0]) result.duracao = parts[0];
     if (!result.genero && parts[1]) result.genero = parts[1];
   }
@@ -415,7 +485,9 @@ const inferSituacaoExibicao = (params: {
 }): "em_cartaz" | "em_breve" | "pre_venda" | "desconhecido" => {
   const sourceUrlRaw = (params.sourceUrl || "").toLowerCase();
   if (/\/pre-venda(\/|$)/i.test(sourceUrlRaw)) return "pre_venda";
-  if (/\/programacao(\/|$)|\/cartaz(\/|$)/i.test(sourceUrlRaw)) return "em_cartaz";
+  if (/\/em-breve(\/|$)/i.test(sourceUrlRaw)) return "em_breve";
+  if (/\/programacao(\/|$)|\/cartaz(\/|$)/i.test(sourceUrlRaw))
+    return "em_cartaz";
 
   const joined = normalizeText(
     `${params.sourceUrl || ""} ${params.pageHtml || ""} ${params.contextHtml || ""}`,
@@ -426,7 +498,8 @@ const inferSituacaoExibicao = (params: {
     joined.includes("programacao em cartaz") ||
     joined.includes("em cartaz") ||
     joined.includes("/cartaz");
-  const hasPreVenda = joined.includes("pre venda") || joined.includes("prevenda");
+  const hasPreVenda =
+    joined.includes("pre venda") || joined.includes("prevenda");
   const hasEmBreve = joined.includes("em breve");
 
   if (hasEmCartaz) return "em_cartaz";
@@ -459,7 +532,9 @@ const extractHorariosFromHtml = (html: string): string[] => {
     if (!/sessao=/i.test(href)) continue;
 
     const sessaoValue = href.match(/[?&]sessao=([^&#"'\s]+)/i)?.[1] || "";
-    const sessaoCompact = sessaoValue.match(/(?:_|%5f)?([01]\d|2[0-3])([0-5]\d)$/i);
+    const sessaoCompact = sessaoValue.match(
+      /(?:_|%5f)?([01]\d|2[0-3])([0-5]\d)$/i,
+    );
     if (sessaoCompact) {
       raw.push(`${sessaoCompact[1]}:${sessaoCompact[2]}`);
       continue;
@@ -489,7 +564,9 @@ const extractDiasFromHtml = (html: string): string[] => {
   for (const hrefMatch of html.matchAll(/href=["']([^"']+)["']/gi)) {
     const href = decodeEntities(hrefMatch[1] || "");
     if (!/dia=/i.test(href)) continue;
-    const diaMatch = href.match(/[?&]dia=(\d{8}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/i);
+    const diaMatch = href.match(
+      /[?&]dia=(\d{8}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/i,
+    );
     if (diaMatch) raw.push(diaMatch[1]);
   }
 
@@ -524,7 +601,9 @@ const extractDiasFromHtml = (html: string): string[] => {
 
     if (month < previousMonth) inferredYear += 1;
     previousMonth = month;
-    raw.push(`${String(day).padStart(2, "0")}${String(month).padStart(2, "0")}${inferredYear}`);
+    raw.push(
+      `${String(day).padStart(2, "0")}${String(month).padStart(2, "0")}${inferredYear}`,
+    );
   }
 
   return dedupeDias(raw);
@@ -550,11 +629,20 @@ const buildIngressosMap = (
     const filmId = extractFilmIdFromUrl(href);
     if (!filmId) continue;
 
-    const diaRaw = href.match(/[?&]dia=(\d{8}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/i)?.[1] || null;
+    const diaRaw =
+      href.match(
+        /[?&]dia=(\d{8}|\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})/i,
+      )?.[1] || null;
     const sessaoValue = href.match(/[?&]sessao=([^&#"'\s]+)/i)?.[1] || "";
     const horarioRaw =
-      sessaoValue.match(/(?:_|%5f)?([01]\d|2[0-3])([0-5]\d)$/i)?.slice(1).join(":") ||
-      sessaoValue.match(/([01]?\d|2[0-3])[:h]([0-5]\d)/i)?.slice(1).join(":") ||
+      sessaoValue
+        .match(/(?:_|%5f)?([01]\d|2[0-3])([0-5]\d)$/i)
+        ?.slice(1)
+        .join(":") ||
+      sessaoValue
+        .match(/([01]?\d|2[0-3])[:h]([0-5]\d)/i)
+        ?.slice(1)
+        .join(":") ||
       null;
 
     const current = map.get(filmId) || { dias: [], horarios: [] };
@@ -574,7 +662,11 @@ const buildIngressosMap = (
 };
 
 const collectJsonLdObjects = (html: string): unknown[] => {
-  const blocks = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  const blocks = [
+    ...html.matchAll(
+      /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+    ),
+  ];
   const out: unknown[] = [];
   for (const match of blocks) {
     const raw = (match[1] || "").trim();
@@ -615,7 +707,10 @@ const isMovieLike = (obj: Record<string, unknown>): boolean => {
   return types.some((t) => t.includes("movie"));
 };
 
-const extractMoviesFromJsonLd = (html: string, siteUrl: string): FilmeExtraido[] => {
+const extractMoviesFromJsonLd = (
+  html: string,
+  siteUrl: string,
+): FilmeExtraido[] => {
   const blocks = collectJsonLdObjects(html);
   const movies: FilmeExtraido[] = [];
 
@@ -635,7 +730,11 @@ const extractMoviesFromJsonLd = (html: string, siteUrl: string): FilmeExtraido[]
       const duration = firstString(obj.duration);
       const contentRating = firstString(obj.contentRating);
       const inLanguage = firstString(obj.inLanguage);
-      const datePublished = firstString(obj.datePublished, obj.dateCreated, obj.dateModified);
+      const datePublished = firstString(
+        obj.datePublished,
+        obj.dateCreated,
+        obj.dateModified,
+      );
       const poster = getImageFromUnknown(obj.image);
       const trailerObj = obj.trailer as Record<string, unknown> | undefined;
       const trailer = firstString(trailerObj?.url, trailerObj?.embedUrl);
@@ -646,7 +745,10 @@ const extractMoviesFromJsonLd = (html: string, siteUrl: string): FilmeExtraido[]
       for (const offer of offers) {
         if (offer && typeof offer === "object") {
           const offerObj = offer as Record<string, unknown>;
-          const starts = firstString(offerObj.availabilityStarts, offerObj.validFrom);
+          const starts = firstString(
+            offerObj.availabilityStarts,
+            offerObj.validFrom,
+          );
           if (starts) {
             horariosRaw.push(starts);
             const dia = extractDiaFromDateTimeLike(starts);
@@ -673,11 +775,17 @@ const extractMoviesFromJsonLd = (html: string, siteUrl: string): FilmeExtraido[]
         classificacao: contentRating,
         idioma: inLanguage,
         data_estreia: datePublished,
-        poster_url: !isBadPosterUrl(poster) ? poster : extractPosterFromHtml(html, siteUrl),
-        trailer_url: normalizeYouTubeUrl(trailer) || extractTrailerFromHtml(html),
+        poster_url: !isBadPosterUrl(poster)
+          ? poster
+          : extractPosterFromHtml(html, siteUrl),
+        trailer_url:
+          normalizeYouTubeUrl(trailer) || extractTrailerFromHtml(html),
         horarios,
         dias_exibicao: diasExibicao,
-        situacao_exibicao: inferSituacaoExibicao({ sourceUrl: siteUrl, pageHtml: html }),
+        situacao_exibicao: inferSituacaoExibicao({
+          sourceUrl: siteUrl,
+          pageHtml: html,
+        }),
         url_origem: urlOrigem,
         dados_brutos: obj,
       });
@@ -687,11 +795,18 @@ const extractMoviesFromJsonLd = (html: string, siteUrl: string): FilmeExtraido[]
   return movies;
 };
 
-const extractMoviesFromAnchors = async (html: string, siteUrl: string): Promise<FilmeExtraido[]> => {
+const extractMoviesFromAnchors = async (
+  html: string,
+  siteUrl: string,
+): Promise<FilmeExtraido[]> => {
   const out: FilmeExtraido[] = [];
   const re = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]{1,220})<\/a>/gi;
   const seenHref = new Set<string>();
-  const candidates: Array<{ href: string; anchorText: string; contextHtml: string }> = [];
+  const candidates: Array<{
+    href: string;
+    anchorText: string;
+    contextHtml: string;
+  }> = [];
   const ingressosMap = buildIngressosMap(html);
 
   for (const match of html.matchAll(re)) {
@@ -718,11 +833,20 @@ const extractMoviesFromAnchors = async (html: string, siteUrl: string): Promise<
 
   for (const candidate of candidates.slice(0, 80)) {
     const candidateFilmId = extractFilmIdFromUrl(candidate.href);
-    const ingressosForMovie = candidateFilmId ? ingressosMap.get(candidateFilmId) : undefined;
+    const ingressosForMovie = candidateFilmId
+      ? ingressosMap.get(candidateFilmId)
+      : undefined;
     const detailHtml = await fetchHtml(candidate.href);
-    const detailJsonLd = detailHtml ? extractMoviesFromJsonLd(detailHtml, candidate.href) : [];
-    const detailMeta = detailHtml ? extractMovieMetaFromHtml(detailHtml) : extractMovieMetaFromHtml(candidate.contextHtml);
-    const posterFromContext = extractPosterFromHtml(candidate.contextHtml, siteUrl);
+    const detailJsonLd = detailHtml
+      ? extractMoviesFromJsonLd(detailHtml, candidate.href)
+      : [];
+    const detailMeta = detailHtml
+      ? extractMovieMetaFromHtml(detailHtml)
+      : extractMovieMetaFromHtml(candidate.contextHtml);
+    const posterFromContext = extractPosterFromHtml(
+      candidate.contextHtml,
+      siteUrl,
+    );
     const horariosFromListing = dedupeHorarios([
       ...extractHorariosFromHtml(candidate.contextHtml),
       ...(ingressosForMovie?.horarios || []),
@@ -735,17 +859,30 @@ const extractMoviesFromAnchors = async (html: string, siteUrl: string): Promise<
     if (detailJsonLd.length > 0) {
       const first = detailJsonLd[0];
       if (!isLikelyGenericTitle(first.titulo)) {
-        const horariosFallback = detailHtml ? extractHorariosFromHtml(detailHtml) : [];
+        const horariosFallback = detailHtml
+          ? extractHorariosFromHtml(detailHtml)
+          : [];
         out.push({
           ...first,
           genero: first.genero || detailMeta.genero,
           duracao: first.duracao || detailMeta.duracao,
           data_estreia: first.data_estreia || detailMeta.data_estreia,
           classificacao: first.classificacao || detailMeta.classificacao,
-          poster_url: !isBadPosterUrl(first.poster_url) ? first.poster_url : (detailMeta.poster_url || posterFromContext),
-          trailer_url: first.trailer_url || detailMeta.trailer_url || extractTrailerFromHtml(candidate.contextHtml),
-          horarios: first.horarios.length > 0 ? first.horarios : dedupeHorarios([...horariosFromListing, ...horariosFallback]),
-          dias_exibicao: dedupeDias([...diasFromListing, ...(detailHtml ? extractDiasFromHtml(detailHtml) : [])]),
+          poster_url: !isBadPosterUrl(first.poster_url)
+            ? first.poster_url
+            : detailMeta.poster_url || posterFromContext,
+          trailer_url:
+            first.trailer_url ||
+            detailMeta.trailer_url ||
+            extractTrailerFromHtml(candidate.contextHtml),
+          horarios:
+            first.horarios.length > 0
+              ? first.horarios
+              : dedupeHorarios([...horariosFromListing, ...horariosFallback]),
+          dias_exibicao: dedupeDias([
+            ...diasFromListing,
+            ...(detailHtml ? extractDiasFromHtml(detailHtml) : []),
+          ]),
           situacao_exibicao: inferSituacaoExibicao({
             sourceUrl: siteUrl,
             pageHtml: detailHtml || null,
@@ -763,16 +900,27 @@ const extractMoviesFromAnchors = async (html: string, siteUrl: string): Promise<
     }
 
     const detailTitle = detailHtml ? extractTitleFromHtml(detailHtml) : null;
-    const chosenTitle = detailTitle && !isLikelyGenericTitle(detailTitle) ? detailTitle : candidate.anchorText;
+    const chosenTitle =
+      detailTitle && !isLikelyGenericTitle(detailTitle)
+        ? detailTitle
+        : candidate.anchorText;
     if (isLikelyGenericTitle(chosenTitle)) continue;
 
     const description = detailHtml
-      ? extractMeta(detailHtml, "og:description", "property") || extractMeta(detailHtml, "description", "name")
+      ? extractMeta(detailHtml, "og:description", "property") ||
+        extractMeta(detailHtml, "description", "name")
       : null;
-    const poster = detailHtml ? extractMeta(detailHtml, "og:image", "property") : null;
-    const horariosDetail = detailHtml ? extractHorariosFromHtml(detailHtml) : [];
+    const poster = detailHtml
+      ? extractMeta(detailHtml, "og:image", "property")
+      : null;
+    const horariosDetail = detailHtml
+      ? extractHorariosFromHtml(detailHtml)
+      : [];
     const diasDetail = detailHtml ? extractDiasFromHtml(detailHtml) : [];
-    const horarios = dedupeHorarios([...horariosFromListing, ...horariosDetail]);
+    const horarios = dedupeHorarios([
+      ...horariosFromListing,
+      ...horariosDetail,
+    ]);
     const dias_exibicao = dedupeDias([...diasFromListing, ...diasDetail]);
 
     out.push({
@@ -783,8 +931,11 @@ const extractMoviesFromAnchors = async (html: string, siteUrl: string): Promise<
       classificacao: detailMeta.classificacao,
       idioma: null,
       data_estreia: detailMeta.data_estreia,
-      poster_url: !isBadPosterUrl(poster) ? poster : (detailMeta.poster_url || posterFromContext),
-      trailer_url: detailMeta.trailer_url || extractTrailerFromHtml(candidate.contextHtml),
+      poster_url: !isBadPosterUrl(poster)
+        ? poster
+        : detailMeta.poster_url || posterFromContext,
+      trailer_url:
+        detailMeta.trailer_url || extractTrailerFromHtml(candidate.contextHtml),
       horarios,
       dias_exibicao,
       situacao_exibicao: inferSituacaoExibicao({
@@ -814,17 +965,29 @@ const dedupeMovies = <T extends FilmeExtraido>(movies: T[]): T[] => {
     }
     const current = map.get(key)!;
     if (!current.sinopse && movie.sinopse) current.sinopse = movie.sinopse;
-    if (!current.poster_url && movie.poster_url) current.poster_url = movie.poster_url;
-    if (!current.trailer_url && movie.trailer_url) current.trailer_url = movie.trailer_url;
+    if (!current.poster_url && movie.poster_url)
+      current.poster_url = movie.poster_url;
+    if (!current.trailer_url && movie.trailer_url)
+      current.trailer_url = movie.trailer_url;
     if (movie.horarios.length > 0) {
-      current.horarios = dedupeHorarios([...(current.horarios || []), ...movie.horarios]);
+      current.horarios = dedupeHorarios([
+        ...(current.horarios || []),
+        ...movie.horarios,
+      ]);
     }
     if (movie.dias_exibicao.length > 0) {
-      current.dias_exibicao = dedupeDias([...(current.dias_exibicao || []), ...movie.dias_exibicao]);
+      current.dias_exibicao = dedupeDias([
+        ...(current.dias_exibicao || []),
+        ...movie.dias_exibicao,
+      ]);
     }
     if (!current.genero && movie.genero) current.genero = movie.genero;
-    if (!current.data_estreia && movie.data_estreia) current.data_estreia = movie.data_estreia;
-    if (current.situacao_exibicao === "desconhecido" && movie.situacao_exibicao !== "desconhecido") {
+    if (!current.data_estreia && movie.data_estreia)
+      current.data_estreia = movie.data_estreia;
+    if (
+      current.situacao_exibicao === "desconhecido" &&
+      movie.situacao_exibicao !== "desconhecido"
+    ) {
       current.situacao_exibicao = movie.situacao_exibicao;
     }
   }
@@ -839,7 +1002,10 @@ Deno.serve(async (req) => {
   try {
     const body = (await req.json()) as RequestBody;
     const cidadeId = String(body?.cidade_id || "").trim();
-    const maxFilmes = Math.max(1, Math.min(Number(body?.max_filmes || 120), 500));
+    const maxFilmes = Math.max(
+      1,
+      Math.min(Number(body?.max_filmes || 120), 500),
+    );
 
     if (!cidadeId) {
       return new Response(JSON.stringify({ error: "cidade_id obrigatorio" }), {
@@ -882,40 +1048,63 @@ Deno.serve(async (req) => {
     const sources = fontesAtivas.length > 0 ? fontesAtivas : fontesPayload;
     if (sources.length === 0) {
       return new Response(
-        JSON.stringify({ ok: false, error: "Nenhuma fonte ativa cadastrada para esta cidade." }),
-        { status: 400, headers: { ...CORS, "Content-Type": "application/json" } },
+        JSON.stringify({
+          ok: false,
+          error: "Nenhuma fonte ativa cadastrada para esta cidade.",
+        }),
+        {
+          status: 400,
+          headers: { ...CORS, "Content-Type": "application/json" },
+        },
       );
     }
 
-    const allMovies: Array<FilmeExtraido & { fonte_id: string | null; fonte_nome: string; site_url: string }> = [];
+    const allMovies: Array<
+      FilmeExtraido & {
+        fonte_id: string | null;
+        fonte_nome: string;
+        site_url: string;
+      }
+    > = [];
     const logs: string[] = [];
 
     for (const source of sources) {
-      const siteUrl = source.url;
-      if (!/^https?:\/\//i.test(siteUrl)) {
-        logs.push(`Fonte ignorada (URL invalida): ${siteUrl}`);
-        continue;
-      }
+      const sourceUrls = expandCinemaSourceUrls(source.url);
 
-      const html = await fetchHtml(siteUrl);
-      if (!html) {
-        logs.push(`Falha ao carregar fonte: ${siteUrl}`);
-        continue;
-      }
+      for (const siteUrl of sourceUrls) {
+        if (!/^https?:\/\//i.test(siteUrl)) {
+          logs.push(`Fonte ignorada (URL invalida): ${siteUrl}`);
+          continue;
+        }
 
-      const fromJsonLd = extractMoviesFromJsonLd(html, siteUrl);
-      const fromAnchorFallback = await extractMoviesFromAnchors(html, siteUrl);
-      const merged = dedupeMovies([...fromJsonLd, ...fromAnchorFallback]).slice(0, maxFilmes);
+        const html = await fetchHtml(siteUrl);
+        if (!html) {
+          logs.push(`Falha ao carregar fonte: ${siteUrl}`);
+          continue;
+        }
 
-      logs.push(`Fonte ${source.nome}: ${merged.length} filme(s) extraido(s).`);
+        const fromJsonLd = extractMoviesFromJsonLd(html, siteUrl);
+        const fromAnchorFallback = await extractMoviesFromAnchors(
+          html,
+          siteUrl,
+        );
+        const merged = dedupeMovies([
+          ...fromJsonLd,
+          ...fromAnchorFallback,
+        ]).slice(0, maxFilmes);
 
-      for (const movie of merged) {
-        allMovies.push({
-          ...movie,
-          fonte_id: source.id,
-          fonte_nome: source.nome,
-          site_url: siteUrl,
-        });
+        logs.push(
+          `Fonte ${source.nome}: ${merged.length} filme(s) extraido(s).`,
+        );
+
+        for (const movie of merged) {
+          allMovies.push({
+            ...movie,
+            fonte_id: source.id,
+            fonte_nome: source.nome,
+            site_url: siteUrl,
+          });
+        }
       }
     }
 
@@ -924,6 +1113,13 @@ Deno.serve(async (req) => {
     const rows = deduped.map((movie) => {
       const baseKey = `${normalizeText(movie.titulo)}|${movie.site_url}|${movie.url_origem || ""}`;
       const dedupeKey = hashDjb2(baseKey);
+      const diasExibicao =
+        movie.dias_exibicao.length > 0
+          ? movie.dias_exibicao
+          : movie.situacao_exibicao === "em_breve" && movie.data_estreia
+            ? dedupeDias([movie.data_estreia])
+            : [];
+
       return {
         cidade_id: cidadeId,
         fonte_id: movie.fonte_id,
@@ -940,7 +1136,7 @@ Deno.serve(async (req) => {
         poster_url: movie.poster_url,
         trailer_url: movie.trailer_url,
         horarios: movie.horarios,
-        dias_exibicao: movie.dias_exibicao,
+        dias_exibicao: diasExibicao,
         situacao_exibicao: movie.situacao_exibicao,
         status: "coletado",
         dedupe_key: dedupeKey,
@@ -982,7 +1178,8 @@ Deno.serve(async (req) => {
             }
           })();
 
-        const situacao = (movie.situacao_exibicao as string | null) || "desconhecido";
+        const situacao =
+          (movie.situacao_exibicao as string | null) || "desconhecido";
         const status = situacao === "desconhecido" ? "em_cartaz" : situacao;
 
         return {

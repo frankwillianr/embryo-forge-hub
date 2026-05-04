@@ -21,6 +21,13 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 interface HorarioFuncionamento {
@@ -28,6 +35,14 @@ interface HorarioFuncionamento {
   aberto: boolean;
   abertura: string;
   fechamento: string;
+}
+
+interface ProdutoCatalogo {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  preco: number | string | null;
+  foto_url: string | null;
 }
 
 const diasOrdem = ["Segunda", "Terca", "Quarta", "Quinta", "Sexta", "Sabado", "Domingo"];
@@ -53,6 +68,7 @@ const ServicoEmpresaDetailPage = () => {
   const [copied, setCopied] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>("informacoes");
+  const [produtoSelecionado, setProdutoSelecionado] = useState<ProdutoCatalogo | null>(null);
 
   const { data: empresa, isLoading } = useQuery({
     queryKey: ["servico-empresa", empresaId],
@@ -224,7 +240,7 @@ const ServicoEmpresaDetailPage = () => {
   }
 
   return (
-    <div id="swipe-back-page" className="min-h-screen bg-background pb-28">
+    <div id="swipe-back-page" className="min-h-screen overflow-x-hidden bg-background pb-28">
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-4 pt-safe pointer-events-none">
         <button
           onClick={() => navigate(backTo)}
@@ -348,24 +364,22 @@ const ServicoEmpresaDetailPage = () => {
         </div>
       )}
 
-      <nav className="z-30 bg-background">
-        <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex w-max gap-2 px-5 pb-4">
+      <nav className="z-30 bg-background px-5 pb-4">
+        <div className="grid grid-cols-2 gap-2 min-[420px]:grid-cols-3 sm:grid-cols-5">
             {tabs.map(({ id, label, Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveSection((current) => (current === id ? null : id))}
-                className={`inline-flex h-11 flex-shrink-0 items-center gap-2 rounded-2xl border px-4 text-sm font-semibold shadow-sm transition-colors ${
+                className={`inline-flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-2xl border px-2 text-xs font-semibold shadow-sm transition-colors sm:text-sm ${
                   activeSection === id
                     ? "border-[#1f2937] bg-[#1f2937] text-white"
                     : "border-border bg-card text-foreground hover:border-neutral-300 hover:bg-neutral-100"
                 }`}
               >
-                <Icon className={`h-4 w-4 ${activeSection === id ? "text-white" : "text-muted-foreground"}`} />
-                {label}
+                <Icon className={`h-4 w-4 flex-shrink-0 ${activeSection === id ? "text-white" : "text-muted-foreground"}`} />
+                <span className="min-w-0 truncate">{label}</span>
               </button>
             ))}
-          </div>
         </div>
       </nav>
 
@@ -508,41 +522,47 @@ const ServicoEmpresaDetailPage = () => {
             )}
 
             {produtos.length > 0 && (
-              <div className="border-t border-border/70 p-4">
-                <div className="flex items-start gap-4">
+              <div className="border-t border-border/70">
+                <div className="flex items-start gap-4 p-4 pb-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f6f6f6]">
                     <ShoppingBag className="h-4 w-4 text-[#5b4b82]" />
                   </div>
-                  <div className="min-w-0 flex-1 space-y-3">
+                  <div className="min-w-0 flex-1">
                     <div className="[&_h2]:hidden">
                       <p className="text-sm font-semibold text-[#5b4b82]">Catálogo de produtos</p>
                       <p className="text-xs text-muted-foreground">{produtos.length} itens disponíveis</p>
                     <h2 className="text-lg font-bold text-foreground">Catálogo de produtos</h2>
                   </div>
                   <span className="hidden">{produtos.length} itens</span>
-                <div className="space-y-3">
+                  </div>
+                </div>
+                <div className="divide-y divide-border/70 border-t border-border/70">
                   {produtos.map((produto) => {
                     const precoFormatado = formatPreco(produto.preco);
                     return (
-                      <article key={produto.id} className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm">
+                      <button
+                        key={produto.id}
+                        type="button"
+                        onClick={() => setProdutoSelecionado(produto as ProdutoCatalogo)}
+                        className="flex w-full min-w-0 items-start gap-3 py-3 pl-2 pr-3 text-left transition-colors hover:bg-neutral-50 active:bg-neutral-100 min-[390px]:py-4 min-[390px]:pl-3 min-[390px]:pr-4"
+                      >
                         {produto.foto_url ? (
-                          <img src={produto.foto_url} alt={produto.nome} className="h-20 w-20 flex-shrink-0 rounded-xl object-cover bg-muted" />
+                          <img src={produto.foto_url} alt={produto.nome} className="h-16 w-16 flex-shrink-0 rounded-xl object-cover bg-muted min-[390px]:h-20 min-[390px]:w-20" />
                         ) : (
-                          <div className="h-20 w-20 flex-shrink-0 rounded-xl bg-[#f6f6f6] flex items-center justify-center">
+                          <div className="h-16 w-16 flex-shrink-0 rounded-xl bg-[#f6f6f6] flex items-center justify-center min-[390px]:h-20 min-[390px]:w-20">
                             <ShoppingBag className="h-6 w-6 text-muted-foreground" />
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
                           <h3 className="font-semibold leading-tight text-foreground">{produto.nome}</h3>
                           {produto.descricao && <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{produto.descricao}</p>}
+                          {precoFormatado && <p className="mt-2 text-sm font-bold text-[#3b1b67] min-[390px]:hidden">{precoFormatado}</p>}
                         </div>
-                        {precoFormatado && <span className="text-sm font-bold text-[#3b1b67] whitespace-nowrap">{precoFormatado}</span>}
-                      </article>
+                        {precoFormatado && <span className="hidden text-sm font-bold text-[#3b1b67] whitespace-nowrap min-[390px]:block">{precoFormatado}</span>}
+                      </button>
                     );
                   })}
                 </div>
-              </div>
-              </div>
               </div>
             )}
 
@@ -641,6 +661,46 @@ const ServicoEmpresaDetailPage = () => {
           Chamar no WhatsApp
         </button>
       </div>
+
+      <Dialog open={!!produtoSelecionado} onOpenChange={(open) => !open && setProdutoSelecionado(null)}>
+        <DialogContent className="max-h-[88vh] overflow-y-auto p-0 sm:max-w-md">
+          {produtoSelecionado && (
+            <div>
+              <div className="bg-muted/40">
+                {produtoSelecionado.foto_url ? (
+                  <img
+                    src={produtoSelecionado.foto_url}
+                    alt={produtoSelecionado.nome}
+                    className="max-h-[45vh] w-full object-contain"
+                  />
+                ) : (
+                  <div className="flex h-52 w-full items-center justify-center">
+                    <ShoppingBag className="h-12 w-12 text-muted-foreground/40" />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-4 p-5">
+                <DialogHeader className="pr-8 text-left">
+                  <DialogTitle className="text-lg leading-snug text-[#2b124c]">
+                    {produtoSelecionado.nome}
+                  </DialogTitle>
+                  {formatPreco(produtoSelecionado.preco) && (
+                    <DialogDescription className="text-base font-bold text-[#3b1b67]">
+                      {formatPreco(produtoSelecionado.preco)}
+                    </DialogDescription>
+                  )}
+                </DialogHeader>
+
+                {produtoSelecionado.descricao && (
+                  <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">
+                    {produtoSelecionado.descricao}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {showFullImage && (
         <div

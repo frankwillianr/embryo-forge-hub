@@ -7,6 +7,8 @@ interface EventoCardProps {
   titulo: string;
   imagem_url?: string | null;
   data_evento: string;
+  tipo_data?: string | null;
+  data_evento_fim?: string | null;
   horario?: string | null;
   local_nome?: string | null;
   categoria?: string | null;
@@ -19,6 +21,8 @@ const EventoCard = ({
   titulo,
   imagem_url,
   data_evento,
+  tipo_data,
+  data_evento_fim,
   horario,
   local_nome,
   categoria,
@@ -27,16 +31,34 @@ const EventoCard = ({
   const navigate = useNavigate();
   const dataObj = new Date(data_evento + "T00:00:00");
   const dia = dataObj.getDate();
-  const mes = dataObj.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "").toUpperCase();
+  const mes = dataObj
+    .toLocaleDateString("pt-BR", { month: "short" })
+    .replace(".", "")
+    .toUpperCase();
+  const fimObj = data_evento_fim
+    ? new Date(data_evento_fim + "T00:00:00")
+    : null;
+  const isPeriodo = tipo_data === "periodo" && !!fimObj;
+  const periodoLabel = isPeriodo
+    ? `${dataObj.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} a ${fimObj!.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
+    : null;
 
   return (
     <div
       onClick={() => navigate(`/cidade/${cidadeSlug}/eventos/${id}`)}
-      className={customClassName || "min-w-[150px] max-w-[150px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer group"}
+      className={
+        customClassName ||
+        "min-w-[150px] max-w-[150px] rounded-2xl overflow-hidden bg-card border border-border shadow-sm flex-shrink-0 cursor-pointer group"
+      }
     >
       <div className="relative h-[95px] w-full">
         {imagem_url ? (
-          <img src={imagem_url} alt={titulo} loading="lazy" className="w-full h-full object-cover" />
+          <img
+            src={imagem_url}
+            alt={titulo}
+            loading="lazy"
+            className="w-full h-full object-cover"
+          />
         ) : (
           <div className="w-full h-full bg-muted flex items-center justify-center">
             <CalendarDays className="h-10 w-10 text-muted-foreground/40" />
@@ -44,8 +66,15 @@ const EventoCard = ({
         )}
         <div className="absolute top-2 left-2 bg-primary text-primary-foreground rounded-xl px-2.5 py-1 text-center leading-tight shadow-md">
           <span className="block text-lg font-bold">{dia}</span>
-          <span className="block text-[10px] font-semibold uppercase tracking-wider">{mes}</span>
+          <span className="block text-[10px] font-semibold uppercase tracking-wider">
+            {mes}
+          </span>
         </div>
+        {periodoLabel && (
+          <div className="absolute bottom-2 left-2 rounded-full bg-black/65 px-2 py-0.5 text-[9px] font-semibold text-white">
+            {periodoLabel}
+          </div>
+        )}
         {categoria && (
           <div className="absolute top-2 right-2 bg-accent text-accent-foreground rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase shadow-md">
             {categoria}
@@ -53,11 +82,15 @@ const EventoCard = ({
         )}
       </div>
       <div className="p-3 space-y-1.5">
-        <h3 className="font-semibold text-foreground text-[10px] line-clamp-2 leading-tight">{titulo}</h3>
+        <h3 className="font-semibold text-foreground text-[10px] line-clamp-2 leading-tight">
+          {titulo}
+        </h3>
         {local_nome && (
           <div className="flex items-start gap-1 text-muted-foreground min-h-[24px]">
             <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
-            <span className="text-[10px] leading-tight line-clamp-2">{local_nome}</span>
+            <span className="text-[10px] leading-tight line-clamp-2">
+              {local_nome}
+            </span>
           </div>
         )}
         {horario && (

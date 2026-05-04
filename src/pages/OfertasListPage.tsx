@@ -129,6 +129,8 @@ const formatarCategoriaLabel = (categoria: string) => {
     .join(" ");
 };
 
+const formatarVisualizacoes = (value: number) => Number(value || 0).toLocaleString("pt-BR");
+
 const shuffleArray = <T,>(items: T[]): T[] => {
   const result = [...items];
   for (let i = result.length - 1; i > 0; i -= 1) {
@@ -271,7 +273,7 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
         <div className="absolute bottom-3 right-3">
           <span className="inline-flex items-center gap-1 rounded-full bg-black/45 px-2 py-1 text-[10px] font-normal text-white backdrop-blur-sm">
             <Eye className="h-3 w-3" />
-            {visualizacoes} {labelVisualizacao}
+            {formatarVisualizacoes(visualizacoes)} {labelVisualizacao}
           </span>
         </div>
       </div>
@@ -307,7 +309,7 @@ const OfertaVideoCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }
           <p className="truncate text-sm font-semibold text-foreground">{oferta.nome}</p>
           <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
             <Eye className="h-3 w-3" />
-            {visualizacoes} {labelVisualizacao}
+            {formatarVisualizacoes(visualizacoes)} {labelVisualizacao}
           </span>
         </div>
         <button

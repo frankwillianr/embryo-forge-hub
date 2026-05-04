@@ -2,7 +2,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, CalendarDays, Clock, MapPin, Ticket, ExternalLink } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Clock,
+  MapPin,
+  Ticket,
+  ExternalLink,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const EventoDetailPage = () => {
@@ -48,12 +55,21 @@ const EventoDetailPage = () => {
   }
 
   const dataObj = new Date(evento.data_evento + "T00:00:00");
-  const dataFormatada = dataObj.toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const formatFullDate = (date: Date) =>
+    date.toLocaleDateString("pt-BR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  const dataFormatada = formatFullDate(dataObj);
+  const dataFimObj =
+    evento.tipo_data === "periodo" && evento.data_evento_fim
+      ? new Date(evento.data_evento_fim + "T00:00:00")
+      : null;
+  const periodoFormatado = dataFimObj
+    ? `${dataFormatada} ate ${formatFullDate(dataFimObj)}`
+    : dataFormatada;
 
   return (
     <div id="swipe-back-page" className="min-h-screen bg-background">
@@ -65,7 +81,9 @@ const EventoDetailPage = () => {
         >
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
-        <h1 className="font-semibold text-foreground text-lg truncate">Evento</h1>
+        <h1 className="font-semibold text-foreground text-lg truncate">
+          Evento
+        </h1>
       </div>
 
       {/* Image */}
@@ -92,7 +110,9 @@ const EventoDetailPage = () => {
           </span>
         )}
 
-        <h2 className="text-2xl font-bold text-foreground leading-tight">{evento.titulo}</h2>
+        <h2 className="text-2xl font-bold text-foreground leading-tight">
+          {evento.titulo}
+        </h2>
 
         {/* Info cards */}
         <div className="space-y-3">
@@ -101,9 +121,13 @@ const EventoDetailPage = () => {
               <CalendarDays className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground capitalize">{dataFormatada}</p>
+              <p className="text-sm font-medium text-foreground capitalize">
+                {periodoFormatado}
+              </p>
               {evento.horario && (
-                <p className="text-xs text-muted-foreground">Horário: {evento.horario}</p>
+                <p className="text-xs text-muted-foreground">
+                  Horário: {evento.horario}
+                </p>
               )}
             </div>
           </div>
@@ -114,26 +138,30 @@ const EventoDetailPage = () => {
                 <MapPin className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-medium text-foreground">{evento.local_nome}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {evento.local_nome}
+                </p>
                 {evento.local_endereco && (
-                  <p className="text-xs text-muted-foreground">{evento.local_endereco}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {evento.local_endereco}
+                  </p>
                 )}
               </div>
             </div>
           )}
         </div>
 
-
         {/* Description */}
         {evento.descricao && (
           <div>
-            <h3 className="font-semibold text-foreground mb-2">Sobre o evento</h3>
+            <h3 className="font-semibold text-foreground mb-2">
+              Sobre o evento
+            </h3>
             <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
               {evento.descricao}
             </p>
           </div>
         )}
-
       </div>
     </div>
   );

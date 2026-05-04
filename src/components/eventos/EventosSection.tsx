@@ -30,7 +30,7 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
         .select("*")
         .eq("cidade_id", cidadeData.id)
         .eq("ativo", true)
-        .gte("data_evento", hoje)
+        .or(`data_evento.gte.${hoje},data_evento_fim.gte.${hoje}`)
         .order("data_evento", { ascending: true })
         .limit(10);
 
@@ -46,7 +46,10 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
         <div className="h-5 w-40 bg-muted animate-pulse rounded-lg" />
         <div className="flex gap-3">
           {[1, 2].map((i) => (
-            <div key={i} className="min-w-[150px] h-[157px] bg-muted animate-pulse rounded-2xl" />
+            <div
+              key={i}
+              className="min-w-[150px] h-[157px] bg-muted animate-pulse rounded-2xl"
+            />
           ))}
         </div>
       </div>
@@ -87,6 +90,8 @@ const EventosSection = ({ cidadeSlug }: EventosSectionProps) => {
               titulo={evento.titulo}
               imagem_url={evento.imagem_url}
               data_evento={evento.data_evento}
+              tipo_data={evento.tipo_data}
+              data_evento_fim={evento.data_evento_fim}
               horario={evento.horario}
               local_nome={evento.local_nome}
               categoria={evento.categoria}

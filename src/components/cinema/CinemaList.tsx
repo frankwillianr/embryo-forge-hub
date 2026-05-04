@@ -81,15 +81,7 @@ const getSituacao = (filme: Cinema): string => {
 
 const isEmCartazHoje = (filme: Cinema, todayIso: string): boolean => {
   const dias = getSortedDias(filme);
-  if (dias.length > 0) return dias.includes(todayIso);
-
-  const situacao = getSituacao(filme);
-  if (situacao === "em_cartaz") return true;
-  if (situacao === "em_breve" || situacao === "pre_venda") return false;
-
-  const estreia = normalizeDateAny(filme.data_estreia);
-  if (!estreia) return false;
-  return estreia <= todayIso;
+  return dias.length > 0 && dias.includes(todayIso);
 };
 
 const isEmBreve = (filme: Cinema, todayIso: string): boolean => {
