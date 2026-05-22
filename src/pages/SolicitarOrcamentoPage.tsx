@@ -73,6 +73,7 @@ const SolicitarOrcamentoPage = () => {
   const { toast } = useToast();
   const [categoria, setCategoria] = useState<string>("");
   const [descricao, setDescricao] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [cep, setCep] = useState("");
   const [logradouro, setLogradouro] = useState("");
   const [numero, setNumero] = useState("");
@@ -82,6 +83,13 @@ const SolicitarOrcamentoPage = () => {
   const [uf, setUf] = useState("");
   const [loadingCep, setLoadingCep] = useState(false);
   const [categoriaOpen, setCategoriaOpen] = useState(false);
+
+  const formatWhatsapp = (value: string) => {
+    const numbers = value.replace(/\D/g, "").slice(0, 11);
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+  };
 
   const formatCep = (value: string) => {
     const numbers = value.replace(/\D/g, "").slice(0, 8);
@@ -122,6 +130,12 @@ const SolicitarOrcamentoPage = () => {
     }
   }, [user, authLoading, navigate, slug]);
 
+  useEffect(() => {
+    if (!whatsapp && profile?.contato) {
+      setWhatsapp(formatWhatsapp(profile.contato));
+    }
+  }, [profile?.contato, whatsapp]);
+
   const { data: cidade } = useQuery({
     queryKey: ["cidade", slug],
     queryFn: async () => {
@@ -147,6 +161,7 @@ const SolicitarOrcamentoPage = () => {
           categoria: categoria || "outros",
           descricao: descricao.trim(),
           status: "novo",
+          whatsapp: whatsapp.replace(/\D/g, ""),
           cep: cep.replace(/\D/g, "").length === 8 ? cep.replace(/\D/g, "") : null,
           endereco_complemento: [
             logradouro.trim(),
@@ -186,6 +201,14 @@ const SolicitarOrcamentoPage = () => {
     if (!descricao.trim()) {
       toast({
         title: "Descreva o que você precisa",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (whatsapp.replace(/\D/g, "").length !== 11) {
+      toast({
+        title: "Informe seu WhatsApp",
+        description: "Digite um WhatsApp vÃ¡lido com DDD.",
         variant: "destructive",
       });
       return;
@@ -293,6 +316,21 @@ const SolicitarOrcamentoPage = () => {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="whatsapp">WhatsApp *</Label>
+            <Input
+              id="whatsapp"
+              placeholder="(00) 00000-0000"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(formatWhatsapp(e.target.value))}
+              maxLength={15}
+              inputMode="tel"
+            />
+            <p className="text-xs text-muted-foreground">
+              Usaremos esse numero para facilitar o atendimento do seu orcamento.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="cep">Endereço (opcional)</Label>
             <p className="text-xs text-muted-foreground mb-1">Digite o CEP para preencher o restante automaticamente</p>
             <Input
@@ -373,7 +411,7 @@ const SolicitarOrcamentoPage = () => {
           <Button
             type="submit"
             className="w-full"
-            disabled={enviarSolicitacao.isPending || !descricao.trim()}
+            disabled={enviarSolicitacao.isPending || !descricao.trim() || whatsapp.replace(/\D/g, "").length !== 11}
           >
             {enviarSolicitacao.isPending ? (
               <>

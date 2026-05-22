@@ -198,6 +198,33 @@ const ConversaOrcamentoPage = () => {
     marcarComoLido.mutate();
   }, [conversaId, user?.id, !!conversaComSolicitacao]);
 
+  const enviarPushMensagem = async (body: string) => {
+    if (!outroParticipanteId || !cidadeIdSol || !conversaId) return;
+
+    const title = souSolicitante
+      ? `Nova resposta em orçamento: ${categoriaLabel}`
+      : `Nova mensagem para seu orçamento: ${categoriaLabel}`;
+
+    const { error } = await supabase.functions.invoke("send-push-notification", {
+      body: {
+        cidadeId: cidadeIdSol,
+        userId: outroParticipanteId,
+        title,
+        body: body.trim(),
+        data: {
+          type: "orcamento_mensagem",
+          conversaId,
+          solicitacaoId: conversaComSolicitacao?.solicitacao_id || "",
+          route: `/cidade/${slug}/orcamentos/conversa/${conversaId}`,
+        },
+      },
+    });
+
+    if (error) {
+      console.error("[ConversaOrcamentoPage] erro ao enviar push de mensagem", error);
+    }
+  };
+
   const enviarMensagem = useMutation({
     mutationFn: async (body: string) => {
       if (!user?.id) throw new Error("Não autenticado");
@@ -205,6 +232,8 @@ const ConversaOrcamentoPage = () => {
         .from("solicitacao_orcamento_mensagem")
         .insert({ conversa_id: conversaId!, user_id: user.id, body: body.trim() });
       if (error) throw error;
+
+      void enviarPushMensagem(body);
     },
     onSuccess: () => {
       setTexto("");

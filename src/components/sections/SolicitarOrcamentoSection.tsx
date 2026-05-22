@@ -164,31 +164,23 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
                   tabIndex={0}
                   onClick={() => setModalSolicitacao(s)}
                   onKeyDown={(e) => e.key === "Enter" && setModalSolicitacao(s)}
-                  className="group relative overflow-hidden flex-shrink-0 w-[150px] max-w-[150px] p-0 rounded-2xl border border-border/70 bg-card text-left flex flex-col cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30"
+                  className="group relative overflow-hidden flex-shrink-0 w-[190px] max-w-[190px] min-h-[178px] rounded-xl border border-border/70 bg-card text-left flex flex-col cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-primary/30"
                 >
-                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary/70 via-primary to-primary/60" />
-
-                  <div className="p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-[11px] font-semibold text-foreground leading-tight">
+                  <div className="flex-1 p-3.5">
+                    <div className="flex items-center gap-1.5">
+                      <FileText className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      <p className="min-w-0 truncate text-[11px] font-semibold text-primary">
                         {CATEGORIA_LABEL[s.categoria] || s.categoria}
                       </p>
-                      <span
-                        className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                          STATUS_CLASSNAME[s.status] || "bg-zinc-100 text-zinc-700 border-zinc-300"
-                        }`}
-                      >
-                        {STATUS_LABEL[s.status] || s.status}
-                      </span>
                     </div>
 
-                    <p className="text-[13px] leading-snug text-foreground/85 mt-2 line-clamp-3 min-h-[56px]">
+                    <p className="mt-2.5 min-h-[54px] text-[13px] font-medium leading-snug text-foreground line-clamp-3">
                       {s.descricao || "Sem descrição"}
                     </p>
 
-                    <div className="mt-2 space-y-1.5 text-[10px] text-muted-foreground">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="h-3 w-3" />
+                    <div className="mt-3 space-y-1.5 text-[10.5px] text-muted-foreground">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground/75" />
                         <span className="truncate">
                           {s.bairro
                             ? s.bairro
@@ -197,13 +189,15 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
                             : "Região não informada"}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <CalendarDays className="h-3 w-3" />
-                        <span>{format(new Date(s.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <UserRound className="h-3 w-3" />
-                        <span className="truncate">{s.nome_solicitante_censurado || "Anônimo"}</span>
+                      <div className="flex min-w-0 items-center justify-between gap-2">
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <UserRound className="h-3.5 w-3.5 shrink-0 text-muted-foreground/75" />
+                          <span className="truncate">{s.nome_solicitante_censurado || "Anônimo"}</span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <CalendarDays className="h-3.5 w-3.5 text-muted-foreground/75" />
+                          {format(new Date(s.created_at), "dd/MM", { locale: ptBR })}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -211,8 +205,8 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
                   {user?.id !== s.user_id && (
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="mx-3 mb-3 mt-0 h-8 text-[11px] rounded-xl border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+                      variant="ghost"
+                      className="mx-3 mb-3 mt-0 h-8 justify-center rounded-lg bg-[#331D4A] text-[11px] font-semibold text-white hover:bg-[#331D4A]/90"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (user) navigate(`/cidade/${cidadeSlug}/orcamentos/${s.id}/enviar`);
@@ -232,7 +226,7 @@ const SolicitarOrcamentoSection = ({ cidadeSlug }: SolicitarOrcamentoSectionProp
                     ? navigate(`/cidade/${cidadeSlug}/solicitar-orcamento`)
                     : navigate(`/cidade/${cidadeSlug}/auth?redirect=${encodeURIComponent(`/cidade/${cidadeSlug}/solicitar-orcamento`)}`)
                 }
-                className="flex-shrink-0 w-[150px] max-w-[150px] flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 hover:bg-muted/40 transition-colors py-4"
+                className="flex-shrink-0 w-[190px] max-w-[190px] min-h-[178px] flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 hover:bg-muted/40 transition-colors py-4"
               >
                 <Plus className="h-6 w-6 text-muted-foreground" />
                 <span className="text-xs font-medium text-muted-foreground">Solicitar orçamento</span>

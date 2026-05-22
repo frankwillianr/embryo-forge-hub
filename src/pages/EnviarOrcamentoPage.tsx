@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CATEGORIAS_SERVICO } from "@/lib/categoriasServico";
 import { Building2 } from "lucide-react";
 
 const CATEGORIA_LABEL: Record<string, string> = {
@@ -19,26 +18,34 @@ const CATEGORIA_LABEL: Record<string, string> = {
   obras: "Obras / Reformas",
   limpeza: "Limpeza",
   diarista: "Diarista",
-  dedetizacao: "Dedetização",
+  dedetizacao: "Dedetizacao",
   chaveiro: "Chaveiro",
   marceneiro: "Marceneiro",
   serralheria: "Serralheria",
   vidraceiro: "Vidraceiro",
   "ar-condicionado": "Ar condicionado",
   jardinagem: "Jardinagem",
-  mudancas: "Mudanças",
-  salao: "Salão de beleza",
+  mudancas: "Mudancas",
+  salao: "Salao de beleza",
   barbeiro: "Barbeiro",
   manicure: "Manicure",
   dentista: "Dentista",
-  veterinario: "Veterinário",
-  mecanico: "Mecânico",
+  veterinario: "Veterinario",
+  mecanico: "Mecanico",
   "lava-jato": "Lava jato",
   advogado: "Advogado",
   contador: "Contador",
-  fotografo: "Fotógrafo",
+  fotografo: "Fotografo",
   eventos: "Eventos / Festas",
   outros: "Outros",
+};
+
+const formatWhatsApp = (phone?: string | null) => {
+  const numbers = (phone || "").replace(/\D/g, "");
+  const local = numbers.startsWith("55") && numbers.length === 13 ? numbers.slice(2) : numbers;
+  if (local.length === 11) return `(${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
+  if (local.length === 10) return `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
+  return phone || null;
 };
 
 const EnviarOrcamentoPage = () => {
@@ -72,26 +79,23 @@ const EnviarOrcamentoPage = () => {
     enabled: !!solicitacaoId && !!user,
   });
 
-  // Verifica se o usuário tem empresa ativa nessa categoria (na mesma cidade) para poder enviar orçamento
-  const categoriaSolicitacao = solicitacao?.categoria;
+  // Verifica se o usuario tem empresa cadastrada nessa cidade para poder enviar orcamento
   const cidadeIdSolicitacao = solicitacao?.cidade_id;
-  const { data: empresasNaCategoria = [] } = useQuery({
-    queryKey: ["minha-empresa-ativa-categoria", user?.id, cidadeIdSolicitacao, categoriaSolicitacao],
+  const { data: empresasNaCidade = [] } = useQuery({
+    queryKey: ["minha-empresa-cidade-orcamento", user?.id, cidadeIdSolicitacao],
     queryFn: async () => {
-      if (!user?.id || !cidadeIdSolicitacao || !categoriaSolicitacao) return [];
+      if (!user?.id || !cidadeIdSolicitacao) return [];
       const { data, error } = await supabase
         .from("rel_cidade_servico_empresa")
         .select("id")
         .eq("cidade_id", cidadeIdSolicitacao)
-        .eq("user_id", user.id)
-        .eq("status", "ativo")
-        .or(`categoria.eq.${categoriaSolicitacao},categorias_adicionais.cs.{"${categoriaSolicitacao}"}`);
+        .eq("user_id", user.id);
       if (error) throw error;
       return data || [];
     },
-    enabled: !!user?.id && !!cidadeIdSolicitacao && !!categoriaSolicitacao,
+    enabled: !!user?.id && !!cidadeIdSolicitacao,
   });
-  const podeEnviarOrcamento = (empresasNaCategoria?.length ?? 0) > 0;
+  const podeEnviarOrcamento = (empresasNaCidade?.length ?? 0) > 0;
 
   const { data: conversa } = useQuery({
     queryKey: ["orcamento-conversa", solicitacaoId, user?.id],
@@ -125,38 +129,35 @@ const EnviarOrcamentoPage = () => {
   const chatIniciado = (mensagens?.length ?? 0) > 0;
   const solicitanteId = solicitacao?.user_id;
   const { data: perfilSolicitante } = useQuery({
-    queryKey: ["profile-solicitante-orcamento", solicitanteId],
+    queryKey: ["profile-solicitante-orcamento", solicitacaoId, solicitanteId, podeEnviarOrcamento],
     queryFn: async () => {
-      if (!solicitanteId) return null;
+      if (!solicitacaoId || !solicitanteId) return null;
       const { data, error } = await supabase
-        .from("profiles")
-        .select("id, nome")
-        .eq("id", solicitanteId)
-        .maybeSingle();
+        .rpc("get_orcamento_solicitante_contato", { p_solicitacao_id: solicitacaoId });
       if (error) throw error;
-      return data;
+      return Array.isArray(data) ? data[0] ?? null : data;
     },
-    enabled: chatIniciado && !!solicitanteId,
+    enabled: !!solicitacaoId && !!solicitanteId && podeEnviarOrcamento,
   });
   const nomeCliente = (perfilSolicitante as { nome?: string } | null)?.nome?.trim() || null;
+  const emailCliente = (perfilSolicitante as { email?: string } | null)?.email?.trim() || null;
+  const whatsappCliente = formatWhatsApp((perfilSolicitante as { whatsapp?: string } | null)?.whatsapp);
 
   const { data: minhaEmpresaNome } = useQuery({
-    queryKey: ["minha-empresa-nome-orcamento", user?.id, cidadeIdSolicitacao, categoriaSolicitacao],
+    queryKey: ["minha-empresa-nome-orcamento", user?.id, cidadeIdSolicitacao],
     queryFn: async () => {
-      if (!user?.id || !cidadeIdSolicitacao || !categoriaSolicitacao) return null;
+      if (!user?.id || !cidadeIdSolicitacao) return null;
       const { data, error } = await supabase
         .from("rel_cidade_servico_empresa")
         .select("id, nome")
         .eq("cidade_id", cidadeIdSolicitacao)
         .eq("user_id", user.id)
-        .eq("status", "ativo")
-        .or(`categoria.eq.${categoriaSolicitacao},categorias_adicionais.cs.{"${categoriaSolicitacao}"}`)
         .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: chatIniciado && !!user?.id && !!cidadeIdSolicitacao && !!categoriaSolicitacao,
+    enabled: chatIniciado && !!user?.id && !!cidadeIdSolicitacao,
   });
   const nomeEmpresaRespondendo = (minhaEmpresaNome as { nome?: string } | null)?.nome?.trim() || null;
 
@@ -165,9 +166,33 @@ const EnviarOrcamentoPage = () => {
     scrollToBottom();
   }, [mensagens.length]);
 
+  const enviarPushMensagem = async (body: string, conversaId: string) => {
+    if (!solicitanteId || !cidadeIdSolicitacao) return;
+
+    const categoriaLabel = CATEGORIA_LABEL[solicitacao?.categoria || ""] || solicitacao?.categoria || "orcamento";
+    const { error } = await supabase.functions.invoke("send-push-notification", {
+      body: {
+        cidadeId: cidadeIdSolicitacao,
+        userId: solicitanteId,
+        title: `Nova mensagem para seu orcamento: ${categoriaLabel}`,
+        body: body.trim(),
+        data: {
+          type: "orcamento_mensagem",
+          conversaId,
+          solicitacaoId: solicitacaoId || "",
+          route: `/cidade/${slug}/orcamentos/conversa/${conversaId}`,
+        },
+      },
+    });
+
+    if (error) {
+      console.error("[EnviarOrcamentoPage] erro ao enviar push de mensagem", error);
+    }
+  };
+
   const enviarMensagem = useMutation({
     mutationFn: async (body: string) => {
-      if (!user?.id) throw new Error("Não autenticado");
+      if (!user?.id) throw new Error("Nao autenticado");
       let convId = conversa?.id;
       if (!convId) {
         const { data: nova, error: errConv } = await supabase
@@ -182,6 +207,8 @@ const EnviarOrcamentoPage = () => {
         .from("solicitacao_orcamento_mensagem")
         .insert({ conversa_id: convId, user_id: user.id, body: body.trim() });
       if (error) throw error;
+
+      void enviarPushMensagem(body, convId);
     },
     onSuccess: () => {
       setTexto("");
@@ -221,13 +248,13 @@ const EnviarOrcamentoPage = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="font-semibold text-base truncate">Enviar orçamento</h1>
+          <h1 className="font-semibold text-base truncate">Enviar orcamento</h1>
           <p className="text-xs text-muted-foreground truncate">{CATEGORIA_LABEL[solicitacao.categoria] || solicitacao.categoria}</p>
         </div>
       </header>
 
       <div className="flex-1 flex flex-col p-4 gap-4 max-w-xl mx-auto w-full">
-        {/* Card da solicitação */}
+        {/* Card da solicitacao */}
         <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
           <div className="p-4">
             <span className="text-xs font-medium text-primary uppercase tracking-wide">
@@ -237,19 +264,12 @@ const EnviarOrcamentoPage = () => {
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-3 text-xs text-muted-foreground">
               {solicitacao.bairro && <span>Bairro: {solicitacao.bairro}</span>}
               {!solicitacao.bairro && solicitacao.cep && (
-                <span>Região: {String(solicitacao.cep).replace(/(\d{5})(\d{3})/, "$1-$2")}</span>
+                <span>Regiao: {String(solicitacao.cep).replace(/(\d{5})(\d{3})/, "$1-$2")}</span>
               )}
-              <span>·</span>
-              <span>
-                Cliente: {chatIniciado && nomeCliente ? nomeCliente : (solicitacao.nome_solicitante_censurado || "Anônimo")}
-              </span>
-              {chatIniciado && (
-                <>
-                  <span>·</span>
-                  <span>Empresa respondendo: {nomeEmpresaRespondendo || "—"}</span>
-                </>
-              )}
-              <span>·</span>
+              <span>Cliente: {nomeCliente || solicitacao.nome_solicitante_censurado || "Anonimo"}</span>
+              {emailCliente && <span>Email: {emailCliente}</span>}
+              {whatsappCliente && <span>WhatsApp: {whatsappCliente}</span>}
+              {chatIniciado && <span>Empresa respondendo: {nomeEmpresaRespondendo || "-"}</span>}
               <span>{format(new Date(solicitacao.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
             </div>
           </div>
@@ -264,7 +284,7 @@ const EnviarOrcamentoPage = () => {
           ) : mensagens.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
               <p className="text-sm text-muted-foreground">Envie sua proposta ou perguntas aqui.</p>
-              <p className="text-xs text-muted-foreground/80 mt-1">O solicitante poderá responder e continuar o diálogo.</p>
+              <p className="text-xs text-muted-foreground/80 mt-1">O solicitante podera responder e continuar o dialogo.</p>
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -300,12 +320,11 @@ const EnviarOrcamentoPage = () => {
               <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4 text-center">
                 <Building2 className="h-10 w-10 mx-auto text-amber-600 mb-2" />
                 <p className="text-sm font-medium text-foreground mb-1">
-                  Cadastre sua empresa para enviar orçamentos
+                  Cadastre sua empresa para enviar orcamentos
                 </p>
                 <p className="text-xs text-muted-foreground mb-4">
-                  Você ainda não tem uma empresa ativa em{" "}
-                  <strong>{CATEGORIAS_SERVICO[solicitacao.categoria] || solicitacao.categoria}</strong>.
-                  Entre no guia de serviços e comece a atender pedidos como este.
+                  Voce ainda nao tem uma empresa cadastrada nesta cidade.
+                  Entre no guia de servicos e comece a atender pedidos como este.
                 </p>
                 <Button
                   size="sm"
@@ -318,7 +337,7 @@ const EnviarOrcamentoPage = () => {
             ) : (
               <div className="flex gap-2 items-end">
                 <Textarea
-                  placeholder="Digite seu orçamento ou mensagem..."
+                  placeholder="Digite seu orcamento ou mensagem..."
                   value={texto}
                   onChange={(e) => setTexto(e.target.value)}
                   onKeyDown={(e) => {
