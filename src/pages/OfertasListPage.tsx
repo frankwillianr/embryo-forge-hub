@@ -1,14 +1,20 @@
 ﻿import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
   Search,
   BadgePercent,
   Eye,
-  ImageIcon,
-  Video,
+  Heart,
+  MessageCircle,
+  Pause,
+  Play,
+  Trash2,
+  Volume2,
+  VolumeX,
+  X,
   Tag,
   Scissors,
   Wrench,
@@ -19,10 +25,15 @@ import {
   PawPrint,
 } from "lucide-react";
 import { useSwipeBack } from "@/hooks/useSwipeBack";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import BottomNavBar from "@/components/navigation/BottomNavBar";
+import { toast } from "sonner";
 
 type Categoria = {
   id: string;
@@ -131,6 +142,18 @@ const formatarCategoriaLabel = (categoria: string) => {
 
 const formatarVisualizacoes = (value: number) => Number(value || 0).toLocaleString("pt-BR");
 
+const getFingerprint = () => {
+  const nav = window.navigator;
+  const screen = window.screen;
+  const data = [nav.userAgent, nav.language, screen.width, screen.height].join("|");
+  let hash = 0;
+  for (let i = 0; i < data.length; i += 1) {
+    hash = (hash << 5) - hash + data.charCodeAt(i);
+    hash &= hash;
+  }
+  return hash.toString();
+};
+
 const shuffleArray = <T,>(items: T[]): T[] => {
   const result = [...items];
   for (let i = result.length - 1; i > 0; i -= 1) {
@@ -158,6 +181,14 @@ type OfertaCardProps = {
   slug: string;
   visualizacoes: number;
   onImpressaoQualificada: (ofertaId: string) => void;
+};
+
+type OfertaVideoCardProps = OfertaCardProps & {
+  isVideoActive: boolean;
+  globalMuted: boolean;
+  onGlobalMutedChange: (muted: boolean) => void;
+  globalAutoplay: boolean;
+  onGlobalAutoplayChange: (enabled: boolean) => void;
 };
 
 const useRegistrarImpressaoAoAparecer = <T extends HTMLElement>(
@@ -246,7 +277,7 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
       }
       className="group relative overflow-hidden rounded-[17px] border border-border/30 bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)] transition-all hover:shadow-xl active:scale-[0.985] text-left"
     >
-      <div className="relative aspect-[2.85] w-full">
+      <div className="relative aspect-[2.18] w-full">
         {imagemOferta ? (
           <img
             src={imagemOferta}
@@ -281,30 +312,297 @@ const OfertaCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: Ofe
   );
 };
 
-const OfertaVideoCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }: OfertaCardProps) => {
+const OfertaVideoCard = ({
+  oferta,
+  slug,
+  visualizacoes,
+  onImpressaoQualificada,
+  isVideoActive,
+  globalMuted,
+  onGlobalMutedChange,
+  globalAutoplay,
+  onGlobalAutoplayChange,
+}: OfertaVideoCardProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user, profile } = useAuth();
+  const fingerprint = user?.id || getFingerprint();
   const cardRef = useRegistrarImpressaoAoAparecer<HTMLElement>(oferta.id, onImpressaoQualificada);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [videoAspect, setVideoAspect] = useState<number | null>(null);
+  const [showCommentSheet, setShowCommentSheet] = useState(false);
+  const [comentario, setComentario] = useState("");
   const labelVisualizacao = visualizacoes <= 1 ? "visualiza\u00E7\u00E3o" : "visualiza\u00E7\u00F5es";
   const categoriaLabel = formatarCategoriaLabel(oferta.categoria);
 
+  const { data: userReaction } = useQuery({
+    queryKey: ["oferta-reaction", oferta.id, fingerprint],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("rel_cidade_servico_empresa_reacoes")
+        .select("tipo")
+        .eq("empresa_id", oferta.id)
+        .eq("user_fingerprint", fingerprint)
+        .maybeSingle();
+
+      return (data?.tipo as "like" | "dislike") || null;
+    },
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
+  });
+
+  const { data: likesCount = 0 } = useQuery({
+    queryKey: ["oferta-likes-count", oferta.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("rel_cidade_servico_empresa_reacoes")
+        .select("*", { count: "exact", head: true })
+        .eq("empresa_id", oferta.id)
+        .eq("tipo", "like");
+
+      return count || 0;
+    },
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
+  });
+
+  const { data: comentariosCount = 0 } = useQuery({
+    queryKey: ["oferta-comentarios-count", oferta.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("rel_cidade_servico_empresa_comentarios")
+        .select("*", { count: "exact", head: true })
+        .eq("empresa_id", oferta.id);
+
+      return count || 0;
+    },
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
+  });
+
+  const { data: comentarios = [] } = useQuery({
+    queryKey: ["oferta-comentarios", oferta.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("listar_oferta_comentarios_public", {
+        p_empresa_id: oferta.id,
+      });
+
+      if (error) throw error;
+
+      return (data || []).map((item: any) => ({
+        ...item,
+        profile: {
+          nome: item.profile_nome,
+          foto_url: item.profile_foto_url,
+        },
+      }));
+    },
+    enabled: showCommentSheet,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
+  });
+
+  const reactMutation = useMutation({
+    mutationFn: async () => {
+      const { data: currentReaction } = await supabase
+        .from("rel_cidade_servico_empresa_reacoes")
+        .select("id, tipo")
+        .eq("empresa_id", oferta.id)
+        .eq("user_fingerprint", fingerprint)
+        .maybeSingle();
+
+      if (currentReaction?.tipo === "like") {
+        const { error } = await supabase
+          .from("rel_cidade_servico_empresa_reacoes")
+          .delete()
+          .eq("id", currentReaction.id);
+        if (error) throw error;
+        return null;
+      }
+
+      const { error } = await supabase
+        .from("rel_cidade_servico_empresa_reacoes")
+        .upsert(
+          { empresa_id: oferta.id, user_fingerprint: fingerprint, tipo: "like" },
+          { onConflict: "empresa_id,user_fingerprint" },
+        );
+
+      if (error) throw error;
+      return "like";
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["oferta-reaction", oferta.id, fingerprint] });
+      queryClient.invalidateQueries({ queryKey: ["oferta-likes-count", oferta.id] });
+    },
+    onError: () => {
+      toast.error("Nao foi possivel registrar a curtida.");
+    },
+  });
+
+  const comentarMutation = useMutation({
+    mutationFn: async (texto: string) => {
+      if (!user) throw new Error("auth");
+
+      const { error } = await supabase
+        .from("rel_cidade_servico_empresa_comentarios")
+        .insert({ empresa_id: oferta.id, user_id: user.id, comentario: texto });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setComentario("");
+      queryClient.invalidateQueries({ queryKey: ["oferta-comentarios", oferta.id] });
+      queryClient.invalidateQueries({ queryKey: ["oferta-comentarios-count", oferta.id] });
+      toast.success("Comentário publicado!");
+    },
+    onError: (error) => {
+      if (error instanceof Error && error.message === "auth") {
+        navigate(`/cidade/${slug}/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
+        return;
+      }
+      toast.error("Erro ao publicar comentário.");
+    },
+  });
+
+  const deletarComentarioMutation = useMutation({
+    mutationFn: async (comentarioId: string) => {
+      const { error } = await supabase
+        .from("rel_cidade_servico_empresa_comentarios")
+        .delete()
+        .eq("id", comentarioId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["oferta-comentarios", oferta.id] });
+      queryClient.invalidateQueries({ queryKey: ["oferta-comentarios-count", oferta.id] });
+      toast.success("Comentário excluído!");
+    },
+    onError: () => {
+      toast.error("Erro ao excluir comentário.");
+    },
+  });
+
+  const handleCommentClick = () => {
+    if (!user) {
+      navigate(`/cidade/${slug}/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    setShowCommentSheet(true);
+  };
+
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    videoEl.muted = globalMuted;
+
+    if (isVideoActive && globalAutoplay) {
+      videoEl.play().catch(() => {
+        // Alguns navegadores bloqueiam autoplay com audio; mantemos falha silenciosa.
+      });
+      return;
+    }
+
+    videoEl.pause();
+  }, [globalAutoplay, globalMuted, isVideoActive]);
+
   return (
-    <article ref={cardRef} className="overflow-hidden rounded-[17px] border border-border/30 bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)]">
-      <div className="relative bg-black">
+    <article
+      ref={cardRef}
+      data-oferta-video-id={oferta.id}
+      className="overflow-hidden bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)] sm:rounded-[17px] sm:border sm:border-border/30"
+    >
+      <div className="relative bg-black" style={{ aspectRatio: videoAspect ? `${videoAspect}` : "16 / 9" }}>
         <video
+          ref={videoRef}
           src={oferta.video_url || ""}
-          controls
+          loop
           playsInline
-          preload="metadata"
-          className="h-[420px] max-h-[70vh] w-full bg-black object-contain"
+          preload={isVideoActive ? "metadata" : "none"}
+          className="h-full w-full bg-transparent object-cover"
+          onLoadedMetadata={(e) => {
+            const { videoWidth, videoHeight } = e.currentTarget;
+            if (videoWidth > 0 && videoHeight > 0) {
+              setVideoAspect(videoWidth / videoHeight);
+            }
+          }}
         />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
         <div className="pointer-events-none absolute right-3 top-3">
           <span className="inline-flex items-center rounded-full border border-white/20 bg-black/35 px-2.5 py-1 text-[10px] font-medium text-white/85 shadow-sm backdrop-blur-sm">
             {categoriaLabel}
           </span>
         </div>
+        <div className="absolute right-2 bottom-2 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onGlobalAutoplayChange(!globalAutoplay);
+            }}
+            className="h-9 px-3 rounded-full bg-black/60 text-white text-xs font-medium flex items-center justify-center"
+            title={globalAutoplay ? "Pausar v\u00EDdeos" : "Reproduzir v\u00EDdeos"}
+          >
+            {globalAutoplay ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onGlobalMutedChange(!globalMuted);
+            }}
+            className="h-9 w-9 rounded-full bg-black/60 text-white flex items-center justify-center"
+            title={globalMuted ? "Ativar \u00E1udio" : "Silenciar v\u00EDdeos"}
+          >
+            {globalMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 p-3">
+      <div className="px-3 pt-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => reactMutation.mutate()}
+              className="active:scale-90 transition-transform"
+              disabled={reactMutation.isPending}
+              title="Curtir"
+            >
+              <Heart className={`h-6 w-6 ${userReaction === "like" ? "text-red-500 fill-red-500" : "text-foreground"}`} />
+            </button>
+            <button
+              type="button"
+              onClick={handleCommentClick}
+              className="active:scale-90 transition-transform flex items-center gap-1"
+              title="Comentar"
+            >
+              <MessageCircle className="h-6 w-6 text-foreground" />
+              {comentariosCount > 0 && (
+                <span className="text-[13px] text-foreground font-medium">{comentariosCount}</span>
+              )}
+            </button>
+          </div>
+          <span className="text-[13px] font-semibold text-foreground">
+            {formatarVisualizacoes(likesCount)} curtidas
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 p-3 pt-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground">{oferta.nome}</p>
           <span className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -324,6 +622,102 @@ const OfertaVideoCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }
           Ver oferta
         </button>
       </div>
+
+      <Sheet open={showCommentSheet} onOpenChange={setShowCommentSheet}>
+        <SheetContent
+          side="bottom"
+          className="rounded-t-[20px] p-0 [&>button]:hidden"
+          style={{ height: "85dvh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <SheetHeader className="px-4 py-3 border-b border-border/50 flex-row items-center justify-between space-y-0">
+            <SheetTitle className="text-base font-semibold">
+              Comentários {comentariosCount > 0 && `(${comentariosCount})`}
+            </SheetTitle>
+            <button
+              type="button"
+              onClick={() => setShowCommentSheet(false)}
+              className="rounded-full p-1.5 hover:bg-muted transition-colors"
+            >
+              <X className="h-5 w-5 text-muted-foreground" />
+            </button>
+          </SheetHeader>
+
+          <div className="flex h-[calc(100%-60px)] flex-col">
+            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+              {comentarios.length === 0 ? (
+                <div className="text-center text-muted-foreground text-sm py-8">
+                  Nenhum comentário ainda. Seja o primeiro!
+                </div>
+              ) : (
+                comentarios.map((item: any) => {
+                  const isOwnComment = user && item.user_id === user.id;
+                  return (
+                    <div key={item.id} className="flex gap-3">
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarImage src={item.profile?.foto_url || undefined} />
+                        <AvatarFallback className="text-xs">
+                          {item.profile?.nome?.charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] font-semibold text-foreground">
+                            {item.profile?.nome || "Usuário"}
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                          </span>
+                          {isOwnComment && (
+                            <button
+                              type="button"
+                              onClick={() => deletarComentarioMutation.mutate(item.id)}
+                              className="ml-auto p-1 hover:bg-destructive/10 rounded transition-colors"
+                              title="Excluir comentário"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[13px] text-foreground leading-relaxed">{item.comentario}</p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="border-t border-border/50 bg-background p-3">
+              <div className="flex items-start gap-2">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarImage src={profile?.foto_url || undefined} />
+                  <AvatarFallback className="text-xs">
+                    {profile?.nome?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-1 gap-2">
+                  <Textarea
+                    placeholder="Adicione um comentário..."
+                    value={comentario}
+                    onChange={(e) => setComentario(e.target.value)}
+                    rows={1}
+                    className="min-h-[36px] resize-none text-base"
+                    maxLength={1000}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => comentarMutation.mutate(comentario.trim())}
+                    disabled={comentarMutation.isPending || !comentario.trim()}
+                    className="h-9"
+                  >
+                    {comentarMutation.isPending ? "..." : "Enviar"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </article>
   );
 };
@@ -331,11 +725,20 @@ const OfertaVideoCard = ({ oferta, slug, visualizacoes, onImpressaoQualificada }
 const OfertasListPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isGuiaPage = location.pathname.endsWith("/guia");
+  const slugParts = String(slug || "cidade").split(/[-\s]+/).filter(Boolean);
+  const apelidoCidade = slugParts.length > 1
+    ? slugParts.map((part) => part.charAt(0)).join("").toUpperCase()
+    : (slugParts[0] || "cidade").toUpperCase();
   useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
-  const [modoVisualizacao, setModoVisualizacao] = useState<"imagem" | "video">("imagem");
+  const [modoVisualizacao, setModoVisualizacao] = useState<"imagem" | "video">(isGuiaPage ? "video" : "imagem");
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
+  const [globalMuted, setGlobalMuted] = useState(false);
+  const [globalAutoplay, setGlobalAutoplay] = useState(true);
   const [visualizacoesById, setVisualizacoesById] = useState<Record<string, number>>({});
   const visualizacoesRegistradasNaTelaRef = useRef<Set<string>>(new Set());
   const pendingIncrementRef = useRef<Set<string>>(new Set());
@@ -372,6 +775,10 @@ const OfertasListPage = () => {
     refetchOnReconnect: "always",
     refetchOnWindowFocus: true,
   });
+
+  useEffect(() => {
+    setModoVisualizacao(isGuiaPage ? "video" : "imagem");
+  }, [isGuiaPage]);
 
   useEffect(() => {
     if (!ofertas?.length) return;
@@ -432,6 +839,50 @@ const OfertasListPage = () => {
     [modoVisualizacao, ofertasFiltradas],
   );
 
+  useEffect(() => {
+    if (modoVisualizacao !== "video" || !ofertasVisiveis.length) {
+      setActiveVideoId(null);
+      return;
+    }
+
+    const visibleRatios = new Map<string, number>();
+    let currentActiveId: string | null = null;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const id = entry.target.getAttribute("data-oferta-video-id");
+          if (!id) return;
+          visibleRatios.set(id, entry.isIntersecting ? entry.intersectionRatio : 0);
+        });
+
+        let nextActiveId: string | null = null;
+        let maxRatio = 0;
+
+        visibleRatios.forEach((ratio, id) => {
+          if (ratio > maxRatio) {
+            maxRatio = ratio;
+            nextActiveId = id;
+          }
+        });
+
+        const computedActiveId = maxRatio >= 0.45 ? nextActiveId : null;
+        if (computedActiveId !== currentActiveId) {
+          currentActiveId = computedActiveId;
+          setActiveVideoId(computedActiveId);
+        }
+      },
+      { threshold: [0, 0.5] },
+    );
+
+    const elements = ofertasVisiveis
+      .map((oferta) => document.querySelector(`[data-oferta-video-id="${oferta.id}"]`))
+      .filter((el): el is Element => !!el);
+
+    elements.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [modoVisualizacao, ofertasVisiveis]);
+
   return (
     <div id="swipe-back-page" className="flex h-screen min-h-screen flex-col overflow-hidden bg-background">
       <header className="z-10 flex-shrink-0 p-4 pt-safe border-b border-border bg-card">
@@ -440,8 +891,12 @@ const OfertasListPage = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex flex-col leading-tight">
-            <h1 className="text-lg font-semibold text-foreground">Mural de ofertas</h1>
-            <p className="text-sm leading-tight text-muted-foreground">As melhores ofertas das melhoras empresas</p>
+            <h1 className="text-lg font-semibold text-foreground">
+              {isGuiaPage ? `Guia ${apelidoCidade}` : "Mural de ofertas"}
+            </h1>
+            <p className="text-sm leading-tight text-muted-foreground">
+              {isGuiaPage ? "Empresas e ofertas em video na cidade" : "As melhores ofertas das melhoras empresas"}
+            </p>
           </div>
         </div>
       </header>
@@ -457,30 +912,6 @@ const OfertasListPage = () => {
               className="pl-9"
             />
           </div>
-          <button
-            type="button"
-            onClick={() => setModoVisualizacao("imagem")}
-            className={`flex h-10 flex-shrink-0 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition-colors ${
-              modoVisualizacao === "imagem"
-                ? "border-[#1f2937] bg-[#1f2937] text-white"
-                : "border-border bg-background text-muted-foreground hover:bg-muted"
-            }`}
-            aria-label="Ver imagens"
-          >
-            Imagem
-          </button>
-          <button
-            type="button"
-            onClick={() => setModoVisualizacao("video")}
-            className={`flex h-10 flex-shrink-0 items-center justify-center rounded-xl border px-3 text-xs font-semibold transition-colors ${
-              modoVisualizacao === "video"
-                ? "border-[#1f2937] bg-[#1f2937] text-white"
-                : "border-border bg-background text-muted-foreground hover:bg-muted"
-            }`}
-            aria-label="Ver vídeos"
-          >
-            Vídeo
-          </button>
         </div>
       </div>
 
@@ -516,11 +947,11 @@ const OfertasListPage = () => {
         </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto overscroll-contain p-4 pb-32">
+      <main className={`flex-1 overflow-y-auto overscroll-contain pb-32 ${modoVisualizacao === "video" ? "px-0 py-4" : "p-4"}`}>
         {isLoading ? (
-          <div className="space-y-3">
+          <div className={`space-y-3 ${modoVisualizacao === "video" ? "px-4" : ""}`}>
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-[2.85] rounded-[17px] bg-muted animate-pulse" />
+              <div key={i} className="aspect-[2.18] rounded-[17px] bg-muted animate-pulse" />
             ))}
           </div>
         ) : ofertasVisiveis.length > 0 ? (
@@ -533,6 +964,11 @@ const OfertasListPage = () => {
                   slug={slug || ""}
                   visualizacoes={Number(visualizacoesById[oferta.id] ?? oferta.visualizacoes ?? 0)}
                   onImpressaoQualificada={registrarImpressaoQualificada}
+                  isVideoActive={activeVideoId === oferta.id}
+                  globalMuted={globalMuted}
+                  onGlobalMutedChange={setGlobalMuted}
+                  globalAutoplay={globalAutoplay}
+                  onGlobalAutoplayChange={setGlobalAutoplay}
                 />
               ) : (
                 <OfertaCard
@@ -564,7 +1000,7 @@ const OfertasListPage = () => {
         )}
       </main>
 
-      <BottomNavBar slug={slug} active="ofertas" />
+      <BottomNavBar slug={slug} active={isGuiaPage ? "guia" : "ofertas"} />
     </div>
   );
 };

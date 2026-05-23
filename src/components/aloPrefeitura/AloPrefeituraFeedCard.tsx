@@ -128,7 +128,7 @@ const AloPrefeituraFeedCard = ({
     };
   }, [showCommentSheet]);
 
-  // Busca reaÃ§Ã£o do usuÃ¡rio
+  // Busca reação do usuário
   const { data: userReaction } = useQuery({
     queryKey: ["alo-reaction-feed", item.id, fingerprint],
     queryFn: async () => {
@@ -161,7 +161,7 @@ const AloPrefeituraFeedCard = ({
     refetchOnWindowFocus: false,
   });
 
-  // Busca contagem de comentÃ¡rios
+  // Busca contagem de comentários
   const { data: comentariosCount = 0 } = useQuery({
     queryKey: ["alo-comentarios-count", item.id],
     queryFn: async () => {
@@ -177,42 +177,30 @@ const AloPrefeituraFeedCard = ({
     refetchOnWindowFocus: false,
   });
 
-  // Busca comentÃ¡rios
+  // Busca comentários
   const { data: comentarios = [] } = useQuery({
     queryKey: ["alo-comentarios-feed", item.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rel_cidade_alo_prefeitura_comentarios")
-        .select(`
-          id,
-          user_id,
-          comentario,
-          created_at
-        `)
-        .eq("alo_prefeitura_id", item.id)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("listar_alo_prefeitura_comentarios_public", {
+        p_alo_prefeitura_id: item.id,
+      });
 
       if (error) throw error;
-      if (!data || data.length === 0) return [];
 
-      // Buscar perfis separadamente
-      const userIds = [...new Set(data.map((c: any) => c.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, nome, foto_url")
-        .in("id", userIds);
-
-      const profileMap = (profiles || []).reduce((acc: any, p: any) => {
-        acc[p.id] = p;
-        return acc;
-      }, {});
-
-      return data.map((c: any) => ({
+      return (data || []).map((c: any) => ({
         ...c,
-        profile: profileMap[c.user_id] || null,
+        profile: {
+          nome: c.profile_nome,
+          foto_url: c.profile_foto_url,
+        },
       }));
     },
     enabled: showCommentSheet,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
   });
 
   // Mutation para reagir (like)
@@ -267,7 +255,7 @@ const AloPrefeituraFeedCard = ({
   // Mutation para comentar
   const comentarMutation = useMutation({
     mutationFn: async (texto: string) => {
-      if (!user) throw new Error("NÃ£o autenticado");
+      if (!user) throw new Error("Não autenticado");
 
       const { error } = await supabase
         .from("rel_cidade_alo_prefeitura_comentarios")
@@ -281,16 +269,16 @@ const AloPrefeituraFeedCard = ({
     },
     onSuccess: () => {
       setComentario("");
-      toast.success("ComentÃ¡rio publicado!");
+      toast.success("Comentário publicado!");
       queryClient.invalidateQueries({ queryKey: ["alo-comentarios-feed", item.id] });
       queryClient.invalidateQueries({ queryKey: ["alo-comentarios-count", item.id] });
     },
     onError: () => {
-      toast.error("Erro ao publicar comentÃ¡rio");
+      toast.error("Erro ao publicar comentário");
     },
   });
 
-  // Mutation para deletar comentÃ¡rio
+  // Mutation para deletar comentário
   const deletarComentarioMutation = useMutation({
     mutationFn: async (comentarioId: string) => {
       const { error } = await supabase
@@ -302,12 +290,12 @@ const AloPrefeituraFeedCard = ({
     },
     onSuccess: () => {
       setComentarioToDelete(null);
-      toast.success("ComentÃ¡rio excluÃ­do!");
+      toast.success("Comentário excluído!");
       queryClient.invalidateQueries({ queryKey: ["alo-comentarios-feed", item.id] });
       queryClient.invalidateQueries({ queryKey: ["alo-comentarios-count", item.id] });
     },
     onError: () => {
-      toast.error("Erro ao excluir comentÃ¡rio");
+      toast.error("Erro ao excluir comentário");
     },
   });
 
@@ -325,7 +313,7 @@ const AloPrefeituraFeedCard = ({
   const handleCommentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) {
-      toast.error("FaÃ§a login para comentar");
+      toast.error("Faça login para comentar");
       return;
     }
     setShowCommentSheet(true);
@@ -333,7 +321,7 @@ const AloPrefeituraFeedCard = ({
 
   const handleEnviarComentario = () => {
     if (!comentario.trim()) {
-      toast.error("Digite um comentÃ¡rio");
+      toast.error("Digite um comentário");
       return;
     }
     comentarMutation.mutate(comentario.trim());
@@ -540,7 +528,7 @@ const AloPrefeituraFeedCard = ({
           <div className="w-full h-full bg-gradient-to-br from-muted/40 to-muted/80" />
         )}
 
-        {/* AnimaÃ§Ã£o de like */}
+        {/* Animação de like */}
         {showLikeAnimation && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <Heart
@@ -552,7 +540,7 @@ const AloPrefeituraFeedCard = ({
         )}
       </div>
 
-      {/* VÃ­deo (quando tem imagens E vÃ­deo) */}
+      {/* Vídeo (quando tem imagens E vídeo) */}
       {imagens.length > 0 && item.video_url && (
         <div className="px-3 pt-2">
           <div
@@ -593,7 +581,7 @@ const AloPrefeituraFeedCard = ({
         </div>
       )}
 
-      {/* AÃ§Ãµes */}
+      {/* Ações */}
       <div className="px-3 pt-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -627,7 +615,7 @@ const AloPrefeituraFeedCard = ({
           </span>
         </div>
 
-        {/* TÃ­tulo e descriÃ§Ã£o */}
+        {/* Título e descrição */}
         <div className="mt-1 mb-3">
           <p className="text-[14px] text-foreground leading-relaxed font-semibold">
             {item.titulo}
@@ -666,7 +654,7 @@ const AloPrefeituraFeedCard = ({
         </div>
       </div>
 
-      {/* Modal de ComentÃ¡rios */}
+      {/* Modal de Comentários */}
       <Sheet open={showCommentSheet} onOpenChange={setShowCommentSheet}>
         <SheetContent
           side="bottom"
@@ -681,7 +669,7 @@ const AloPrefeituraFeedCard = ({
         >
           <SheetHeader className="px-4 py-3 border-b border-border/50 flex-row items-center justify-between space-y-0">
             <SheetTitle className="text-base font-semibold">
-              ComentÃ¡rios {comentariosCount > 0 && `(${comentariosCount})`}
+              Comentários {comentariosCount > 0 && `(${comentariosCount})`}
             </SheetTitle>
             <button
               onClick={() => setShowCommentSheet(false)}
@@ -692,11 +680,11 @@ const AloPrefeituraFeedCard = ({
           </SheetHeader>
 
           <div className="flex flex-col h-[calc(100%-60px)]">
-            {/* Lista de comentÃ¡rios */}
+            {/* Lista de comentários */}
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
               {comentarios.length === 0 ? (
                 <div className="text-center text-muted-foreground text-sm py-8">
-                  Nenhum comentÃ¡rio ainda. Seja o primeiro!
+                  Nenhum comentário ainda. Seja o primeiro!
                 </div>
               ) : (
                 comentarios.map((c: any) => {
@@ -712,7 +700,7 @@ const AloPrefeituraFeedCard = ({
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="text-[13px] font-semibold text-foreground">
-                            {c.profile?.nome || "UsuÃ¡rio"}
+                            {c.profile?.nome || "Usuário"}
                           </span>
                           <span className="text-[11px] text-muted-foreground">
                             {formatDistanceToNow(new Date(c.created_at), {
@@ -739,7 +727,7 @@ const AloPrefeituraFeedCard = ({
               )}
             </div>
 
-            {/* Form de comentÃ¡rio */}
+            {/* Form de comentário */}
             <div className="border-t border-border/50 p-3 bg-background">
               <div className="flex items-start gap-2">
                 <Avatar className="h-8 w-8 flex-shrink-0">
@@ -750,7 +738,7 @@ const AloPrefeituraFeedCard = ({
                 </Avatar>
                 <div className="flex-1 flex gap-2">
                   <Textarea
-                    placeholder="Adicione um comentÃ¡rio..."
+                    placeholder="Adicione um comentário..."
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
                     rows={1}
@@ -771,13 +759,13 @@ const AloPrefeituraFeedCard = ({
         </SheetContent>
       </Sheet>
 
-      {/* Modal de confirmaÃ§Ã£o de exclusÃ£o */}
+      {/* Modal de confirmação de exclusão */}
       <AlertDialog open={!!comentarioToDelete} onOpenChange={(open) => !open && setComentarioToDelete(null)}>
         <AlertDialogContent className="w-[calc(100%-20px)] max-w-lg rounded-[10px]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir comentÃ¡rio?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir comentário?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta aÃ§Ã£o nÃ£o pode ser desfeita.
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

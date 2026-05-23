@@ -83,6 +83,7 @@ import SuportePage from "@/pages/SuportePage";
 import EnquetesHistoricoPage from "@/pages/EnquetesHistoricoPage";
 import TesteTokenPage from "@/pages/TesteTokenPage";
 import AnuncioDiretoPage from "@/pages/AnuncioDiretoPage";
+import TesteOficinaPage from "@/pages/TesteOficinaPage";
 
 const QUERY_CACHE_STORAGE_KEY = "gc:offline-query-cache:v2";
 
@@ -151,6 +152,8 @@ queryClient.getQueryCache().subscribe(() => {
       shouldDehydrateQuery: (query) => {
         const [queryName] = query.queryKey;
         if (queryName === "ofertas" || queryName === "todas-ofertas") return false;
+        if (typeof queryName === "string" && queryName.startsWith("oferta-")) return false;
+        if (typeof queryName === "string" && queryName.includes("comentarios")) return false;
         return query.state.status === "success";
       },
     });
@@ -192,6 +195,7 @@ const App = () => (
               <Route path="/cidade/:slug/servicos/:categoriaId" element={<ServicoCategoriaPage />} />
               <Route path="/cidade/:slug/servicos/:categoriaId/novo" element={<NovaEmpresaPage />} />
               <Route path="/cidade/:slug/servicos/:categoriaId/:empresaId" element={<ServicoEmpresaDetailPage />} />
+              <Route path="/cidade/:slug/guia" element={<OfertasListPage />} />
               <Route path="/cidade/:slug/ofertas" element={<OfertasListPage />} />
               <Route path="/cidade/:slug/vagas" element={<VagasListPage />} />
               <Route path="/cidade/:slug/vagas/nova" element={<NovaVagaPage />} />
@@ -234,6 +238,9 @@ const App = () => (
               <Route path="/suporte" element={<SuportePage />} />
               <Route path="/Anuncio" element={<AnuncioDiretoPage />} />
             </Route>
+
+            <Route path="/testeoficina" element={<TesteOficinaPage />} />
+            <Route path="/cidade/:slug/testeoficina" element={<TesteOficinaPage />} />
 
             {/* Admin routes without max-width constraint */}
             <Route path="/admin" element={<AdminRouteGuard><AdminLayout><AdminDashboard /></AdminLayout></AdminRouteGuard>} />

@@ -1,7 +1,7 @@
 ﻿import { useNavigate } from "react-router-dom";
-import { Home, Newspaper, Film, Briefcase, BadgePercent } from "lucide-react";
+import { Home, Newspaper, Film, BookOpen, BadgePercent } from "lucide-react";
 
-type BottomNavTab = "home" | "jornal" | "cinema" | "servicos" | "ofertas";
+type BottomNavTab = "home" | "jornal" | "cinema" | "servicos" | "guia" | "ofertas";
 
 interface BottomNavBarProps {
   slug?: string;
@@ -9,7 +9,6 @@ interface BottomNavBarProps {
   onHomeClick?: () => void;
   onJornalClick?: () => void;
   onCinemaClick?: () => void;
-  onServicosClick?: () => void;
   onOfertasClick?: () => void;
 }
 
@@ -36,7 +35,6 @@ const BottomNavBar = ({
   onHomeClick,
   onJornalClick,
   onCinemaClick,
-  onServicosClick,
   onOfertasClick,
 }: BottomNavBarProps) => {
   const navigate = useNavigate();
@@ -66,15 +64,19 @@ const BottomNavBar = ({
     setTimeout(forceScrollTop, 120);
   };
 
-  const goServicos = () => {
-    if (onServicosClick) return onServicosClick();
-    navigate(`/cidade/${slug}/servicos`);
+  const goGuia = () => {
+    navigate(`/cidade/${slug}/guia`);
   };
 
   const goOfertas = () => {
     if (onOfertasClick) return onOfertasClick();
     navigate(`/cidade/${slug}/ofertas`);
   };
+
+  const slugParts = String(slug || "cidade").split(/[-\s]+/).filter(Boolean);
+  const apelidoCidade = slugParts.length > 1
+    ? slugParts.map((part) => part.charAt(0)).join("").toUpperCase()
+    : (slugParts[0] || "cidade").toUpperCase();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 w-auto bg-[#1a1a2e]/95 rounded-t-2xl shadow-2xl backdrop-blur-sm pb-[7px]">
@@ -110,14 +112,14 @@ const BottomNavBar = ({
           </span>
         </button>
         <button
-          onClick={goServicos}
-          className={`${baseItemClass} ${active === "servicos" ? activeClass : inactiveClass}`}
+          onClick={goGuia}
+          className={`${baseItemClass} ${active === "guia" ? activeClass : inactiveClass}`}
         >
-          <Briefcase className={`h-5 w-5 text-violet-400 transition-all ${iconStateClass("servicos")}`} />
+          <BookOpen className={`h-5 w-5 text-violet-400 transition-all ${iconStateClass("guia")}`} />
           <span className="text-[11px] font-normal leading-[1.5] text-center">
-            Onde ir &
+            Guia
             <br />
-            Serviços
+            {apelidoCidade}
           </span>
         </button>
         <button

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+﻿import { useState, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -104,6 +104,11 @@ const JornalDetailPage = () => {
       } as Jornal;
     },
     enabled: !!jornalId,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
   });
 
   // Busca reação do usuário
@@ -126,24 +131,18 @@ const JornalDetailPage = () => {
   const { data: comentarios = [] } = useQuery({
     queryKey: ["jornal-comentarios", jornalId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rel_cidade_jornal_comentarios")
-        .select(`
-          id,
-          jornal_id,
-          user_id,
-          comentario,
-          created_at,
-          profiles:user_id (nome, foto_url)
-        `)
-        .eq("jornal_id", jornalId)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("listar_jornal_comentarios_public", {
+        p_jornal_id: jornalId,
+      });
 
       if (error) throw error;
 
       return (data || []).map((c: any) => ({
         ...c,
-        profile: c.profiles,
+        profile: {
+          nome: c.profile_nome,
+          foto_url: c.profile_foto_url,
+        },
       })) as Comentario[];
     },
     enabled: !!jornalId,

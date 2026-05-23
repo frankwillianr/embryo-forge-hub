@@ -16,7 +16,6 @@ import {
   ShoppingBag,
   Eye,
   Info,
-  Tag,
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -200,7 +199,6 @@ const ServicoEmpresaDetailPage = () => {
   const fullImageUrl = images[currentImageIndex]?.url || empresa?.banner_oferta_url || "";
   const tabs = [
     { id: "informacoes", label: "Informações", Icon: Info },
-    empresa?.banner_oferta_url ? { id: "oferta", label: "Oferta", Icon: Tag } : null,
     empresa?.video_url ? { id: "video", label: "Vídeo", Icon: Eye } : null,
     horariosOrdenados.length > 0 ? { id: "horarios", label: "Horários", Icon: Clock } : null,
     endereco ? { id: "localizacao", label: "Localização", Icon: MapPin } : null,
@@ -401,18 +399,6 @@ const ServicoEmpresaDetailPage = () => {
 
         </section>
 
-        {activeSection === "oferta" && empresa.banner_oferta_url && (
-          <section id="oferta" className="scroll-mt-20 space-y-3">
-            <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Oferta em destaque</h2>
-            </div>
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-              <img src={empresa.banner_oferta_url} alt="Oferta" className="w-full h-auto" />
-            </div>
-          </section>
-        )}
-
         {false && activeSection === "catalogo" && produtos.length > 0 && (
           <section id="catalogo" className="scroll-mt-20 space-y-3">
             <div className="flex items-center justify-between gap-3">
@@ -464,21 +450,24 @@ const ServicoEmpresaDetailPage = () => {
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Informações</h2>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
-            {empresa.descricao && (
-              <div className="flex items-start gap-4 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f6f6f6]">
-                  <Info className="h-4 w-4 text-sky-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-[#5b4b82]">Sobre {empresa.nome}</p>
-                  <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">{empresa.descricao}</p>
+          <div className="overflow-hidden rounded-2xl bg-card shadow-sm">
+            {empresa.banner_oferta_url && (
+              <div className="p-2">
+                <div className="overflow-hidden rounded-2xl bg-background">
+                  <img src={empresa.banner_oferta_url} alt="Oferta" className="w-full h-auto" />
                 </div>
               </div>
             )}
 
+            {empresa.descricao && (
+              <div className="px-2 py-3">
+                <p className="mb-1 text-sm font-semibold text-[#5b4b82]">Sobre {empresa.nome}</p>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">{empresa.descricao}</p>
+              </div>
+            )}
+
             {empresa.whatsapp && (
-              <button onClick={handleCopyPhone} className="group flex w-full items-center gap-4 border-t border-border/70 p-4 text-left transition-colors hover:bg-neutral-50">
+              <button onClick={handleCopyPhone} className="group flex w-full items-center gap-3 px-2 py-3 text-left transition-colors hover:bg-neutral-50">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f6f6f6]">
                   <Phone className="h-4 w-4 text-emerald-600" />
                 </div>
@@ -510,7 +499,7 @@ const ServicoEmpresaDetailPage = () => {
             )}
 
             {empresa.instagram && (
-              <button onClick={handleInstagram} className="flex w-full items-center gap-4 border-t border-border/70 p-4 text-left transition-colors hover:bg-neutral-50">
+              <button onClick={handleInstagram} className="flex w-full items-center gap-3 px-2 py-3 text-left transition-colors hover:bg-neutral-50">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f6f6f6]">
                   <Instagram className="h-4 w-4 text-pink-600" />
                 </div>
@@ -522,8 +511,8 @@ const ServicoEmpresaDetailPage = () => {
             )}
 
             {produtos.length > 0 && (
-              <div className="border-t border-border/70">
-                <div className="flex items-start gap-4 p-4 pb-3">
+              <div>
+                <div className="flex items-start gap-3 px-2 py-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f6f6f6]">
                     <ShoppingBag className="h-4 w-4 text-[#5b4b82]" />
                   </div>
@@ -536,7 +525,7 @@ const ServicoEmpresaDetailPage = () => {
                   <span className="hidden">{produtos.length} itens</span>
                   </div>
                 </div>
-                <div className="divide-y divide-border/70 border-t border-border/70">
+                <div>
                   {produtos.map((produto) => {
                     const precoFormatado = formatPreco(produto.preco);
                     return (

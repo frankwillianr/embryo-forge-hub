@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -169,26 +169,26 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const { data: comentarios = [] } = useQuery({
     queryKey: ["jornal-comentarios-feed", jornal.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("rel_cidade_jornal_comentarios")
-        .select(`
-          id,
-          user_id,
-          comentario,
-          created_at,
-          profiles:user_id (nome, foto_url)
-        `)
-        .eq("jornal_id", jornal.id)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("listar_jornal_comentarios_public", {
+        p_jornal_id: jornal.id,
+      });
 
       if (error) throw error;
 
       return (data || []).map((c: any) => ({
         ...c,
-        profile: c.profiles,
+        profile: {
+          nome: c.profile_nome,
+          foto_url: c.profile_foto_url,
+        },
       }));
     },
     enabled: showCommentSheet, // Só busca quando abre o modal
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
+    refetchOnWindowFocus: true,
   });
 
   // Mutation para reagir (like)

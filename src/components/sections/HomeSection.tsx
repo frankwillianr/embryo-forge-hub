@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { Briefcase, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BannerCarousel from "@/components/BannerCarousel";
 import EnqueteSection from "@/components/sections/EnqueteSection";
@@ -28,6 +30,7 @@ const Separador = () => (
 );
 
 const HomeSection = ({ cidadeSlug, onMapClick }: HomeSectionProps) => {
+  const navigate = useNavigate();
   const { data: banners = [], isLoading } = useQuery({
     queryKey: ["banners-hoje", cidadeSlug],
     queryFn: async () => {
@@ -116,6 +119,25 @@ const HomeSection = ({ cidadeSlug, onMapClick }: HomeSectionProps) => {
       <Separador />
 
       <EventosSection cidadeSlug={cidadeSlug} />
+
+      <Separador />
+
+      <section className="px-5 py-2">
+        <button
+          type="button"
+          onClick={() => navigate(`/cidade/${cidadeSlug}/servicos`)}
+          className="flex w-full items-center gap-3 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-500 p-4 text-left text-white shadow-md transition-transform active:scale-[0.98]"
+        >
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/18">
+            <Briefcase className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-sm font-bold leading-tight">Onde ir & Serviços</h2>
+            <p className="mt-0.5 text-xs text-white/80">Empresas, profissionais e lugares da cidade.</p>
+          </div>
+          <ChevronRight className="h-5 w-5 flex-shrink-0 text-white/80" />
+        </button>
+      </section>
 
       <Separador />
 
