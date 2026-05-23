@@ -239,9 +239,6 @@ const App = () => (
               <Route path="/Anuncio" element={<AnuncioDiretoPage />} />
             </Route>
 
-            <Route path="/testeoficina" element={<TesteOficinaPage />} />
-            <Route path="/cidade/:slug/testeoficina" element={<TesteOficinaPage />} />
-
             {/* Admin routes without max-width constraint */}
             <Route path="/admin" element={<AdminRouteGuard><AdminLayout><AdminDashboard /></AdminLayout></AdminRouteGuard>} />
             <Route path="/admin/cidades" element={<AdminRouteGuard><AdminLayout><AdminCidades /></AdminLayout></AdminRouteGuard>} />
