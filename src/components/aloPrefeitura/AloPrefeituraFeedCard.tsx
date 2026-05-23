@@ -377,7 +377,7 @@ const AloPrefeituraFeedCard = ({
     <article
       id={`alo-${item.id}`}
       data-alo-id={item.id}
-      className="relative flex h-[calc(100dvh-86px)] min-h-[calc(100dvh-86px)] snap-start snap-always flex-col overflow-hidden border-b border-border/50"
+      className="border-b border-border/50 relative mb-6 scroll-mt-16"
     >
       {/* Header */}
       <div className="flex items-center px-3 py-2.5">
@@ -400,7 +400,7 @@ const AloPrefeituraFeedCard = ({
 
       {/* Imagem/Carrossel */}
       <div
-        className="relative min-h-0 flex-1 w-full overflow-hidden bg-muted/30"
+        className={`relative w-full overflow-hidden bg-muted/30 ${hasMainVideo ? "" : "aspect-square"}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -443,10 +443,10 @@ const AloPrefeituraFeedCard = ({
             )}
           </>
         ) : item.video_url ? (
-          <div className="relative h-full w-full bg-transparent">
+          <div className="relative w-full bg-transparent">
             {embedUrl ? (
               isVideoActive ? (
-                <div className="h-full">
+                <div style={{ aspectRatio: youtubeAspect }}>
                   <iframe
                     src={`${embedUrl}&autoplay=${globalAutoplay ? "1" : "0"}&mute=${globalMuted ? "1" : "0"}&controls=1&playsinline=1`}
                     title={item.titulo}
@@ -459,16 +459,17 @@ const AloPrefeituraFeedCard = ({
                 <img
                   src={youtubeThumb}
                   alt={item.titulo}
-                  className="h-full w-full object-cover"
+                  className="w-full h-auto"
                   loading="lazy"
                 />
               ) : (
-                <div className="h-full w-full bg-gradient-to-br from-muted/40 to-muted/80" />
+                <div className="w-full bg-gradient-to-br from-muted/40 to-muted/80" style={{ aspectRatio: youtubeAspect }} />
               )
             ) : (
               <>
                 <div
-                  className="h-full w-full overflow-hidden"
+                  className="w-full overflow-hidden"
+                  style={{ aspectRatio: primaryVideoAspect ? `${primaryVideoAspect}` : "16 / 9" }}
                 >
                   <video
                     ref={primaryVideoRef}
@@ -620,7 +621,7 @@ const AloPrefeituraFeedCard = ({
             {item.titulo}
           </p>
           {descricao && (
-            <div className={`text-[13px] text-muted-foreground leading-relaxed mt-1 ${isDescricaoExpanded ? "max-h-[28dvh] overflow-y-auto overscroll-contain pr-1" : ""}`}>
+            <div className="text-[13px] text-muted-foreground leading-relaxed mt-1">
               <p
                 className="whitespace-pre-line"
                 style={

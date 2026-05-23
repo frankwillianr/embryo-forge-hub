@@ -351,8 +351,8 @@ const JornalListPage = () => {
   }, [categoriaAtiva, feedItems]);
 
   return (
-    <div id="swipe-back-page" className="h-screen overflow-y-auto overscroll-contain bg-background pb-24 snap-y snap-mandatory scroll-smooth">
-      <header className="snap-start flex items-center gap-3 px-4 py-3 pt-safe border-b border-border/50 bg-background">
+    <div id="swipe-back-page" className="min-h-screen bg-background pb-24">
+      <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 pt-safe border-b border-border/50 bg-background/95 backdrop-blur-sm">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/cidade/${slug}`)}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -442,53 +442,51 @@ const JornalListPage = () => {
         </div>
       </div>
 
-      <main>
-        {isLoading ? (
-          <div>
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-[calc(100dvh-86px)] snap-start snap-always border-b border-border/50">
-                <div className="px-3 py-2.5 flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-muted/50 animate-pulse" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-32 bg-muted/50 animate-pulse rounded" />
-                    <div className="h-2 w-20 bg-muted/50 animate-pulse rounded" />
-                  </div>
-                </div>
-                <div className="h-[62%] w-full bg-muted/50 animate-pulse" />
-                <div className="px-3 py-3 space-y-2">
-                  <div className="h-3 w-full bg-muted/50 animate-pulse rounded" />
-                  <div className="h-3 w-3/4 bg-muted/50 animate-pulse rounded" />
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="border-b border-border/50">
+              <div className="px-3 py-2.5 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-muted/50 animate-pulse" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 w-32 bg-muted/50 animate-pulse rounded" />
+                  <div className="h-2 w-20 bg-muted/50 animate-pulse rounded" />
                 </div>
               </div>
-            ))}
-          </div>
-        ) : feedFiltrado.length === 0 ? (
-          <div className="text-center text-muted-foreground py-12 text-sm">Nenhuma publicação nesta seleção</div>
-        ) : (
-          <div>
-            {feedFiltrado.map((item) =>
-              item.source === "jornal" ? (
-                <JornalFeedCard key={`jornal-${item.data.id}`} jornal={item.data as Jornal} cidadeSlug={slug} />
-              ) : (
-                <AloPrefeituraFeedCard
-                  key={`voz-${item.data.id}`}
-                  item={item.data as AloPrefeitura}
-                  cidadeSlug={slug}
-                  isVideoActive={activeAloId === item.data.id}
-                  globalMuted={globalMuted}
-                  onGlobalMutedChange={setGlobalMuted}
-                  globalAutoplay={globalAutoplay}
-                  onGlobalAutoplayChange={setGlobalAutoplay}
-                />
-              )
-            )}
-            <div ref={loadMoreRef} className="h-8" />
-            {isFetchingNextPage && (
-              <div className="py-6 text-center text-xs text-muted-foreground">Carregando mais publicações...</div>
-            )}
-          </div>
-        )}
-      </main>
+              <div className="aspect-square w-full bg-muted/50 animate-pulse" />
+              <div className="px-3 py-3 space-y-2">
+                <div className="h-3 w-full bg-muted/50 animate-pulse rounded" />
+                <div className="h-3 w-3/4 bg-muted/50 animate-pulse rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : feedFiltrado.length === 0 ? (
+        <div className="text-center text-muted-foreground py-12 text-sm">Nenhuma publicação nesta seleção</div>
+      ) : (
+        <div>
+          {feedFiltrado.map((item) =>
+            item.source === "jornal" ? (
+              <JornalFeedCard key={`jornal-${item.data.id}`} jornal={item.data as Jornal} cidadeSlug={slug} />
+            ) : (
+              <AloPrefeituraFeedCard
+                key={`voz-${item.data.id}`}
+                item={item.data as AloPrefeitura}
+                cidadeSlug={slug}
+                isVideoActive={activeAloId === item.data.id}
+                globalMuted={globalMuted}
+                onGlobalMutedChange={setGlobalMuted}
+                globalAutoplay={globalAutoplay}
+                onGlobalAutoplayChange={setGlobalAutoplay}
+              />
+            )
+          )}
+          <div ref={loadMoreRef} className="h-8" />
+          {isFetchingNextPage && (
+            <div className="py-6 text-center text-xs text-muted-foreground">Carregando mais publicações...</div>
+          )}
+        </div>
+      )}
 
       <BottomNavBar slug={slug} active="jornal" />
 
