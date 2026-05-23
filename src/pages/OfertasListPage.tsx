@@ -327,7 +327,6 @@ const OfertaVideoCard = ({
   const fingerprint = user?.id || getFingerprint();
   const cardRef = useRegistrarImpressaoAoAparecer<HTMLElement>(oferta.id, onImpressaoQualificada);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [videoAspect, setVideoAspect] = useState<number | null>(null);
   const [showCommentSheet, setShowCommentSheet] = useState(false);
   const [comentario, setComentario] = useState("");
   const labelVisualizacao = visualizacoes <= 1 ? "visualiza\u00E7\u00E3o" : "visualiza\u00E7\u00F5es";
@@ -521,9 +520,9 @@ const OfertaVideoCard = ({
     <article
       ref={cardRef}
       data-oferta-video-id={oferta.id}
-      className="overflow-hidden bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)] sm:rounded-[17px] sm:border sm:border-border/30"
+      className="flex h-full min-h-full snap-start snap-always flex-col overflow-hidden bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)] sm:rounded-[17px] sm:border sm:border-border/30"
     >
-      <div className="relative bg-black" style={{ aspectRatio: videoAspect ? `${videoAspect}` : "16 / 9" }}>
+      <div className="relative min-h-0 flex-1 bg-black">
         <video
           ref={videoRef}
           src={oferta.video_url || ""}
@@ -531,12 +530,6 @@ const OfertaVideoCard = ({
           playsInline
           preload={isVideoActive ? "metadata" : "none"}
           className="h-full w-full bg-transparent object-cover"
-          onLoadedMetadata={(e) => {
-            const { videoWidth, videoHeight } = e.currentTarget;
-            if (videoWidth > 0 && videoHeight > 0) {
-              setVideoAspect(videoWidth / videoHeight);
-            }
-          }}
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
         <div className="pointer-events-none absolute right-3 top-3">
@@ -929,15 +922,15 @@ const OfertasListPage = () => {
         </div>
       </div>
 
-      <main className={`flex-1 overflow-y-auto overscroll-contain pb-32 ${modoVisualizacao === "video" ? "px-0 py-4" : "p-4"}`}>
+      <main className={`flex-1 overflow-y-auto overscroll-contain ${modoVisualizacao === "video" ? "mb-[86px] snap-y snap-mandatory scroll-smooth px-0 py-0" : "p-4 pb-32"}`}>
         {isLoading ? (
-          <div className={`space-y-3 ${modoVisualizacao === "video" ? "px-4" : ""}`}>
+          <div className={modoVisualizacao === "video" ? "h-full" : "space-y-3"}>
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-[2.18] rounded-[17px] bg-muted animate-pulse" />
+              <div key={i} className={modoVisualizacao === "video" ? "h-full bg-muted animate-pulse" : "aspect-[2.18] rounded-[17px] bg-muted animate-pulse"} />
             ))}
           </div>
         ) : ofertasVisiveis.length > 0 ? (
-          <div className="space-y-3">
+          <div className={modoVisualizacao === "video" ? "h-full" : "space-y-3"}>
             {ofertasVisiveis.map((oferta) =>
               modoVisualizacao === "video" ? (
                 <OfertaVideoCard
