@@ -83,7 +83,6 @@ import SuportePage from "@/pages/SuportePage";
 import EnquetesHistoricoPage from "@/pages/EnquetesHistoricoPage";
 import TesteTokenPage from "@/pages/TesteTokenPage";
 import AnuncioDiretoPage from "@/pages/AnuncioDiretoPage";
-import TesteOficinaPage from "@/pages/TesteOficinaPage";
 
 const QUERY_CACHE_STORAGE_KEY = "gc:offline-query-cache:v2";
 
@@ -238,9 +237,6 @@ const App = () => (
               <Route path="/suporte" element={<SuportePage />} />
               <Route path="/Anuncio" element={<AnuncioDiretoPage />} />
             </Route>
-
-            <Route path="/testeoficina" element={<TesteOficinaPage />} />
-            <Route path="/cidade/:slug/testeoficina" element={<TesteOficinaPage />} />
 
             {/* Admin routes without max-width constraint */}
             <Route path="/admin" element={<AdminRouteGuard><AdminLayout><AdminDashboard /></AdminLayout></AdminRouteGuard>} />
