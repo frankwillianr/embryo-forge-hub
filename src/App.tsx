@@ -83,7 +83,7 @@ import SuportePage from "@/pages/SuportePage";
 import EnquetesHistoricoPage from "@/pages/EnquetesHistoricoPage";
 import TesteTokenPage from "@/pages/TesteTokenPage";
 import AnuncioDiretoPage from "@/pages/AnuncioDiretoPage";
-import TesteOficinaPage from "@/pages/TesteOficinaPage";
+
 
 const QUERY_CACHE_STORAGE_KEY = "gc:offline-query-cache:v2";
 
