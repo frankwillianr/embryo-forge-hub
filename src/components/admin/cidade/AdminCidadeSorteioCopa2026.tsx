@@ -180,7 +180,6 @@ const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioC
           <TableHeader>
             <TableRow className="bg-gray-50">
               <TableHead>Data</TableHead>
-              <TableHead>Usuário</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Telefone</TableHead>
               <TableHead>Email</TableHead>
@@ -192,19 +191,19 @@ const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioC
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-gray-500">
+                <TableCell colSpan={7} className="py-8 text-center text-gray-500">
                   Carregando vouchers...
                 </TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-red-600">
+                <TableCell colSpan={7} className="py-8 text-center text-red-600">
                   {(error as Error).message || "Erro ao carregar vouchers."}
                 </TableCell>
               </TableRow>
             ) : filteredVouchers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-gray-500">
+                <TableCell colSpan={7} className="py-8 text-center text-gray-500">
                   Nenhum voucher encontrado.
                 </TableCell>
               </TableRow>
@@ -213,9 +212,6 @@ const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioC
                 <TableRow key={voucher.id}>
                   <TableCell className="whitespace-nowrap text-sm text-gray-600">
                     {formatDateTime(voucher.created_at)}
-                  </TableCell>
-                  <TableCell className="max-w-[160px] truncate text-xs text-gray-500">
-                    {voucher.user_id}
                   </TableCell>
                   <TableCell className="font-medium text-gray-900">
                     {voucher.nome || "Sem nome"}
