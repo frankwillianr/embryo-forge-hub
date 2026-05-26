@@ -20,6 +20,7 @@
   Smartphone,
   FolderTree,
   ShoppingBag,
+  Trophy,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,7 @@ const cidadeMenuItems = [
   { id: "banners", title: "Banners", icon: Megaphone },
   { id: "eventos", title: "Eventos", icon: CalendarDays },
   { id: "musica-ao-vivo", title: "Musica ao vivo", icon: Music2 },
+  { id: "sorteio-copa-2026", title: "Sorteio Copa 2026", icon: Trophy },
   { id: "marketplace", title: "Marketplace", icon: ShoppingBag },
   { id: "empresas", title: "Empresas", icon: Building2 },
   { id: "comentarios", title: "Comentarios", icon: MessageCircle },
