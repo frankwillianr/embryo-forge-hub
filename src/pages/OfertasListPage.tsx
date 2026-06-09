@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
-  Search,
   BadgePercent,
   Eye,
   Heart,
@@ -28,7 +27,6 @@ import { useSwipeBack } from "@/hooks/useSwipeBack";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -329,7 +327,6 @@ const OfertaVideoCard = ({
   const fingerprint = user?.id || getFingerprint();
   const cardRef = useRegistrarImpressaoAoAparecer<HTMLElement>(oferta.id, onImpressaoQualificada);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [videoAspect, setVideoAspect] = useState<number | null>(null);
   const [showCommentSheet, setShowCommentSheet] = useState(false);
   const [comentario, setComentario] = useState("");
   const labelVisualizacao = visualizacoes <= 1 ? "visualiza\u00E7\u00E3o" : "visualiza\u00E7\u00F5es";
@@ -523,9 +520,9 @@ const OfertaVideoCard = ({
     <article
       ref={cardRef}
       data-oferta-video-id={oferta.id}
-      className="overflow-hidden bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)] sm:rounded-[17px] sm:border sm:border-border/30"
+      className="flex h-full min-h-full snap-start snap-always flex-col overflow-hidden bg-card shadow-[0_10px_26px_rgba(15,23,42,0.10)] sm:rounded-[17px] sm:border sm:border-border/30"
     >
-      <div className="relative bg-black" style={{ aspectRatio: videoAspect ? `${videoAspect}` : "16 / 9" }}>
+      <div className="relative min-h-0 flex-1 bg-black">
         <video
           ref={videoRef}
           src={oferta.video_url || ""}
@@ -533,12 +530,6 @@ const OfertaVideoCard = ({
           playsInline
           preload={isVideoActive ? "metadata" : "none"}
           className="h-full w-full bg-transparent object-cover"
-          onLoadedMetadata={(e) => {
-            const { videoWidth, videoHeight } = e.currentTarget;
-            if (videoWidth > 0 && videoHeight > 0) {
-              setVideoAspect(videoWidth / videoHeight);
-            }
-          }}
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
         <div className="pointer-events-none absolute right-3 top-3">
@@ -733,7 +724,6 @@ const OfertasListPage = () => {
     : (slugParts[0] || "cidade").toUpperCase();
   useSwipeBack({ onBack: () => navigate(`/cidade/${slug}`) });
 
-  const [searchTerm, setSearchTerm] = useState("");
   const [categoriaAtiva, setCategoriaAtiva] = useState("todas");
   const [modoVisualizacao, setModoVisualizacao] = useState<"imagem" | "video">(isGuiaPage ? "video" : "imagem");
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
@@ -827,12 +817,11 @@ const OfertasListPage = () => {
 
   const ofertasFiltradas = useMemo(() => {
     return ofertasEmOrdemAleatoria.filter((oferta) => {
-      const matchSearch = !searchTerm || oferta.nome.toLowerCase().includes(searchTerm.toLowerCase());
-      if (categoriaAtiva === "todas") return matchSearch;
+      if (categoriaAtiva === "todas") return true;
       const dbCats = CATEGORIA_MAP[categoriaAtiva] || [];
-      return dbCats.includes(oferta.categoria) && matchSearch;
+      return dbCats.includes(oferta.categoria);
     });
-  }, [ofertasEmOrdemAleatoria, categoriaAtiva, searchTerm]);
+  }, [ofertasEmOrdemAleatoria, categoriaAtiva]);
 
   const ofertasVisiveis = useMemo(
     () => (modoVisualizacao === "video" ? ofertasFiltradas.filter((oferta) => !!oferta.video_url) : ofertasFiltradas),
@@ -901,38 +890,24 @@ const OfertasListPage = () => {
         </div>
       </header>
 
-      <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card/50">
-        <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar ofertas..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-        </div>
-      </div>
-
       <div className="flex-shrink-0 border-b border-border bg-card/30">
         <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex gap-1 px-4 py-3 w-max">
+          <div className="flex gap-1 px-4 py-2.5 w-max">
             {TODAS_CATEGORIAS.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setCategoriaAtiva(cat.id)}
-                className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[62px] text-center"
+                className="flex-shrink-0 flex flex-col items-center gap-1.5 w-[56px] text-center"
               >
                 <span
-                  className={`flex h-11 w-11 items-center justify-center rounded-2xl border text-lg transition-colors ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
                     categoriaAtiva === cat.id
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-background text-muted-foreground"
                   }`}
                 >
-                  <cat.Icone className="h-4 w-4" />
+                  <cat.Icone className="h-3.5 w-3.5" />
                 </span>
                 <span
                   className={`text-[11px] font-medium leading-tight ${
@@ -947,15 +922,15 @@ const OfertasListPage = () => {
         </div>
       </div>
 
-      <main className={`flex-1 overflow-y-auto overscroll-contain pb-32 ${modoVisualizacao === "video" ? "px-0 py-4" : "p-4"}`}>
+      <main className={`flex-1 overflow-y-auto overscroll-contain ${modoVisualizacao === "video" ? "mb-[86px] snap-y snap-mandatory scroll-smooth px-0 py-0" : "p-4 pb-32"}`}>
         {isLoading ? (
-          <div className={`space-y-3 ${modoVisualizacao === "video" ? "px-4" : ""}`}>
+          <div className={modoVisualizacao === "video" ? "h-full" : "space-y-3"}>
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="aspect-[2.18] rounded-[17px] bg-muted animate-pulse" />
+              <div key={i} className={modoVisualizacao === "video" ? "h-full bg-muted animate-pulse" : "aspect-[2.18] rounded-[17px] bg-muted animate-pulse"} />
             ))}
           </div>
         ) : ofertasVisiveis.length > 0 ? (
-          <div className="space-y-3">
+          <div className={modoVisualizacao === "video" ? "h-full" : "space-y-3"}>
             {ofertasVisiveis.map((oferta) =>
               modoVisualizacao === "video" ? (
                 <OfertaVideoCard

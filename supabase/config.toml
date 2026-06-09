@@ -63,3 +63,6 @@ verify_jwt = false
 
 [functions.agente_publicador_05]
 verify_jwt = false
+
+[functions.agente_fluxo_automatico_v2]
+verify_jwt = false

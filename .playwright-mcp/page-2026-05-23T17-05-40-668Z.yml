@@ -1,0 +1,54 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e6]:
+    - banner [ref=e7]:
+      - button [ref=e8] [cursor=pointer]:
+        - img
+      - heading "Jornal da cidade" [level=1] [ref=e9]
+      - button "Postar" [ref=e10] [cursor=pointer]:
+        - img [ref=e11]
+        - text: Postar
+    - generic [ref=e12]:
+      - img "Jornal da cidade" [ref=e13]
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - img [ref=e19]
+          - text: Notícias da cidade
+        - generic [ref=e22]:
+          - heading "Jornal da Cidade" [level=2] [ref=e23]
+          - generic [ref=e24]: "0"
+        - paragraph [ref=e25]: Atualizações locais em tempo real para você.
+    - generic [ref=e28]:
+      - button "Todos" [ref=e29] [cursor=pointer]
+      - button "Jornal" [ref=e30] [cursor=pointer]
+      - button "Voz do Povo" [ref=e31] [cursor=pointer]
+    - main [ref=e32]
+    - navigation [ref=e64]:
+      - generic [ref=e65]:
+        - button "Jornal da cidade" [ref=e66] [cursor=pointer]:
+          - img [ref=e67]
+          - generic [ref=e70]:
+            - text: Jornal da
+            - text: cidade
+        - button "Filmes em cartaz" [ref=e71] [cursor=pointer]:
+          - img [ref=e72]
+          - generic [ref=e74]:
+            - text: Filmes em
+            - text: cartaz
+        - button "Pagina inicial" [ref=e75] [cursor=pointer]:
+          - img [ref=e76]
+          - generic [ref=e79]:
+            - text: Pagina
+            - text: inicial
+        - button "Guia GV" [ref=e80] [cursor=pointer]:
+          - img [ref=e81]
+          - generic [ref=e83]:
+            - text: Guia
+            - text: GV
+        - button "Mural de ofertas" [ref=e84] [cursor=pointer]:
+          - img [ref=e85]
+          - generic [ref=e88]:
+            - text: Mural de
+            - text: ofertas

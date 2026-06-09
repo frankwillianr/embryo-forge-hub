@@ -239,7 +239,7 @@ const AuthPage = () => {
         return;
       }
       toast({ title: "Bem-vindo!", description: "Login realizado com sucesso" });
-      navigate(`/cidade/${slug}`);
+      navigate(destination);
     } catch (error: any) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
     } finally {
@@ -355,7 +355,7 @@ const AuthPage = () => {
       // Success! Now allow redirect
       setIsSigningUp(false);
       toast({ title: "Bem-vindo!", description: "Conta criada com sucesso" });
-      navigate(`/cidade/${slug}`);
+      navigate(destination);
     } catch (error: any) {
       setIsSigningUp(false);
       toast({ title: "Erro", description: error.message, variant: "destructive" });

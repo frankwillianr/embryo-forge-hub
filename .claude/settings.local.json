@@ -16,7 +16,14 @@
       "Bash(curl -s -X POST https://api.supabase.com/v1/projects/umauozcntfxgphzbiifz/database/query -H 'Authorization: Bearer sbp_d5e188fc761aa29fb67cf03f31f558d4dd59cb5b' -H 'Content-Type: application/json' -d '{:*)",
       "Bash(SUPABASE_ACCESS_TOKEN=sbp_d5e188fc761aa29fb67cf03f31f558d4dd59cb5b npx supabase functions deploy agente_emprego_buscador_01 --project-ref umauozcntfxgphzbiifz --no-verify-jwt)",
       "Bash(supabase functions:*)",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(git -C \"c:/Users/willi/Desktop/PROJETO DESKTOP/embryo-forge-hub-main/embryo-forge-hub-main\" status)",
+      "Bash(git -C \"c:/Users/willi/Desktop/PROJETO DESKTOP/embryo-forge-hub-main/embryo-forge-hub-main\" branch -a)",
+      "Bash(git -C \"c:/Users/willi/Desktop/PROJETO DESKTOP/embryo-forge-hub-main/embryo-forge-hub-main\" remote -v)",
+      "Bash(git -C \"c:/Users/willi/Desktop/PROJETO DESKTOP/embryo-forge-hub-main/embryo-forge-hub-main\" log --oneline -5 origin/master)",
+      "Bash(git -C \"c:/Users/willi/Desktop/PROJETO DESKTOP/embryo-forge-hub-main/embryo-forge-hub-main\" log --oneline -5 origin/main)",
+      "Bash(git -C \"c:/Users/willi/Desktop/PROJETO DESKTOP/embryo-forge-hub-main/embryo-forge-hub-main\" log --oneline origin/main..origin/master)",
+      "Bash(git -C \"c:/Users/willi/Desktop/PROJETO DESKTOP/embryo-forge-hub-main/embryo-forge-hub-main\" diff --stat)"
     ]
   }
 }
