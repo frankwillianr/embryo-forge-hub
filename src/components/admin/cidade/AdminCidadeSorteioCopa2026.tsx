@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Loader2, Search, Ticket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -85,6 +85,7 @@ const maskPhone = (phone?: string | null) => {
 };
 
 const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioCopa2026Props) => {
+  const queryClient = useQueryClient();
   const [voucherCountFilter, setVoucherCountFilter] = useState("todos");
   const [search, setSearch] = useState("");
   const [openingPrintId, setOpeningPrintId] = useState<string | null>(null);
@@ -98,6 +99,27 @@ const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioC
       return (data || []) as VoucherRow[];
     },
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-copa-2026-vouchers")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "copa_2026_voucher",
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["admin-copa-2026-vouchers"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const voucherCountByUser = useMemo(() => {
     const map = new Map<string, number>();
