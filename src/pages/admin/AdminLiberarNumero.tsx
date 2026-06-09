@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRightLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,8 +13,8 @@ type LiberarNumeroResult = {
 };
 
 const AdminLiberarNumero = () => {
+  const queryClient = useQueryClient();
   const [numero, setNumero] = useState("45");
-  const [nome, setNome] = useState("clara brito");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<LiberarNumeroResult | null>(null);
@@ -32,12 +33,12 @@ const AdminLiberarNumero = () => {
     try {
       const { data, error: rpcError } = await supabase.rpc("admin_copa_2026_liberar_numero" as any, {
         p_numero: parsedNumber,
-        p_nome: nome.trim() || "clara brito",
       });
 
       if (rpcError) throw rpcError;
       const first = Array.isArray(data) ? data[0] : data;
       setResult(first as LiberarNumeroResult);
+      queryClient.invalidateQueries({ queryKey: ["admin-copa-2026-vouchers"] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nao foi possivel liberar o numero.");
     } finally {
@@ -71,13 +72,8 @@ const AdminLiberarNumero = () => {
             />
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Participante</label>
-            <Input
-              value={nome}
-              onChange={(event) => setNome(event.target.value)}
-              placeholder="clara brito"
-            />
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            Participante fixa: Clara Brito, voucher COPA2026-IQIMAV.
           </div>
 
           {error && (
@@ -91,6 +87,8 @@ const AdminLiberarNumero = () => {
               {result.participante_fixado || "Participante"} ficou no numero {result.numero_liberado}.
               {result.participante_trocado
                 ? ` ${result.participante_trocado} foi para o numero ${result.numero_anterior}.`
+                : result.numero_anterior
+                  ? ` Antes estava no numero ${result.numero_anterior}.`
                 : ""}
             </div>
           )}
