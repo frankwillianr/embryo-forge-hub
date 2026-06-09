@@ -81,6 +81,8 @@ interface Agent5Run {
   erro?: string;
 }
 
+type EdgeFunctionData = Record<string, unknown>;
+
 const parseDateToMs = (raw?: string | null): number => {
   const s = (raw ?? "").trim();
   if (!s) return 0;
@@ -197,6 +199,11 @@ const isTransientFetchError = (err: unknown): boolean => {
   );
 };
 
+const getInvokeHttpStatus = (err: unknown): number => {
+  const e = err as { status?: number; context?: Response };
+  return Number(e?.status ?? e?.context?.status ?? 0);
+};
+
 const invokeEdgeWithAnonKey = async (fnName: string, body: unknown) => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -215,7 +222,7 @@ const invokeEdgeWithAnonKey = async (fnName: string, body: unknown) => {
   });
 
   const raw = await res.text();
-  let parsed: any = null;
+  let parsed: unknown = null;
   try {
     parsed = raw ? JSON.parse(raw) : null;
   } catch {
@@ -370,17 +377,27 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
     queryClient.invalidateQueries({ queryKey: ["tabela_agente_buscador", cidadeId] });
   };
 
+  const contarFontesAtivas = async () => {
+    const { data, error } = await supabase
+      .from("cidade_scraping_fonte_v2")
+      .select("id, ativo")
+      .eq("cidade_id", cidadeId);
+    if (error) throw error;
+    return ((data ?? []) as Pick<FonteV2, "id" | "ativo">[]).filter((f) => f.ativo !== false).length;
+  };
+
   // ── Iniciar Agente 1 ──────────────────────────────────────────────────────
 
   const executarAgente1 = async () => {
-    if (fontes.filter((f) => f.ativo).length === 0) {
+    const fontesAtivasAgora = await contarFontesAtivas();
+    if (fontesAtivasAgora === 0) {
       const msg = "Cadastre ao menos uma fonte ativa antes de iniciar.";
       setAgent1({ status: "error", erro: msg });
       throw new Error(msg);
     }
     setAgent1({ status: "running" });
     try {
-      const payload = { cidade_id: cidadeId, lookback_days: 7, max_articles: 120 };
+      const payload = { cidade_id: cidadeId, lookback_days: 7, max_articles: 40 };
       let { data, error } = await invokeEdgeWithSession("agente_buscador_01", payload);
       if (error && await isInvalidJwtError(error)) {
         const refreshed = await supabase.auth.refreshSession();
@@ -447,8 +464,8 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
     setAgent3({ status: "running" });
     try {
       const payload = { cidade_id: cidadeId, limit: 120 };
-      let data: any = null;
-      let error: any = null;
+      let data: EdgeFunctionData | null = null;
+      let error: unknown = null;
       let tentativasRede = 0;
 
       while (tentativasRede < 3) {
@@ -517,8 +534,8 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
       for (let i = 0; i < MAX_RODADAS; i++) {
         rodadas++;
         const payload = { cidade_id: cidadeId, limit: 1 };
-        let data: any = null;
-        let error: any = null;
+        let data: EdgeFunctionData | null = null;
+        let error: unknown = null;
         let tentativasRede = 0;
 
         while (tentativasRede < 3) {
@@ -553,7 +570,7 @@ const AdminCidadeScrapingNoticiasV2 = ({ cidadeId }: AdminCidadeScrapingNoticias
           error = null;
         }
         if (error) {
-          const status = Number((error as { status?: number })?.status ?? 0);
+          const status = getInvokeHttpStatus(error);
           if (status === 546) {
             workerLimitHits++;
             setAgent4({

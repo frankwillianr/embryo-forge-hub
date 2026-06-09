@@ -1,0 +1,47 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e8]:
+    - main [ref=e9]:
+      - generic [ref=e10]:
+        - img [ref=e14]
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - generic [ref=e21]:
+              - img [ref=e22]
+              - generic [ref=e27]: Bom dia
+            - button "Menu" [ref=e28] [cursor=pointer]:
+              - img [ref=e29]
+              - text: Menu
+          - paragraph [ref=e30]: Olá, Visitante
+          - generic [ref=e33]:
+            - img [ref=e34]
+            - generic [ref=e36]: Carregando...
+    - navigation [ref=e78]:
+      - generic [ref=e79]:
+        - button "Jornal da cidade" [ref=e80] [cursor=pointer]:
+          - img [ref=e81]
+          - generic [ref=e84]:
+            - text: Jornal da
+            - text: cidade
+        - button "Filmes em cartaz" [ref=e85] [cursor=pointer]:
+          - img [ref=e86]
+          - generic [ref=e88]:
+            - text: Filmes em
+            - text: cartaz
+        - button "Pagina inicial" [ref=e89] [cursor=pointer]:
+          - img [ref=e90]
+          - generic [ref=e93]:
+            - text: Pagina
+            - text: inicial
+        - button "Onde ir & Serviços" [ref=e94] [cursor=pointer]:
+          - img [ref=e95]
+          - generic [ref=e98]:
+            - text: Onde ir &
+            - text: Serviços
+        - button "Mural de ofertas" [ref=e99] [cursor=pointer]:
+          - img [ref=e100]
+          - generic [ref=e103]:
+            - text: Mural de
+            - text: ofertas

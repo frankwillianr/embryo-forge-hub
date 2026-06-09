@@ -38,13 +38,15 @@ const BROWSER_HEADERS = {
   "Cache-Control": "no-cache",
 };
 
-const FETCH_TIMEOUT_MS = 14_000;
-const ARTICLE_FETCH_TIMEOUT_MS = 10_000;
-const CONCURRENCY = 8; // artigos enriquecidos em paralelo
-const MAX_ARTICLES_DEFAULT = 120;
+const FETCH_TIMEOUT_MS = 9_000;
+const ARTICLE_FETCH_TIMEOUT_MS = 6_500;
+const CONCURRENCY = 3; // manter baixo evita WORKER_RESOURCE_LIMIT em Edge Functions
+const MAX_ARTICLES_DEFAULT = 40;
+const MAX_ARTICLES_LIMIT = 60;
+const MAX_CANDIDATES_TO_ENRICH = 80;
 const LOOKBACK_DAYS_DEFAULT = 3;
 const MAX_IMAGES_PER_ARTICLE = 1;
-const ARTICLE_READ_MAX_BYTES = 260_000;
+const ARTICLE_READ_MAX_BYTES = 120_000;
 
 // ─── Image blocklist (logos, ícones, tracking, social, etc.) ─────────────────
 
@@ -63,6 +65,7 @@ interface FonteRow {
   nome: string;
   url: string;
   tipo: "rss" | "html" | "auto";
+  ativo?: boolean | null;
 }
 
 interface Candidato {
@@ -716,7 +719,10 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const cidade_id: string = body.cidade_id;
-    const max_articles: number = body.max_articles ?? MAX_ARTICLES_DEFAULT;
+    const max_articles = Math.min(
+      Math.max(Number(body.max_articles ?? MAX_ARTICLES_DEFAULT) || MAX_ARTICLES_DEFAULT, 1),
+      MAX_ARTICLES_LIMIT
+    );
     const lookback_days: number = body.lookback_days ?? LOOKBACK_DAYS_DEFAULT;
 
     if (!cidade_id) {
@@ -757,29 +763,48 @@ Deno.serve(async (req) => {
     const otherCityPhrases = listOtherCityPhrases((cidadesRef ?? []) as CidadeRef[], cidade_id);
 
     // ── 2. Carregar fontes dinâmicas ─────────────────────────────────────────
-    const { data: fontes, error: fontesErr } = await supabase
+    const { data: fontesRows, error: fontesErr } = await supabase
       .from("cidade_scraping_fonte_v2")
-      .select("id, nome, url, tipo")
+      .select("id, cidade_id, nome, url, tipo, ativo")
       .eq("cidade_id", cidade_id)
-      .eq("ativo", true)
       .order("ordem");
 
     if (fontesErr) throw fontesErr;
-    if (!fontes?.length) {
+
+    const fontes = ((fontesRows ?? []) as FonteRow[])
+      // Registros antigos podem estar com ativo NULL. Somente false explicito desativa.
+      .filter((f) => f.ativo !== false && String(f.url ?? "").trim());
+
+    if (!fontes.length) {
       return new Response(
-        JSON.stringify({ ok: true, inseridos: 0, mensagem: "Nenhuma fonte ativa para esta cidade" }),
+        JSON.stringify({
+          ok: true,
+          inseridos: 0,
+          total_fontes_cadastradas: fontesRows?.length ?? 0,
+          mensagem: (fontesRows?.length ?? 0) > 0
+            ? "Nenhuma fonte ativa para esta cidade (todas estao desativadas)"
+            : "Nenhuma fonte cadastrada para esta cidade",
+          logs: [
+            `Cidade: "${cidadeRow.nome}"`,
+            `Fontes cadastradas: ${fontesRows?.length ?? 0}`,
+            `Fontes ativas: 0`,
+          ],
+        }),
         { headers: { ...CORS, "Content-Type": "application/json" } }
       );
     }
 
     logs.push(`Fontes ativas: ${fontes.length}`);
-    const sourceHostAllowlist = buildSourceHostAllowlist(fontes as FonteRow[]);
+    const sourceHostAllowlist = buildSourceHostAllowlist(fontes);
 
     // ── 3. Coletar candidatos de todas as fontes ──────────────────────────────
     const todosOsCandidatos: Candidato[] = [];
 
-    await Promise.allSettled(
-      (fontes as FonteRow[]).map(async (fonte) => {
+    for (const fonte of fontes) {
+      if (todosOsCandidatos.length >= MAX_CANDIDATES_TO_ENRICH) {
+        logs.push(`Coleta pausada: limite seguro de ${MAX_CANDIDATES_TO_ENRICH} candidatos atingido`);
+        break;
+      }
         try {
           const tipo = fonte.tipo === "auto"
             ? (/rss|feed|\.xml|atom/i.test(fonte.url) ? "rss" : "html")
@@ -794,8 +819,7 @@ Deno.serve(async (req) => {
         } catch (e) {
           logs.push(`[${fonte.nome}] ERRO na coleta: ${String(e)}`);
         }
-      })
-    );
+    }
 
     // ── 4. Deduplicar por URL ─────────────────────────────────────────────────
     const seen = new Set<string>();
@@ -810,9 +834,9 @@ Deno.serve(async (req) => {
       .toISOString()
       .slice(0, 10);
 
-    const filtrados = unicos.filter((c) =>
-      !c.data_publicacao || c.data_publicacao >= minDate
-    );
+    const filtrados = unicos
+      .filter((c) => !c.data_publicacao || c.data_publicacao >= minDate)
+      .slice(0, MAX_CANDIDATES_TO_ENRICH);
 
     logs.push(`Candidatos únicos: ${unicos.length} → após filtro de data: ${filtrados.length}`);
 

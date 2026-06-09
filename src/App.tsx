@@ -85,7 +85,6 @@ import EnquetesHistoricoPage from "@/pages/EnquetesHistoricoPage";
 import TesteTokenPage from "@/pages/TesteTokenPage";
 import AnuncioDiretoPage from "@/pages/AnuncioDiretoPage";
 
-
 const QUERY_CACHE_STORAGE_KEY = "gc:offline-query-cache:v2";
 
 const queryClient = new QueryClient({

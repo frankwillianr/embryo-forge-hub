@@ -1,15 +1,21 @@
 import AdminSidebar from "./AdminSidebar";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { useState } from "react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#f6f6f6]">
-      <AdminSidebar />
+      <AdminSidebar
+        isCollapsed={isSidebarCollapsed}
+        onCollapsedChange={setIsSidebarCollapsed}
+      />
       <Button
         type="button"
         variant="outline"
@@ -26,7 +32,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       </Button>
       
       {/* Main Content */}
-      <main className="lg:ml-64 min-h-screen">
+      <main className={isSidebarCollapsed ? "min-h-screen lg:ml-20" : "min-h-screen lg:ml-64"}>
         <div className="p-6 pt-20 lg:pt-6">
           {children}
         </div>

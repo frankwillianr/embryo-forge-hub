@@ -27,31 +27,49 @@ interface NoticiaRow {
 const BUCKET_DEFAULT = "jornal-imagens";
 const LIMIT_DEFAULT = 1;
 const LIMIT_MAX = 1;
-const EXECUTION_BUDGET_MS = 9000;
-const MAX_TENTATIVAS_POR_RODADA = 3;
+const EXECUTION_BUDGET_MS = 6500;
+const MAX_TENTATIVAS_POR_RODADA = 1;
+const FETCH_TIMEOUT_MS = 5000;
+const MAX_IMAGE_BYTES = 2_800_000;
 const GVCITY_LOGO_URL =
   "https://umauozcntfxgphzbiifz.supabase.co/storage/v1/object/public/jornal-imagens/logos/gvcity-logo.png";
 
-const CARD_W = 1024;
-const CARD_H = 1024;
-const PAD = 28;
-const LOGO_SIZE = 52;
+const CARD_W = 768;
+const CARD_H = 768;
+const PAD = 22;
+const LOGO_SIZE = 42;
 const LOGO_X = PAD;
 const LOGO_Y = 14;
 const HEADER_H = LOGO_Y + LOGO_SIZE + 16;
 const TITLE_Y = HEADER_H + 16;
-const TITLE_MAX_H = 196;
+const TITLE_MAX_H = 150;
 const IMAGE_Y = TITLE_Y + TITLE_MAX_H;
-const TITLE_TARGET_SIZE = 45;
-const CAT_TARGET_SIZE = 20;
+const TITLE_TARGET_SIZE = 34;
+const CAT_TARGET_SIZE = 16;
 const CAT_FONT_PROMISE = Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
 const TITLE_FONT_PROMISE = Jimp.loadFont(Jimp.FONT_SANS_64_BLACK);
 
-async function fetchBuffer(url: string): Promise<Buffer> {
-  const res = await fetch(url, { headers: { "User-Agent": "agente_imagem_04/1.0" } });
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
-  const ab = await res.arrayBuffer();
-  return Buffer.from(ab);
+async function fetchBuffer(url: string, maxBytes = MAX_IMAGE_BYTES): Promise<Buffer> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal: ctrl.signal,
+      headers: { "User-Agent": "agente_imagem_04/1.0" },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
+    const contentLength = Number(res.headers.get("content-length") ?? 0);
+    if (contentLength > maxBytes) {
+      throw new Error(`Imagem grande demais (${contentLength} bytes): ${url}`);
+    }
+    const ab = await res.arrayBuffer();
+    if (ab.byteLength > maxBytes) {
+      throw new Error(`Imagem grande demais (${ab.byteLength} bytes): ${url}`);
+    }
+    return Buffer.from(ab);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function safeTitle(raw: string | null | undefined): string {
@@ -78,9 +96,8 @@ function firstImageCandidates(firstUrl: string): string[] {
     try {
       const clean = v.trim();
       const noProto = clean.replace(/^https?:\/\//i, "");
-      // Padroniza para JPEG e reduz dimensao para evitar WORKER_LIMIT por imagem gigante.
-      out.push(`https://images.weserv.nl/?url=${encodeURIComponent(noProto)}&w=1600&h=1600&fit=inside&output=jpg`);
-      out.push(`https://images.weserv.nl/?url=${encodeURIComponent(noProto)}&w=1600&h=1600&fit=inside&output=png`);
+      // Padroniza e reduz antes de chegar ao worker. Imagem grande e webp sao a maior causa de 546.
+      out.push(`https://images.weserv.nl/?url=${encodeURIComponent(noProto)}&w=900&h=900&fit=inside&output=jpg&q=82`);
     } catch {
       // ignore
     }
@@ -88,6 +105,15 @@ function firstImageCandidates(firstUrl: string): string[] {
   }
 
   return [...new Set(out)];
+}
+
+function proxiedImageUrl(raw: string): string {
+  try {
+    const noProto = raw.trim().replace(/^https?:\/\//i, "");
+    return `https://images.weserv.nl/?url=${encodeURIComponent(noProto)}&w=900&h=900&fit=inside&output=jpg&q=82`;
+  } catch {
+    return raw;
+  }
 }
 
 async function contarElegiveis(
@@ -242,6 +268,7 @@ Deno.serve(async (req) => {
     const itens: Array<Record<string, unknown>> = [];
     let total_processado = 0;
     let total_erros = 0;
+    let total_fallbacks = 0;
     let total_tentado = 0;
     const maxTentativasNaRodada = Math.min(
       10,
@@ -316,6 +343,34 @@ Deno.serve(async (req) => {
         total_processado++;
         itens.push({ id: noticia.id, ok: true, imagem_origem: origemUsada, imagem_refeita });
       } catch (e) {
+        const origemFallback = noticia.lista_imagens?.[0] ?? "";
+        const imagemFallback = origemFallback ? proxiedImageUrl(origemFallback) : "";
+
+        if (imagemFallback) {
+          const { error: fallbackErr } = await supabase
+            .from("tabela_agente_buscador")
+            .update({
+              imagem_refeita: imagemFallback,
+              status: "processado",
+              agente_imagem_updated_at: new Date().toISOString(),
+            })
+            .eq("id", noticia.id);
+
+          if (!fallbackErr) {
+            // Melhor publicar com imagem normalizada do que travar o pipeline por limite do worker.
+            total_processado++;
+            total_fallbacks++;
+            itens.push({
+              id: noticia.id,
+              ok: true,
+              fallback: true,
+              imagem_refeita: imagemFallback,
+              erro_original: String(e),
+            });
+            continue;
+          }
+        }
+
         total_erros++;
         itens.push({ id: noticia.id, ok: false, erro: String(e) });
       }
@@ -333,6 +388,7 @@ Deno.serve(async (req) => {
         total_tentado,
         total_processado,
         total_erros,
+        total_fallbacks,
         interrompido_por_limite,
         interrompido_por_tempo,
         restantes_estimados: Math.max(0, noticias.length - total_tentado),

@@ -6,14 +6,21 @@ const CORS = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const LIMIT_DEFAULT = 20;
-const LIMIT_MAX = 30;
+const LIMIT_DEFAULT = 25;
+const LIMIT_MAX = 60;
 const MODEL_DEFAULT = "gpt-4o-mini";
-const CONCURRENCY = 3;
+const CONCURRENCY = 2;
 
 interface RequestBody {
   cidade_id: string;
   limit?: number;
+  include_published?: boolean;
+  force_rewrite?: boolean;
+  only_missing_description?: boolean;
+  update_jornal?: boolean;
+  missing_description_max_chars?: number;
+  rewrite_jornal_direct?: boolean;
+  created_before?: string;
 }
 
 interface NoticiaInput {
@@ -23,7 +30,7 @@ interface NoticiaInput {
   titulo: string | null;
   descricao: string | null;
   fonte_nome: string | null;
-  status: "coletado" | "processando" | "processado" | "concluido" | "erro";
+  status: "coletado" | "processando" | "processado" | "concluido" | "erro" | "publicado";
   created_at: string;
   titulo_original?: string | null;
   descricao_original?: string | null;
@@ -33,6 +40,17 @@ interface NoticiaInput {
 interface JornalRow {
   id: string;
   id_externo: string | null;
+  descricao?: string | null;
+}
+
+interface JornalDirectRow {
+  id: string;
+  cidade_id: string;
+  titulo: string | null;
+  descricao: string | null;
+  fonte: string | null;
+  id_externo: string | null;
+  created_at: string;
 }
 
 interface RewriteResult {
@@ -47,6 +65,8 @@ interface ProcessItem {
   ok: boolean;
   erro?: string;
   titulo_reescrito?: string;
+  jornal_id?: string;
+  jornal_atualizado?: boolean;
 }
 
 function stripHtml(raw: string | null | undefined): string {
@@ -67,12 +87,27 @@ function stripHtml(raw: string | null | undefined): string {
     .trim();
 }
 
-function ensureTwoParagraphs(raw: string): string {
+function ensureThreeParagraphs(raw: string): string {
   const text = raw.replace(/\r\n/g, "\n").trim();
   if (!text) return text;
 
   if (/\n\s*\n/.test(text)) {
-    return text.replace(/\n{3,}/g, "\n\n").trim();
+    const paragraphs = text
+      .split(/\n\s*\n/)
+      .map((p) => p.replace(/\s{2,}/g, " ").trim())
+      .filter(Boolean);
+    if (paragraphs.length >= 3) return paragraphs.slice(0, 4).join("\n\n").trim();
+    if (paragraphs.length === 2) {
+      const sentences = paragraphs[1].split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
+      if (sentences.length >= 2) {
+        const mid = Math.ceil(sentences.length / 2);
+        return [paragraphs[0], sentences.slice(0, mid).join(" "), sentences.slice(mid).join(" ")]
+          .filter(Boolean)
+          .join("\n\n")
+          .trim();
+      }
+    }
+    return paragraphs.join("\n\n").trim();
   }
 
   const sentences = text
@@ -80,20 +115,29 @@ function ensureTwoParagraphs(raw: string): string {
     .map((s) => s.trim())
     .filter(Boolean);
 
-  if (sentences.length >= 4) {
-    const mid = Math.ceil(sentences.length / 2);
-    const p1 = sentences.slice(0, mid).join(" ").trim();
-    const p2 = sentences.slice(mid).join(" ").trim();
-    if (p1 && p2) return `${p1}\n\n${p2}`;
-  }
-
-  const words = text.split(/\s+/).filter(Boolean);
-  if (words.length >= 20) {
-    const mid = Math.ceil(words.length / 2);
-    return `${words.slice(0, mid).join(" ")}\n\n${words.slice(mid).join(" ")}`.trim();
+  if (sentences.length >= 5) {
+    const first = Math.ceil(sentences.length / 3);
+    const second = Math.ceil((sentences.length - first) / 2) + first;
+    const p1 = sentences.slice(0, first).join(" ").trim();
+    const p2 = sentences.slice(first, second).join(" ").trim();
+    const p3 = sentences.slice(second).join(" ").trim();
+    if (p1 && p2 && p3) return `${p1}\n\n${p2}\n\n${p3}`;
   }
 
   return text;
+}
+
+function shortDesc(raw?: string | null): string {
+  const clean = stripHtml(raw ?? "").replace(/\s{2,}/g, " ").trim();
+  if (clean.length <= 180) return clean;
+  const cut = clean.slice(0, 180);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 80 ? cut.slice(0, lastSpace) : cut).trim() + "...";
+}
+
+function isMissingDescription(raw: string | null | undefined, minChars: number): boolean {
+  const clean = stripHtml(raw ?? "").replace(/\s{2,}/g, " ").trim();
+  return !clean || clean.length < minChars;
 }
 
 function foldText(raw: string): string {
@@ -185,8 +229,10 @@ O título precisa chamar atenção logo de cara, como em páginas populares do I
 O leitor deve entender o que aconteceu só pelo título, mesmo sem abrir a notícia.
 O título deve contar quase toda a notícia de forma natural, emocional e direta.
 O título pode ter no máximo 2 frases curtas.
-Criar uma descrição fácil de ler em 2 parágrafos, com começo, meio e fim.
-Na "descricao_reescrita", separar os 2 parágrafos com uma linha em branco ("\\n\\n").
+Criar uma descrição jornalística, clara e mais completa em 3 parágrafos, com começo, meio e fim.
+Na "descricao_reescrita", separar os 3 parágrafos com uma linha em branco ("\\n\\n").
+A descrição deve ter normalmente entre 180 e 320 palavras, desde que a notícia original tenha informação suficiente.
+Se o texto original for curto, ainda assim explique melhor o contexto sem inventar nenhum fato.
 Definir uma categoria específica, criativa e coerente com o assunto da notícia.
 Nunca usar a categoria "Geral".
 
@@ -289,6 +335,12 @@ REGRAS PARA A DESCRIÇÃO
 A descrição deve ser simples, direta e gostosa de ler.
 Deve parecer que alguém está explicando a notícia de forma clara.
 Pode ter leve tom humano e popular, mas sem exagerar.
+Escreva em 3 parágrafos:
+1. O primeiro parágrafo deve explicar o fato principal: quem, o que aconteceu, onde e quando, quando essa informação existir.
+2. O segundo parágrafo deve trazer os detalhes importantes: circunstâncias, envolvidos, números, decisões, consequências ou encaminhamentos citados na fonte.
+3. O terceiro parágrafo deve fechar com contexto útil, próximos passos, situação atual ou impacto para a cidade, sempre baseado no texto original.
+Não resumir demais. Evite descrições de apenas 2 ou 3 frases quando houver informação para desenvolver.
+Não transformar a descrição em chamada curta; ela deve funcionar como corpo da notícia.
 Não transformar a notícia em reflexão motivacional.
 Não inventar reação da população se isso não estiver no texto original.
 Não dramatizar além do que o fato já mostra.
@@ -352,7 +404,7 @@ O emoji deve ser sutil e comum, sem exagero.
 DIFERENÇA ENTRE OS CAMPOS
 
 - "titulo_reescrito": título final, forte, humano, chamativo e fiel ao fato
-- "descricao_reescrita": resumo em 2 parágrafos com linha em branco entre eles
+- "descricao_reescrita": corpo da notícia em 3 parágrafos com linha em branco entre eles
 - "texto_reescrito": repetir a descrição reescrita em versão corrida, sem quebra de parágrafo
 - "categoria": categoria específica da notícia, nunca "Geral"
 
@@ -386,7 +438,7 @@ async function rewriteWithAI(
     body: JSON.stringify({
       model,
       temperature: 0.4,
-      max_tokens: 900,
+      max_tokens: 1600,
       response_format: { type: "json_object" },
       messages: [{ role: "user", content: prompt }],
     }),
@@ -411,8 +463,8 @@ async function rewriteWithAI(
   }
 
   const titulo = limitTitleToTwoSentences(stripHtml(parsed?.titulo_reescrito));
-  const descricao = ensureTwoParagraphs(stripHtml(parsed?.descricao_reescrita));
-  const texto = stripHtml(parsed?.texto_reescrito);
+  const descricao = ensureThreeParagraphs(stripHtml(parsed?.descricao_reescrita));
+  const texto = stripHtml(parsed?.texto_reescrito) || descricao.replace(/\n\s*\n/g, " ");
   const categoria = normalizeCat(
     parsed?.categoria,
     `${n.titulo ?? ""}\n${n.descricao ?? ""}`
@@ -461,6 +513,14 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as RequestBody;
     const cidade_id = body?.cidade_id;
     const limit = Math.min(Math.max(body?.limit ?? LIMIT_DEFAULT, 1), LIMIT_MAX);
+    const includePublished = body?.include_published === true;
+    const forceRewrite = body?.force_rewrite === true;
+    const onlyMissingDescription = body?.only_missing_description === true;
+    const updateJornal = body?.update_jornal !== false;
+    const missingDescriptionMaxChars = Math.min(
+      Math.max(body?.missing_description_max_chars ?? 80, 1),
+      500,
+    );
 
     if (!cidade_id) {
       return new Response(
@@ -483,15 +543,115 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data, error } = await supabase
+    if (body?.rewrite_jornal_direct === true) {
+      let jornalQuery = supabase
+        .from("rel_cidade_jornal")
+        .select("id, cidade_id, titulo, descricao, fonte, id_externo, created_at")
+        .eq("cidade_id", cidade_id)
+        .order("created_at", { ascending: false });
+
+      if (body?.created_before) {
+        jornalQuery = jornalQuery.lt("created_at", body.created_before);
+      }
+
+      const { data: jornalData, error: jornalSelectErr } = await jornalQuery.limit(limit);
+      if (jornalSelectErr) throw jornalSelectErr;
+
+      let jornalRows = (jornalData ?? []) as JornalDirectRow[];
+      if (onlyMissingDescription) {
+        jornalRows = jornalRows.filter((j) => isMissingDescription(j.descricao, missingDescriptionMaxChars));
+      }
+
+      const items: ProcessItem[] = [];
+      const tasks = jornalRows.map((j) => async () => {
+        const rewritten = await rewriteWithAI(
+          {
+            id: j.id,
+            cidade_id: j.cidade_id,
+            url: j.id_externo || j.id,
+            titulo: j.titulo,
+            descricao: j.descricao,
+            fonte_nome: j.fonte,
+            status: "publicado",
+            created_at: j.created_at,
+            jornal_postado_at: j.created_at,
+          },
+          openaiKey,
+          model,
+        );
+
+        const { error: updErr } = await supabase
+          .from("rel_cidade_jornal")
+          .update({
+            titulo: rewritten.titulo_reescrito,
+            descricao: rewritten.descricao_reescrita,
+            descricao_curta: shortDesc(rewritten.descricao_reescrita),
+            categoria: rewritten.categoria,
+          })
+          .eq("id", j.id);
+
+        if (updErr) throw new Error(`Update jornal ${j.id}: ${updErr.message}`);
+
+        const result: ProcessItem = {
+          id: j.id,
+          ok: true,
+          titulo_reescrito: rewritten.titulo_reescrito,
+          jornal_id: j.id,
+          jornal_atualizado: true,
+        };
+        items.push(result);
+        return result;
+      });
+
+      const settled = await runConcurrent(tasks, CONCURRENCY);
+      for (let i = 0; i < settled.length; i++) {
+        const r = settled[i];
+        if (r.status === "rejected") {
+          items.push({ id: jornalRows[i].id, ok: false, erro: String(r.reason), jornal_id: jornalRows[i].id });
+        }
+      }
+
+      const total_processado = items.filter((i) => i.ok).length;
+      const total_erros = items.length - total_processado;
+      const oldest_created_at = jornalRows.at(-1)?.created_at ?? null;
+
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          agente: "agente_texto_03",
+          modo: "jornal_direct",
+          cidade_id,
+          model,
+          total_entrada: jornalData?.length ?? 0,
+          total_elegiveis: jornalRows.length,
+          total_processado,
+          total_jornal_atualizado: total_processado,
+          total_erros,
+          oldest_created_at,
+          itens: items,
+        }),
+        { headers: { ...CORS, "Content-Type": "application/json" } }
+      );
+    }
+
+    let query = supabase
       .from("tabela_agente_buscador")
       .select("id, cidade_id, url, titulo, descricao, fonte_nome, status, created_at, titulo_original, descricao_original, is_duplicada, jornal_postado_at")
       .eq("cidade_id", cidade_id)
       .eq("is_duplicada", false)
-      .is("jornal_postado_at", null)
-      .in("status", ["coletado", "erro"])
-      .order("created_at", { ascending: false })
-      .limit(limit);
+      .order("created_at", { ascending: false });
+
+    if (!includePublished) {
+      query = query.is("jornal_postado_at", null);
+    }
+
+    if (forceRewrite) {
+      query = query.in("status", ["coletado", "erro", "processado", "concluido", "publicado"]);
+    } else {
+      query = query.in("status", ["coletado", "erro"]);
+    }
+
+    const { data, error } = await query.limit(limit * 3);
 
     if (error) throw error;
 
@@ -503,27 +663,46 @@ Deno.serve(async (req) => {
       .map((n) => (n.url ?? "").trim())
       .filter((u) => !!u);
 
-    let publicadasPorUrl = new Map<string, string>();
+    const publicadasPorUrl = new Map<string, string>();
+    const jornalRowsByUrl = new Map<string, JornalRow>();
     if (urls.length) {
       const { data: jornalRows, error: jornalErr } = await supabase
         .from("rel_cidade_jornal")
-        .select("id, id_externo")
+        .select("id, id_externo, descricao")
         .eq("cidade_id", cidade_id)
         .in("id_externo", urls);
       if (jornalErr) throw jornalErr;
 
       for (const row of ((jornalRows ?? []) as JornalRow[])) {
         const key = (row.id_externo ?? "").trim();
-        if (key) publicadasPorUrl.set(key, row.id);
+        if (key) {
+          publicadasPorUrl.set(key, row.id);
+          jornalRowsByUrl.set(key, row);
+        }
       }
     }
 
-    const noticiasJaPublicadas = noticiasBase.filter((n) =>
+    const noticiasJaPublicadas = includePublished ? [] : noticiasBase.filter((n) =>
       publicadasPorUrl.has((n.url ?? "").trim())
     );
-    const noticias = noticiasBase.filter((n) =>
-      !publicadasPorUrl.has((n.url ?? "").trim())
-    );
+    let noticias = includePublished
+      ? noticiasBase
+      : noticiasBase.filter((n) => !publicadasPorUrl.has((n.url ?? "").trim()));
+
+    if (onlyMissingDescription) {
+      noticias = noticias.filter((n) => {
+        const url = (n.url ?? "").trim();
+        const jornalDescricao = publicadasPorUrl.has(url)
+          ? ((jornalRowsByUrl.get(url)?.descricao ?? "") as string)
+          : "";
+        return (
+          isMissingDescription(n.descricao, missingDescriptionMaxChars) ||
+          isMissingDescription(jornalDescricao, missingDescriptionMaxChars)
+        );
+      });
+    }
+
+    noticias = noticias.slice(0, limit);
 
     if (noticiasJaPublicadas.length) {
       await supabase
@@ -551,16 +730,24 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Marca lote como processando
-    await supabase
-      .from("tabela_agente_buscador")
-      .update({ status: "processando" })
-      .in("id", noticias.map((n) => n.id));
+    // Marca como processando apenas itens ainda nao publicados.
+    const processandoIds = noticias
+      .filter((n) => n.status !== "publicado" && !n.jornal_postado_at)
+      .map((n) => n.id);
+    if (processandoIds.length) {
+      await supabase
+        .from("tabela_agente_buscador")
+        .update({ status: "processando" })
+        .in("id", processandoIds);
+    }
 
     const items: ProcessItem[] = [];
     const tasks = noticias.map((n) => async () => {
       const rewritten = await rewriteWithAI(n, openaiKey, model);
 
+      const url = (n.url ?? "").trim();
+      const jornalRow = jornalRowsByUrl.get(url);
+      const isPublished = Boolean(n.jornal_postado_at || n.status === "publicado" || jornalRow?.id);
       const payload = {
         titulo_original: n.titulo_original ?? n.titulo,
         descricao_original: n.descricao_original ?? n.descricao,
@@ -571,7 +758,7 @@ Deno.serve(async (req) => {
         // Atualiza os campos principais para o app jÃ¡ consumir a versÃ£o nova
         titulo: rewritten.titulo_reescrito,
         descricao: rewritten.descricao_reescrita,
-        status: "processado",
+        status: isPublished ? "publicado" : "processado",
         agente_texto_updated_at: new Date().toISOString(),
       };
 
@@ -582,10 +769,26 @@ Deno.serve(async (req) => {
 
       if (updErr) throw new Error(`Update ${n.id}: ${updErr.message}`);
 
+      if (updateJornal && jornalRow?.id) {
+        const { error: jornalUpdErr } = await supabase
+          .from("rel_cidade_jornal")
+          .update({
+            titulo: rewritten.titulo_reescrito,
+            descricao: rewritten.descricao_reescrita,
+            descricao_curta: shortDesc(rewritten.descricao_reescrita),
+            categoria: rewritten.categoria,
+          })
+          .eq("id", jornalRow.id);
+
+        if (jornalUpdErr) throw new Error(`Update jornal ${jornalRow.id}: ${jornalUpdErr.message}`);
+      }
+
       const result: ProcessItem = {
         id: n.id,
         ok: true,
         titulo_reescrito: rewritten.titulo_reescrito,
+        jornal_id: jornalRow?.id,
+        jornal_atualizado: Boolean(updateJornal && jornalRow?.id),
       };
       items.push(result);
       return result;
@@ -599,15 +802,18 @@ Deno.serve(async (req) => {
         const n = noticias[i];
         const errMsg = String(r.reason);
         items.push({ id: n.id, ok: false, erro: errMsg });
-        await supabase
-          .from("tabela_agente_buscador")
-          .update({ status: "erro" })
-          .eq("id", n.id);
+        if (n.status !== "publicado" && !n.jornal_postado_at) {
+          await supabase
+            .from("tabela_agente_buscador")
+            .update({ status: "erro" })
+            .eq("id", n.id);
+        }
       }
     }
 
     const total_processado = items.filter((i) => i.ok).length;
     const total_erros = items.length - total_processado;
+    const total_jornal_atualizado = items.filter((i) => i.jornal_atualizado).length;
 
     return new Response(
       JSON.stringify({
@@ -619,6 +825,7 @@ Deno.serve(async (req) => {
         total_elegiveis: noticias.length,
         total_ja_publicadas: noticiasJaPublicadas.length,
         total_processado,
+        total_jornal_atualizado,
         total_erros,
         itens: items,
       }),

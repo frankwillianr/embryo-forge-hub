@@ -1,0 +1,71 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e6]:
+    - banner [ref=e7]:
+      - generic [ref=e8]:
+        - button [ref=e9] [cursor=pointer]:
+          - img
+        - generic [ref=e10]:
+          - heading "Mural de ofertas" [level=1] [ref=e11]
+          - paragraph [ref=e12]: As melhores ofertas das melhoras empresas
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - img [ref=e16]
+        - textbox "Buscar ofertas..." [ref=e19]
+      - button "Ver imagens" [ref=e20] [cursor=pointer]: Imagem
+      - button "Ver vídeos" [ref=e21] [cursor=pointer]: Vídeo
+    - generic [ref=e24]:
+      - button "Todas" [ref=e25] [cursor=pointer]:
+        - img [ref=e27]
+        - generic [ref=e30]: Todas
+      - button "Beleza" [ref=e31] [cursor=pointer]:
+        - img [ref=e33]
+        - generic [ref=e39]: Beleza
+      - button "Serviços" [ref=e40] [cursor=pointer]:
+        - img [ref=e42]
+        - generic [ref=e44]: Serviços
+      - button "Saúde" [ref=e45] [cursor=pointer]:
+        - img [ref=e47]
+        - generic [ref=e50]: Saúde
+      - button "Comércio" [ref=e51] [cursor=pointer]:
+        - img [ref=e53]
+        - generic [ref=e58]: Comércio
+      - button "Veículos" [ref=e59] [cursor=pointer]:
+        - img [ref=e61]
+        - generic [ref=e65]: Veículos
+      - button "Profissionais" [ref=e66] [cursor=pointer]:
+        - img [ref=e68]
+        - generic [ref=e71]: Profissionais
+      - button "Pets" [ref=e72] [cursor=pointer]:
+        - img [ref=e74]
+        - generic [ref=e79]: Pets
+    - main [ref=e80]
+    - navigation [ref=e86]:
+      - generic [ref=e87]:
+        - button "Jornal da cidade" [ref=e88] [cursor=pointer]:
+          - img [ref=e89]
+          - generic [ref=e92]:
+            - text: Jornal da
+            - text: cidade
+        - button "Filmes em cartaz" [ref=e93] [cursor=pointer]:
+          - img [ref=e94]
+          - generic [ref=e96]:
+            - text: Filmes em
+            - text: cartaz
+        - button "Pagina inicial" [ref=e97] [cursor=pointer]:
+          - img [ref=e98]
+          - generic [ref=e101]:
+            - text: Pagina
+            - text: inicial
+        - button "Onde ir & Serviços" [ref=e102] [cursor=pointer]:
+          - img [ref=e103]
+          - generic [ref=e106]:
+            - text: Onde ir &
+            - text: Serviços
+        - button "Mural de ofertas" [ref=e107] [cursor=pointer]:
+          - img [ref=e108]
+          - generic [ref=e111]:
+            - text: Mural de
+            - text: ofertas

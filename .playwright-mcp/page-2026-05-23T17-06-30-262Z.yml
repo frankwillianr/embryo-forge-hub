@@ -1,0 +1,625 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e6]:
+    - banner [ref=e7]:
+      - button [ref=e8] [cursor=pointer]:
+        - img
+      - heading "Jornal da cidade" [level=1] [ref=e9]
+      - button "Postar" [ref=e10] [cursor=pointer]:
+        - img [ref=e11]
+        - text: Postar
+    - generic [ref=e12]:
+      - img "Jornal da cidade" [ref=e13]
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - img [ref=e19]
+          - text: Notícias da cidade
+        - generic [ref=e22]:
+          - heading "Jornal da Cidade" [level=2] [ref=e23]
+          - generic [ref=e24]: "628"
+        - paragraph [ref=e25]: Atualizações locais em tempo real para você.
+    - generic [ref=e28]:
+      - button "Todos" [ref=e29] [cursor=pointer]
+      - button "Jornal" [ref=e30] [cursor=pointer]
+      - button "Voz do Povo" [ref=e31] [cursor=pointer]
+      - button "acidente" [ref=e32] [cursor=pointer]
+      - button "Acidente" [ref=e33] [cursor=pointer]
+      - button "Agricultura" [ref=e34] [cursor=pointer]
+      - button "Agronegócio" [ref=e35] [cursor=pointer]
+      - button "Água E Meio Ambiente" [ref=e36] [cursor=pointer]
+      - button "Artesanato" [ref=e37] [cursor=pointer]
+      - button "Câmara Municipal" [ref=e38] [cursor=pointer]
+      - button "Cidade" [ref=e39] [cursor=pointer]
+      - button "Clima" [ref=e40] [cursor=pointer]
+      - button "Comunicação" [ref=e41] [cursor=pointer]
+      - button "Conflitos Familiares" [ref=e42] [cursor=pointer]
+      - button "Cultura" [ref=e43] [cursor=pointer]
+      - button "Cultura E Gastronomia" [ref=e44] [cursor=pointer]
+      - button "Cultura E Lazer" [ref=e45] [cursor=pointer]
+      - button "Direitos" [ref=e46] [cursor=pointer]
+      - button "economia" [ref=e47] [cursor=pointer]
+      - button "Economia" [ref=e48] [cursor=pointer]
+      - button "educacao" [ref=e49] [cursor=pointer]
+      - button "Educação" [ref=e50] [cursor=pointer]
+      - button "Empoderamento Feminino" [ref=e51] [cursor=pointer]
+      - button "Empreendedorismo" [ref=e52] [cursor=pointer]
+      - button "esporte" [ref=e53] [cursor=pointer]
+      - button "Esporte" [ref=e54] [cursor=pointer]
+      - button "Esportes" [ref=e55] [cursor=pointer]
+      - button "Esportes De Aventura" [ref=e56] [cursor=pointer]
+      - button "Esportes Radicais" [ref=e57] [cursor=pointer]
+      - button "Eventos" [ref=e58] [cursor=pointer]
+      - button "Fauna Urbana" [ref=e59] [cursor=pointer]
+      - button "Fiscalização" [ref=e60] [cursor=pointer]
+      - button "Gastronomia" [ref=e61] [cursor=pointer]
+      - button "geral" [ref=e62] [cursor=pointer]
+      - button "Incêndio" [ref=e63] [cursor=pointer]
+      - button "Infraestrutura" [ref=e64] [cursor=pointer]
+      - button "Justiça" [ref=e65] [cursor=pointer]
+      - button "Meio Ambiente" [ref=e66] [cursor=pointer]
+      - button "Mídia" [ref=e67] [cursor=pointer]
+      - button "Música" [ref=e68] [cursor=pointer]
+      - button "Negócios" [ref=e69] [cursor=pointer]
+      - button "Oportunidade" [ref=e70] [cursor=pointer]
+      - button "Participação Cidadã" [ref=e71] [cursor=pointer]
+      - button "Pecuária" [ref=e72] [cursor=pointer]
+      - button "policia" [ref=e73] [cursor=pointer]
+      - button "Polícia" [ref=e74] [cursor=pointer]
+      - button "politica" [ref=e75] [cursor=pointer]
+      - button "Política" [ref=e76] [cursor=pointer]
+      - button "Religião" [ref=e77] [cursor=pointer]
+      - button "Saneamento" [ref=e78] [cursor=pointer]
+      - button "saude" [ref=e79] [cursor=pointer]
+      - button "Saúde" [ref=e80] [cursor=pointer]
+      - button "Segurança" [ref=e81] [cursor=pointer]
+      - button "Serviços" [ref=e82] [cursor=pointer]
+      - button "Sociedade" [ref=e83] [cursor=pointer]
+      - button "Tempo" [ref=e84] [cursor=pointer]
+      - button "Tragédia" [ref=e85] [cursor=pointer]
+      - button "Trânsito" [ref=e86] [cursor=pointer]
+      - button "Transporte" [ref=e87] [cursor=pointer]
+      - button "Transporte Escolar" [ref=e88] [cursor=pointer]
+      - button "Turismo" [ref=e89] [cursor=pointer]
+      - button "Vida Social" [ref=e90] [cursor=pointer]
+      - button "Violência" [ref=e91] [cursor=pointer]
+      - button "Violência Doméstica" [ref=e92] [cursor=pointer]
+    - main [ref=e93]:
+      - generic [ref=e94]:
+        - article [ref=e95]:
+          - generic [ref=e97]:
+            - generic [ref=e100]: M
+            - generic [ref=e101]:
+              - generic [ref=e102]: Voz do Povo
+              - generic [ref=e103]: há cerca de 17 horas
+          - img "Viaduto do Filadélfia será interditado novamente em cerca de 60 dias - 1" [ref=e107]
+          - generic [ref=e108]:
+            - generic [ref=e110]:
+              - button [ref=e111] [cursor=pointer]:
+                - img [ref=e112]
+              - button [ref=e114] [cursor=pointer]:
+                - img [ref=e115]
+            - generic [ref=e118]: 0 curtidas
+            - generic [ref=e119]:
+              - paragraph [ref=e120]: Viaduto do Filadélfia será interditado novamente em cerca de 60 dias
+              - generic [ref=e121]:
+                - paragraph [ref=e122]: A Prefeitura de Governador Valadares informou que o Viaduto do Filadélfia passará por uma nova interdição total nos próximos 60 dias para continuidade das obras. Segundo a engenharia responsável, será realizado o “macaqueamento” da estrutura, procedimento necessário para substituir apoios danificados. O trânsito deverá ficar totalmente bloqueado por cerca de 15 dias. Atualmente, apenas veículos leves circulam pelo local em mão única. A previsão é de conclusão total das obras em até 90 dias.
+                - button "Ver mais" [ref=e123] [cursor=pointer]
+        - article [ref=e124]:
+          - generic [ref=e126]:
+            - generic [ref=e129]: M
+            - generic [ref=e130]:
+              - generic [ref=e131]: Voz do Povo
+              - generic [ref=e132]: há cerca de 17 horas
+          - generic [ref=e137]:
+            - button "Pausar vídeos" [ref=e138] [cursor=pointer]:
+              - img [ref=e139]
+            - button "Silenciar vídeos" [ref=e142] [cursor=pointer]:
+              - img [ref=e143]
+          - generic [ref=e147]:
+            - generic [ref=e149]:
+              - button [ref=e150] [cursor=pointer]:
+                - img [ref=e151]
+              - button [ref=e153] [cursor=pointer]:
+                - img [ref=e154]
+            - generic [ref=e157]: 0 curtidas
+            - generic [ref=e158]:
+              - paragraph [ref=e159]: Viaduto do Filadélfia tem tráfego parcialmente liberado
+              - generic [ref=e160]:
+                - paragraph [ref=e161]: O tráfego de veículos e pedestres no Viaduto do Filadélfia, em Governador Valadares, foi parcialmente liberado na manhã desta sexta-feira (22). A estrutura estava interditada há mais de um ano para a realização de obras de recuperação e manutenção. De acordo com as informações divulgadas, apenas um trecho do viaduto foi reaberto neste primeiro momento. As demais áreas continuam passando por intervenções, e ainda não existe uma previsão oficial para a liberação completa da estrutura. A reabertura parcial deve contribuir para a melhora do trânsito na região, que vinha registrando congestionamentos e mudanças no fluxo desde o início da interdição.
+                - button "Ver mais" [ref=e162] [cursor=pointer]
+        - article [ref=e163]:
+          - generic [ref=e164]:
+            - generic [ref=e165]:
+              - generic [ref=e168]: J
+              - generic [ref=e169]:
+                - generic [ref=e170]: Jornal da Cidade
+                - generic [ref=e171]: há cerca de 17 horas
+            - generic [ref=e172]:
+              - generic [ref=e173]: Polícia
+              - generic [ref=e174]: não lida
+          - generic [ref=e176]:
+            - img "Que absurdo! Detento em saída temporária é pego com arma e drogas! - 1" [ref=e178]
+            - img "Que absurdo! Detento em saída temporária é pego com arma e drogas! - 2" [ref=e180]
+          - generic [ref=e184]:
+            - generic [ref=e185]:
+              - generic [ref=e186]:
+                - button "Curtir" [ref=e187] [cursor=pointer]:
+                  - img [ref=e188]
+                - button "Comentar" [ref=e190] [cursor=pointer]:
+                  - img [ref=e191]
+              - button "Ouvir notícia" [ref=e193] [cursor=pointer]:
+                - img [ref=e194]
+                - generic [ref=e198]: Ouvir notícia
+            - generic [ref=e200]: 0 curtidas
+            - generic [ref=e201]:
+              - paragraph [ref=e202]: Que absurdo! Detento em saída temporária é pego com arma e drogas!
+              - generic [ref=e203]:
+                - paragraph [ref=e204]: Um detento que estava em saída temporária foi preso em Governador Valadares, Minas Gerais, após ser flagrado com uma arma e drogas. A prisão aconteceu na tarde de quarta-feira, 22 de maio, quando a Polícia Militar recebeu informações sobre a presença do homem em uma festa na cidade. Durante a abordagem, os policiais encontraram uma pistola e uma quantidade significativa de maconha com o detento. Ele já tinha um histórico criminal e estava cumprindo pena por tráfico de drogas. Agora, ele enfrentará novas acusações, além de perder o direito à saída temporária. Esse caso levanta questões sobre a eficácia do sistema de saídas temporárias e a necessidade de um controle mais rigoroso sobre os detentos. A população está preocupada com a segurança, já que a liberação de presos pode resultar em mais crimes nas comunidades. As autoridades prometem investigar o caso e revisar os procedimentos de saída para evitar que situações como essa se repitam.
+                - button "Ver mais" [ref=e205] [cursor=pointer]
+        - article [ref=e206]:
+          - generic [ref=e207]:
+            - generic [ref=e208]:
+              - generic [ref=e211]: J
+              - generic [ref=e212]:
+                - generic [ref=e213]: Jornal da Cidade
+                - generic [ref=e214]: há cerca de 17 horas
+            - generic [ref=e215]:
+              - generic [ref=e216]: Trânsito
+              - generic [ref=e217]: não lida
+          - generic [ref=e219]:
+            - img "Finalmente, o viaduto Filadélfia reabre para trânsito em Governador Valadares! - 1" [ref=e221]
+            - img "Finalmente, o viaduto Filadélfia reabre para trânsito em Governador Valadares! - 2" [ref=e223]
+          - generic [ref=e227]:
+            - generic [ref=e228]:
+              - generic [ref=e229]:
+                - button "Curtir" [ref=e230] [cursor=pointer]:
+                  - img [ref=e231]
+                - button "Comentar" [ref=e233] [cursor=pointer]:
+                  - img [ref=e234]
+              - button "Ouvir notícia" [ref=e236] [cursor=pointer]:
+                - img [ref=e237]
+                - generic [ref=e241]: Ouvir notícia
+            - generic [ref=e243]: 0 curtidas
+            - generic [ref=e244]:
+              - paragraph [ref=e245]: Finalmente, o viaduto Filadélfia reabre para trânsito em Governador Valadares!
+              - generic [ref=e246]:
+                - paragraph [ref=e247]: Depois de 14 meses de interdições, o viaduto Filadélfia, em Governador Valadares, voltou a permitir o trânsito parcial. A reabertura ocorreu na última terça-feira, dia 22 de maio, e traz um alívio para motoristas e moradores da região, que enfrentaram longos períodos de desvio e transtornos devido às obras de recuperação da estrutura. A obra, que foi iniciada em março de 2022, visava garantir a segurança do viaduto, que apresentava problemas estruturais. Com a liberação parcial, os motoristas podem utilizar uma das faixas do viaduto, enquanto a outra segue interditada para finalização dos serviços. A expectativa é que a obra seja concluída em breve, permitindo a passagem total novamente. A reabertura do viaduto é uma boa notícia para quem precisa se deslocar pela cidade, pois o trânsito deve melhorar consideravelmente. A prefeitura e o Departamento de Estradas de Rodagem de Minas Gerais (DER-MG) afirmam que a segurança dos usuários é a prioridade e que o trabalho de recuperação continua até que tudo esteja em perfeitas condições.
+                - button "Ver mais" [ref=e248] [cursor=pointer]
+        - article [ref=e249]:
+          - generic [ref=e250]:
+            - generic [ref=e251]:
+              - generic [ref=e254]: J
+              - generic [ref=e255]:
+                - generic [ref=e256]: Jornal da Cidade
+                - generic [ref=e257]: há 3 dias
+            - generic [ref=e258]:
+              - generic [ref=e259]: Eventos
+              - generic [ref=e260]: não lida
+          - generic [ref=e262]:
+            - img "É hoje! Começou a Expoleste em Governador Valadares! - 1" [ref=e264]
+            - img "É hoje! Começou a Expoleste em Governador Valadares! - 2" [ref=e266]
+          - generic [ref=e270]:
+            - generic [ref=e271]:
+              - generic [ref=e272]:
+                - button "Curtir" [ref=e273] [cursor=pointer]:
+                  - img [ref=e274]
+                - button "Comentar" [ref=e276] [cursor=pointer]:
+                  - img [ref=e277]
+              - button "Ouvir notícia" [ref=e279] [cursor=pointer]:
+                - img [ref=e280]
+                - generic [ref=e284]: Ouvir notícia
+            - generic [ref=e286]: 0 curtidas
+            - generic [ref=e287]:
+              - paragraph [ref=e288]: É hoje! Começou a Expoleste em Governador Valadares!
+              - generic [ref=e289]:
+                - paragraph [ref=e290]: A Expoleste, uma das maiores feiras de negócios e entretenimento do leste de Minas Gerais, começou hoje em Governador Valadares. O evento promete agitar a cidade com uma programação recheada de atrações, incluindo shows, exposições e diversas opções de gastronomia, que vão até o dia 28 de maio. Durante a feira, os visitantes poderão conferir estandes de empresas locais, além de participar de palestras e workshops sobre temas variados, como inovação e empreendedorismo. A expectativa é que milhares de pessoas passem pelo evento, que é uma ótima oportunidade para fomentar a economia local e promover o comércio da região. A programação completa pode ser conferida nas redes sociais da Expoleste, que promete oferecer uma experiência única para quem busca diversão e conhecimento. Então, se você está em Governador Valadares, não perca essa chance de aproveitar tudo que a feira tem a oferecer!
+                - button "Ver mais" [ref=e291] [cursor=pointer]
+        - article [ref=e292]:
+          - generic [ref=e294]:
+            - generic [ref=e297]: M
+            - generic [ref=e298]:
+              - generic [ref=e299]: Voz do Povo
+              - generic [ref=e300]: há 3 dias
+          - generic [ref=e305]:
+            - button "Pausar vídeos" [ref=e306] [cursor=pointer]:
+              - img [ref=e307]
+            - button "Silenciar vídeos" [ref=e310] [cursor=pointer]:
+              - img [ref=e311]
+          - generic [ref=e315]:
+            - generic [ref=e317]:
+              - button [ref=e318] [cursor=pointer]:
+                - img [ref=e319]
+              - button [ref=e321] [cursor=pointer]:
+                - img [ref=e322]
+            - generic [ref=e325]: 0 curtidas
+            - generic [ref=e326]:
+              - paragraph [ref=e327]: Abordagem na BR-259 termina em prisão por porte ilegal de arma em GV
+              - generic [ref=e328]:
+                - paragraph [ref=e329]: Durante a Operação Maio Amarelo 2026, a Polícia Militar abordou um Ford Fiesta com placa do RJ no KM 145 da BR-259, em Governador Valadares, e prendeu um homem de 32 anos por porte ilegal de arma de fogo. Com ele foram apreendidos uma pistola calibre .380, dois carregadores e 46 munições intactas. O suspeito não possuía registro nem porte da arma e tem passagens por homicídio, porte ilegal de arma e tráfico de drogas. Ele foi encaminhado à Delegacia de Plantão de GV.
+                - button "Ver mais" [ref=e330] [cursor=pointer]
+        - article [ref=e331]:
+          - generic [ref=e333]:
+            - generic [ref=e336]: M
+            - generic [ref=e337]:
+              - generic [ref=e338]: Voz do Povo
+              - generic [ref=e339]: há 3 dias
+          - generic [ref=e341]:
+            - img "Águas de Valadares faz intervenções emergenciais e deixa bairros sem água nesta quarta (20) - 1" [ref=e343]
+            - img "Águas de Valadares faz intervenções emergenciais e deixa bairros sem água nesta quarta (20) - 2" [ref=e345]
+            - img "Águas de Valadares faz intervenções emergenciais e deixa bairros sem água nesta quarta (20) - 3" [ref=e347]
+            - img "Águas de Valadares faz intervenções emergenciais e deixa bairros sem água nesta quarta (20) - 4" [ref=e349]
+          - generic [ref=e355]:
+            - generic [ref=e357]:
+              - button [ref=e358] [cursor=pointer]:
+                - img [ref=e359]
+              - button [ref=e361] [cursor=pointer]:
+                - img [ref=e362]
+            - generic [ref=e365]: 0 curtidas
+            - generic [ref=e366]:
+              - paragraph [ref=e367]: Águas de Valadares faz intervenções emergenciais e deixa bairros sem água nesta quarta (20)
+              - generic [ref=e368]:
+                - paragraph [ref=e369]: "A Águas de Valadares realiza intervenções emergenciais nesta quarta-feira (20/05) em três pontos da cidade. Veja os locais e previsão de retorno: 📍 Av. Moacir Paleta, 410 — Universitário 🔴 Afetado: Jother Perez | ⏰ Normaliza a partir das 17h 📍 Rua Machado de Assis, 100 — Belvedere 🔴 Afetado: Belvedere | ⏰ Normaliza a partir das 13h 📍 ETA Vila Isa 🔴 Afetados: Vila Isa, Elvamar, Vila Parque Ibituruna, Village da Serra, Vila Parque São João, Jardim Primavera, Parque das Aroeiras e Chácaras Acácias, Julieta, Recanto das Cachoeiras e Encosta do Sol | ⏰ Normaliza a partir das 17h Reserve água para o período. Se necessário, solicite caminhão-pipa pelo 0800 321 3001 (24h)."
+                - button "Ver mais" [ref=e370] [cursor=pointer]
+        - article [ref=e371]:
+          - generic [ref=e372]:
+            - generic [ref=e373]:
+              - generic [ref=e376]: J
+              - generic [ref=e377]:
+                - generic [ref=e378]: Jornal da Cidade
+                - generic [ref=e379]: há 3 dias
+            - generic [ref=e380]:
+              - generic [ref=e381]: Saúde
+              - generic [ref=e382]: não lida
+          - generic [ref=e384]:
+            - img "Que situação! Valadares declara emergência por síndrome respiratória! - 1" [ref=e386]
+            - img "Que situação! Valadares declara emergência por síndrome respiratória! - 2" [ref=e388]
+          - generic [ref=e392]:
+            - generic [ref=e393]:
+              - generic [ref=e394]:
+                - button "Curtir" [ref=e395] [cursor=pointer]:
+                  - img [ref=e396]
+                - button "Comentar" [ref=e398] [cursor=pointer]:
+                  - img [ref=e399]
+              - button "Ouvir notícia" [ref=e401] [cursor=pointer]:
+                - img [ref=e402]
+                - generic [ref=e406]: Ouvir notícia
+            - generic [ref=e408]: 0 curtidas
+            - generic [ref=e409]:
+              - paragraph [ref=e410]: Que situação! Valadares declara emergência por síndrome respiratória!
+              - generic [ref=e411]:
+                - paragraph [ref=e412]: A cidade de Governador Valadares, em Minas Gerais, está enfrentando uma grave crise de saúde pública. A prefeitura decretou situação de emergência devido ao aumento de casos de síndrome respiratória, que já afetou centenas de moradores. O anúncio foi feito nesta quinta-feira, 20 de maio, e visa agilizar ações de combate à doença e proteger a população. A decisão foi tomada após um crescimento significativo no número de internações e atendimentos relacionados a problemas respiratórios nas unidades de saúde da cidade. As autoridades locais estão preocupadas com a rápida propagação da síndrome, que tem gerado sintomas graves em algumas pessoas. O governo municipal está mobilizando recursos e equipes para intensificar a fiscalização e garantir que as medidas de prevenção sejam seguidas. Com o decreto de emergência, a prefeitura poderá implementar ações mais eficazes, como campanhas de conscientização e reforço na assistência médica. A população é orientada a buscar atendimento médico ao apresentar sintomas e a seguir as recomendações de saúde para evitar a contaminação. A situação é preocupante e exige a colaboração de todos para que a cidade consiga superar essa crise de saúde.
+                - button "Ver mais" [ref=e413] [cursor=pointer]
+        - article [ref=e414]:
+          - generic [ref=e416]:
+            - generic [ref=e419]: M
+            - generic [ref=e420]:
+              - generic [ref=e421]: Voz do Povo
+              - generic [ref=e422]: há 3 dias
+          - generic [ref=e424]:
+            - img "Vacinamóvel leva vacinas contra Gripe e Covid-19 à Praça dos Pioneiros - 1" [ref=e426]
+            - img "Vacinamóvel leva vacinas contra Gripe e Covid-19 à Praça dos Pioneiros - 2" [ref=e428]
+          - generic [ref=e432]:
+            - generic [ref=e434]:
+              - button [ref=e435] [cursor=pointer]:
+                - img [ref=e436]
+              - button [ref=e438] [cursor=pointer]:
+                - img [ref=e439]
+            - generic [ref=e442]: 2 curtidas
+            - generic [ref=e443]:
+              - paragraph [ref=e444]: Vacinamóvel leva vacinas contra Gripe e Covid-19 à Praça dos Pioneiros
+              - generic [ref=e445]:
+                - paragraph [ref=e446]: "Liberada para todos! A vacinação contra Influenza e Covid-19 está disponível nesta quarta-feira (20/05), das 8h às 17h, na Praça dos Pioneiros, por meio do Vacinamóvel da Prefeitura de Governador Valadares. No local também estão disponíveis outros imunizantes do calendário básico, como Hepatite A e B, HPV, Febre Amarela, Meningite, entre outros. Para se vacinar, basta comparecer ao local com o cartão de vacina em mãos. Fonte: Instagram @prefeituradevaladares"
+                - button "Ver mais" [ref=e447] [cursor=pointer]
+        - article [ref=e448]:
+          - generic [ref=e449]:
+            - generic [ref=e450]:
+              - generic [ref=e453]: J
+              - generic [ref=e454]:
+                - generic [ref=e455]: Jornal da Cidade
+                - generic [ref=e456]: há 4 dias
+            - generic [ref=e457]:
+              - generic [ref=e458]: Trânsito
+              - generic [ref=e459]: não lida
+          - generic [ref=e461]:
+            - img "Que absurdo! Condutor sem CNH é preso em Governador Valadares com moto cheia de multas! - 1" [ref=e463]
+            - img "Que absurdo! Condutor sem CNH é preso em Governador Valadares com moto cheia de multas! - 2" [ref=e465]
+          - generic [ref=e469]:
+            - generic [ref=e470]:
+              - generic [ref=e471]:
+                - button "Curtir" [ref=e472] [cursor=pointer]:
+                  - img [ref=e473]
+                - button "Comentar" [ref=e475] [cursor=pointer]:
+                  - img [ref=e476]
+              - button "Ouvir notícia" [ref=e478] [cursor=pointer]:
+                - img [ref=e479]
+                - generic [ref=e483]: Ouvir notícia
+            - generic [ref=e485]: 0 curtidas
+            - generic [ref=e486]:
+              - paragraph [ref=e487]: Que absurdo! Condutor sem CNH é preso em Governador Valadares com moto cheia de multas!
+              - generic [ref=e488]:
+                - paragraph [ref=e489]: Um motorista foi preso em Governador Valadares após fugir da polícia em uma moto que possuía nada menos que 38 multas. O caso ocorreu na noite de terça-feira (16), quando a polícia estava em patrulhamento na Avenida Minas Gerais e avistou o condutor em atitude suspeita. Ao tentar abordar o motociclista, ele acelerou e fugiu, mas não conseguiu escapar por muito tempo. Durante a perseguição, o condutor acabou colidindo com um carro e, mesmo assim, tentou fugir a pé. A polícia conseguiu detê-lo rapidamente. Ao verificar a situação da moto, os agentes descobriram que ela tinha 38 multas registradas, o que levantou ainda mais suspeitas sobre o uso do veículo. O motorista, que não tinha CNH, foi levado para a delegacia e agora enfrenta várias acusações. Esse caso levanta um alerta sobre a segurança no trânsito e a importância de respeitar as leis. A polícia reforça que a condução sem habilitação e com veículos irregulares pode resultar em consequências sérias, tanto para o motorista quanto para outros usuários da via. A situação atual é de que o condutor está preso e as autoridades seguem investigando o caso.
+                - button "Ver mais" [ref=e490] [cursor=pointer]
+        - article [ref=e491]:
+          - generic [ref=e492]:
+            - generic [ref=e493]:
+              - generic [ref=e496]: J
+              - generic [ref=e497]:
+                - generic [ref=e498]: Jornal da Cidade
+                - generic [ref=e499]: há 4 dias
+            - generic [ref=e500]:
+              - generic [ref=e501]: Política
+              - generic [ref=e502]: não lida
+          - generic [ref=e504]:
+            - 'img "Mudanças na Prefeitura de Governador Valadares: exonerações no primeiro escalão! - 1" [ref=e506]'
+            - 'img "Mudanças na Prefeitura de Governador Valadares: exonerações no primeiro escalão! - 2" [ref=e508]'
+          - generic [ref=e512]:
+            - generic [ref=e513]:
+              - generic [ref=e514]:
+                - button "Curtir" [ref=e515] [cursor=pointer]:
+                  - img [ref=e516]
+                - button "Comentar" [ref=e518] [cursor=pointer]:
+                  - img [ref=e519]
+              - button "Ouvir notícia" [ref=e521] [cursor=pointer]:
+                - img [ref=e522]
+                - generic [ref=e526]: Ouvir notícia
+            - generic [ref=e528]: 0 curtidas
+            - generic [ref=e529]:
+              - paragraph [ref=e530]: "Mudanças na Prefeitura de Governador Valadares: exonerações no primeiro escalão!"
+              - generic [ref=e531]:
+                - paragraph [ref=e532]: Em Governador Valadares, a Prefeitura anunciou uma grande reestruturação que resultou na exoneração de diversos servidores do primeiro escalão. A decisão foi divulgada na última terça-feira e promete impactar diretamente a administração municipal, com a saída de figuras importantes do governo local. As exonerações incluem secretários e outros cargos de confiança, e a medida foi justificada pela necessidade de renovação na gestão. O prefeito enfatizou que a mudança visa trazer novas ideias e melhorar a eficiência dos serviços públicos, mas a decisão gerou reações diversas entre a população e os servidores. Agora, a expectativa é saber quem serão os novos nomes que ocuparão esses postos e como essas mudanças afetarão a rotina da Prefeitura e a prestação de serviços à comunidade. A cidade aguarda ansiosa por mais informações sobre a nova equipe que assumirá as funções deixadas pelos exonerados.
+                - button "Ver mais" [ref=e533] [cursor=pointer]
+        - article [ref=e534]:
+          - generic [ref=e535]:
+            - generic [ref=e536]:
+              - generic [ref=e539]: J
+              - generic [ref=e540]:
+                - generic [ref=e541]: Jornal da Cidade
+                - generic [ref=e542]: há 4 dias
+            - generic [ref=e543]:
+              - generic [ref=e544]: Polícia
+              - generic [ref=e545]: não lida
+          - generic [ref=e547]:
+            - img "Não é que o cara foi pego de novo? Furta carro mesmo com tornozeleira! - 1" [ref=e549]
+            - img "Não é que o cara foi pego de novo? Furta carro mesmo com tornozeleira! - 2" [ref=e551]
+          - generic [ref=e555]:
+            - generic [ref=e556]:
+              - generic [ref=e557]:
+                - button "Curtir" [ref=e558] [cursor=pointer]:
+                  - img [ref=e559]
+                - button "Comentar" [ref=e561] [cursor=pointer]:
+                  - img [ref=e562]
+              - button "Ouvir notícia" [ref=e564] [cursor=pointer]:
+                - img [ref=e565]
+                - generic [ref=e569]: Ouvir notícia
+            - generic [ref=e571]: 0 curtidas
+            - generic [ref=e572]:
+              - paragraph [ref=e573]: Não é que o cara foi pego de novo? Furta carro mesmo com tornozeleira!
+              - generic [ref=e574]:
+                - paragraph [ref=e575]: Um homem foi preso em Governador Valadares após tentar furtar um carro enquanto estava monitorado por uma tornozeleira eletrônica. O crime aconteceu na manhã de sábado, 18 de maio, e o suspeito estava usando uma máscara para tentar esconder a identidade. A polícia foi acionada e conseguiu deter o homem logo após o furto, que foi registrado em um vídeo de segurança da área. Durante a abordagem, os policiais encontraram o homem com uma faca e, ao verificar sua situação, descobriram que ele já tinha passagens pela polícia. A tornozeleira eletrônica que ele usava indicava que ele estava em regime de monitoramento, o que não impediu sua ação criminosa. O carro furtado foi recuperado e devolvido ao proprietário, que ficou aliviado com a rápida ação da polícia. Esse caso levanta questões sobre a eficácia do monitoramento eletrônico, já que o homem conseguiu cometer o crime mesmo sob vigilância. A polícia reforçou que a segurança da população é prioridade e que medidas serão tomadas para evitar que situações como essa se repitam. O suspeito foi levado para a delegacia e deve responder por furto e porte de arma branca.
+                - button "Ver mais" [ref=e576] [cursor=pointer]
+        - article [ref=e577]:
+          - generic [ref=e578]:
+            - generic [ref=e579]:
+              - generic [ref=e582]: J
+              - generic [ref=e583]:
+                - generic [ref=e584]: Jornal da Cidade
+                - generic [ref=e585]: há 4 dias
+            - generic [ref=e586]:
+              - generic [ref=e587]: Polícia
+              - generic [ref=e588]: não lida
+          - generic [ref=e590]:
+            - img "Que absurdo! Mãe esconde arma no quarto da filha e é presa em Governador Valadares! - 1" [ref=e592]
+            - img "Que absurdo! Mãe esconde arma no quarto da filha e é presa em Governador Valadares! - 2" [ref=e594]
+          - generic [ref=e598]:
+            - generic [ref=e599]:
+              - generic [ref=e600]:
+                - button "Curtir" [ref=e601] [cursor=pointer]:
+                  - img [ref=e602]
+                - button "Comentar" [ref=e604] [cursor=pointer]:
+                  - img [ref=e605]
+              - button "Ouvir notícia" [ref=e607] [cursor=pointer]:
+                - img [ref=e608]
+                - generic [ref=e612]: Ouvir notícia
+            - generic [ref=e614]: 0 curtidas
+            - generic [ref=e615]:
+              - paragraph [ref=e616]: Que absurdo! Mãe esconde arma no quarto da filha e é presa em Governador Valadares!
+              - generic [ref=e617]:
+                - paragraph [ref=e618]: Uma mulher foi presa em Governador Valadares, Minas Gerais, após a polícia encontrar uma arma escondida no quarto da filha dela. A abordagem aconteceu na última sexta-feira, 18 de maio, durante uma operação de combate ao tráfico de drogas na cidade. Durante a ação, os policiais também descobriram que a mulher guardava drogas em sua residência. As autoridades informaram que a arma estava em um local de fácil acesso, o que levantou preocupações sobre a segurança da criança que vive na casa. A mulher foi detida e levada para a delegacia, onde responderá por posse ilegal de arma e tráfico de drogas. Esse caso gerou revolta entre os moradores da região, que se preocupam com a segurança das crianças e a influência de atividades criminosas nas comunidades. A polícia continua investigando o caso e reforça a importância de denúncias anônimas para combater o crime na área.
+                - button "Ver mais" [ref=e619] [cursor=pointer]
+        - article [ref=e620]:
+          - generic [ref=e622]:
+            - generic [ref=e625]: M
+            - generic [ref=e626]:
+              - generic [ref=e627]: Voz do Povo
+              - generic [ref=e628]: há 4 dias
+          - generic [ref=e630]:
+            - img "Águas de Valadares faz intervenção emergencial e deixa bairros sem água nesta terça (19) - 1" [ref=e632]
+            - img "Águas de Valadares faz intervenção emergencial e deixa bairros sem água nesta terça (19) - 2" [ref=e634]
+            - img "Águas de Valadares faz intervenção emergencial e deixa bairros sem água nesta terça (19) - 3" [ref=e636]
+          - generic [ref=e641]:
+            - generic [ref=e643]:
+              - button [ref=e644] [cursor=pointer]:
+                - img [ref=e645]
+              - button [ref=e647] [cursor=pointer]:
+                - img [ref=e648]
+            - generic [ref=e651]: 0 curtidas
+            - generic [ref=e652]:
+              - paragraph [ref=e653]: Águas de Valadares faz intervenção emergencial e deixa bairros sem água nesta terça (19)
+              - generic [ref=e654]:
+                - paragraph [ref=e655]: "A Águas de Valadares realiza intervenções emergenciais nesta terça-feira (19/05) em dois pontos da cidade, causando interrupção no abastecimento de água em diversos bairros. 📍 Rua Nova Era, 265 — Santa Helena 📍 Rua Chile, 75 — Jardim Pérola 🔴 Bairros afetados: Santa Helena, Vila Rica, São Cristovão, Bela Vista, Gleba Horácio, Nossa Senhora de Fátima, Jardim Pérola, Fraternidade, Kennedy, São Luiz, Nova Vila Bretas, Coração Eucarístico e Redenção. ⏰ Previsão de normalização a partir das 13h, com retomada gradativa do abastecimento. Reserve água para o período. Se necessário, solicite caminhão-pipa pelo 0800 321 3001 (24h). Fonte: Instagram aguasdevaladares"
+                - button "Ver mais" [ref=e656] [cursor=pointer]
+        - article [ref=e657]:
+          - generic [ref=e659]:
+            - generic [ref=e662]: M
+            - generic [ref=e663]:
+              - generic [ref=e664]: Voz do Povo
+              - generic [ref=e665]: há 4 dias
+          - 'img "Emergência em saúde: Mourão decreta alerta por surto respiratório em GV - 1" [ref=e669]'
+          - generic [ref=e670]:
+            - generic [ref=e672]:
+              - button [ref=e673] [cursor=pointer]:
+                - img [ref=e674]
+              - button [ref=e676] [cursor=pointer]:
+                - img [ref=e677]
+            - generic [ref=e680]: 0 curtidas
+            - generic [ref=e681]:
+              - paragraph [ref=e682]: "Emergência em saúde: Mourão decreta alerta por surto respiratório em GV"
+              - generic [ref=e683]:
+                - paragraph [ref=e684]: O prefeito José Bonifácio Mourão decretou estado de emergência em saúde pública em Governador Valadares devido ao aumento de casos de Síndrome Respiratória Aguda Grave (SRAG). O decreto foi publicado nesta segunda-feira (18) no Diário Oficial do Município. Com a medida, a Secretaria Municipal de Saúde fica autorizada a ampliar leitos clínicos, pediátricos e de UTI, adotar protocolos de atendimento e realizar contratações emergenciais. A Prefeitura também poderá requisitar informações de estabelecimentos públicos e privados para monitorar filas e ocupação de leitos. O decreto entrou em vigor imediatamente e tem duração de 90 dias, podendo ser prorrogado.
+                - button "Ver mais" [ref=e685] [cursor=pointer]
+        - article [ref=e686]:
+          - generic [ref=e688]:
+            - generic [ref=e691]: M
+            - generic [ref=e692]:
+              - generic [ref=e693]: Voz do Povo
+              - generic [ref=e694]: há 4 dias
+          - generic [ref=e699]:
+            - button "Pausar vídeos" [ref=e700] [cursor=pointer]:
+              - img [ref=e701]
+            - button "Silenciar vídeos" [ref=e704] [cursor=pointer]:
+              - img [ref=e705]
+          - generic [ref=e709]:
+            - generic [ref=e711]:
+              - button [ref=e712] [cursor=pointer]:
+                - img [ref=e713]
+              - button [ref=e715] [cursor=pointer]:
+                - img [ref=e716]
+            - generic [ref=e719]: 0 curtidas
+            - generic [ref=e720]:
+              - paragraph [ref=e721]: "Fugiu da PM, mas não escapou: moto com 38 multas é apreendida em GV"
+              - generic [ref=e722]:
+                - paragraph [ref=e723]: Um jovem sem CNH foi preso na noite desta segunda-feira (18/05) após fugir de uma abordagem durante a Operação Maio Amarelo 2026, em Governador Valadares. Ele trafegou na contramão e fez manobras perigosas até ser detido no bairro Vale Pastoril, em frente à própria casa. A moto estava completamente irregular — pneus carecas, sem retrovisores e com sinais de "grau". A motocicleta acumulava 38 multas e ainda recebeu mais 3 autuações. O jovem foi levado à delegacia e a moto apreendida pelo Detran.
+                - button "Ver mais" [ref=e724] [cursor=pointer]
+        - article [ref=e725]:
+          - generic [ref=e727]:
+            - generic [ref=e730]: M
+            - generic [ref=e731]:
+              - generic [ref=e732]: Voz do Povo
+              - generic [ref=e733]: há 5 dias
+          - generic [ref=e738]:
+            - button "Pausar vídeos" [ref=e739] [cursor=pointer]:
+              - img [ref=e740]
+            - button "Silenciar vídeos" [ref=e743] [cursor=pointer]:
+              - img [ref=e744]
+          - generic [ref=e748]:
+            - generic [ref=e750]:
+              - button [ref=e751] [cursor=pointer]:
+                - img [ref=e752]
+              - button [ref=e754] [cursor=pointer]:
+                - img [ref=e755]
+            - generic [ref=e758]: 0 curtidas
+            - generic [ref=e759]:
+              - paragraph [ref=e760]: Mourão anuncia secretariado e define primeiro escalão de GV
+              - generic [ref=e761]:
+                - paragraph [ref=e762]: "O prefeito José Bonifácio Mourão divulgou os nomes da nova administração de Governador Valadares. Veja quem assumiu cada pasta: 🔹 Gabinete: Cel. Welington da Silva Campos 🔹 Desenvolvimento e Inovação: Samuel Sabbagh 🔹 Procuradoria-Geral: Amarildo Lourenço Costa 🔹 Administração: Allan Heringer Rodrigues 🔹 Planejamento: Robert Nogueira 🔹 Obras: Lourival Antunes Miranda 🔹 Saúde: Thalita Poli Soalheiro 🔹 Educação: Rodrigo Cunha 🔹 Assistência Social: Igor Costa e Moura 🔹 Cultura e Esporte: Adriano Juliano Lopes da Silva 🔹 Meio Ambiente: Guilherme Moraes de Castro 🔹 Comunicação: Valéria Alves 🔹 Controladoria-Geral: Robson Mourão Franklin dos Santos 🔹 Ouvidoria: José Maria Pires Coelho A gestão Mourão inicia sua reorganização administrativa em GV."
+                - button "Ver mais" [ref=e763] [cursor=pointer]
+        - article [ref=e764]:
+          - generic [ref=e766]:
+            - generic [ref=e769]: M
+            - generic [ref=e770]:
+              - generic [ref=e771]: Voz do Povo
+              - generic [ref=e772]: há 5 dias
+          - generic [ref=e777]:
+            - button "Pausar vídeos" [ref=e778] [cursor=pointer]:
+              - img [ref=e779]
+            - button "Silenciar vídeos" [ref=e782] [cursor=pointer]:
+              - img [ref=e783]
+          - generic [ref=e787]:
+            - generic [ref=e789]:
+              - button [ref=e790] [cursor=pointer]:
+                - img [ref=e791]
+              - button [ref=e793] [cursor=pointer]:
+                - img [ref=e794]
+            - generic [ref=e797]: 1 curtidas
+            - generic [ref=e798]:
+              - paragraph [ref=e799]: "De tornozeleira e usando máscara: homem furta carro e é preso em GV"
+              - generic [ref=e800]:
+                - paragraph [ref=e801]: Um homem de 38 anos, monitorado por tornozeleira eletrônica, foi preso após furtar um Fiat Uno branco na noite de sábado (16), no bairro Morada do Acampamento, em Governador Valadares. Câmeras de segurança flagraram a ação — ele usava máscara e fugiu em direção ao viaduto Mister Simpson. O veículo foi encontrado abandonado no bairro Altinópolis. O suspeito foi localizado próximo a um posto de combustíveis, ainda com as mesmas roupas das câmeras, e confessou o crime. Ele já tem passagens por furto de veículos e ficou à disposição da Justiça. O carro será devolvido ao proprietário após os procedimentos legais.
+                - button "Ver mais" [ref=e802] [cursor=pointer]
+        - article [ref=e803]:
+          - generic [ref=e804]:
+            - generic [ref=e805]:
+              - generic [ref=e808]: J
+              - generic [ref=e809]:
+                - generic [ref=e810]: Jornal da Cidade
+                - generic [ref=e811]: há 6 dias
+            - generic [ref=e812]:
+              - generic [ref=e813]: Tragédia
+              - generic [ref=e814]: não lida
+          - generic [ref=e816]:
+            - img "Que tragédia! Mulher é atropelada por caminhão em Governador Valadares - 1" [ref=e818]
+            - img "Que tragédia! Mulher é atropelada por caminhão em Governador Valadares - 2" [ref=e820]
+          - generic [ref=e824]:
+            - generic [ref=e825]:
+              - generic [ref=e826]:
+                - button "Curtir" [ref=e827] [cursor=pointer]:
+                  - img [ref=e828]
+                - button "Comentar" [ref=e830] [cursor=pointer]:
+                  - img [ref=e831]
+              - button "Ouvir notícia" [ref=e833] [cursor=pointer]:
+                - img [ref=e834]
+                - generic [ref=e838]: Ouvir notícia
+            - generic [ref=e840]: 0 curtidas
+            - generic [ref=e841]:
+              - paragraph [ref=e842]: Que tragédia! Mulher é atropelada por caminhão em Governador Valadares
+              - generic [ref=e843]:
+                - paragraph [ref=e844]: Uma mulher perdeu a vida de forma trágica em Governador Valadares, após ser atropelada por um caminhão. O acidente aconteceu na manhã de terça-feira, 17 de maio, quando a vítima tentava atravessar a rua e foi pega de surpresa pelo veículo que fazia uma curva. O caminhoneiro, que não viu a pedestre, não conseguiu evitar a colisão fatal. A mulher, que não teve seu nome divulgado, foi socorrida de imediato, mas infelizmente não resistiu aos ferimentos e faleceu no hospital. O motorista do caminhão, visivelmente abalado, prestou socorro e chamou as autoridades. A Polícia Militar e a perícia foram acionadas para investigar as circunstâncias do acidente e apurar quem é o responsável pela tragédia. Esse triste incidente levanta questões sobre a segurança nas ruas da cidade e a necessidade de mais atenção dos motoristas, especialmente em áreas com grande movimento de pedestres. A comunidade local está em luto pela perda e espera que medidas sejam adotadas para evitar que tragédias como essa voltem a acontecer no futuro.
+                - button "Ver mais" [ref=e845] [cursor=pointer]
+        - article [ref=e846]:
+          - generic [ref=e847]:
+            - generic [ref=e848]:
+              - generic [ref=e851]: J
+              - generic [ref=e852]:
+                - generic [ref=e853]: Jornal da Cidade
+                - generic [ref=e854]: há 8 dias
+            - generic [ref=e855]:
+              - generic [ref=e856]: Polícia
+              - generic [ref=e857]: não lida
+          - generic [ref=e859]:
+            - 'img "Que situação inusitada: Idoso é preso após pular muro armado em Governador Valadares! - 1" [ref=e861]'
+            - 'img "Que situação inusitada: Idoso é preso após pular muro armado em Governador Valadares! - 2" [ref=e863]'
+          - generic [ref=e867]:
+            - generic [ref=e868]:
+              - generic [ref=e869]:
+                - button "Curtir" [ref=e870] [cursor=pointer]:
+                  - img [ref=e871]
+                - button "Comentar" [ref=e873] [cursor=pointer]:
+                  - img [ref=e874]
+              - button "Ouvir notícia" [ref=e876] [cursor=pointer]:
+                - img [ref=e877]
+                - generic [ref=e881]: Ouvir notícia
+            - generic [ref=e883]: 0 curtidas
+            - generic [ref=e884]:
+              - paragraph [ref=e885]: "Que situação inusitada: Idoso é preso após pular muro armado em Governador Valadares!"
+              - generic [ref=e886]:
+                - paragraph [ref=e887]: Um idoso de 68 anos foi preso em Governador Valadares depois de protagonizar uma cena bem estranha. Na última terça-feira, ele subiu no telhado de uma casa e pulou o muro com uma arma em punho, o que deixou os moradores bem preocupados. A polícia foi chamada para averiguar a movimentação suspeita e, ao chegar, encontrou o homem ainda em cima do telhado, causando alvoroço na vizinhança. Os policiais abordaram o idoso e, durante a revista, encontraram uma pistola calibre .380 e algumas munições. O homem não conseguiu explicar o motivo de estar armado, o que deixou os vizinhos ainda mais alarmados, já que ninguém esperava por uma cena dessas em um dia comum. A situação gerou bastante preocupação entre os moradores, que se sentiram inseguros com a presença de um homem armado na área. Após a abordagem, o idoso foi levado para a delegacia e autuado por porte ilegal de arma. A polícia aproveitou a ocasião para reforçar a importância da vigilância na comunidade e pediu que qualquer comportamento suspeito seja reportado imediatamente. Essa ocorrência serviu como um alerta para os moradores, que agora estão mais atentos à segurança do bairro.
+                - button "Ver mais" [ref=e888] [cursor=pointer]
+    - navigation [ref=e890]:
+      - generic [ref=e891]:
+        - button "Jornal da cidade" [ref=e892] [cursor=pointer]:
+          - img [ref=e893]
+          - generic [ref=e896]:
+            - text: Jornal da
+            - text: cidade
+        - button "Filmes em cartaz" [ref=e897] [cursor=pointer]:
+          - img [ref=e898]
+          - generic [ref=e900]:
+            - text: Filmes em
+            - text: cartaz
+        - button "Pagina inicial" [ref=e901] [cursor=pointer]:
+          - img [ref=e902]
+          - generic [ref=e905]:
+            - text: Pagina
+            - text: inicial
+        - button "Guia GV" [ref=e906] [cursor=pointer]:
+          - img [ref=e907]
+          - generic [ref=e909]:
+            - text: Guia
+            - text: GV
+        - button "Mural de ofertas" [ref=e910] [cursor=pointer]:
+          - img [ref=e911]
+          - generic [ref=e914]:
+            - text: Mural de
+            - text: ofertas

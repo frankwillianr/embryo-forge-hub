@@ -1,0 +1,37 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e6]:
+    - main [ref=e7]:
+      - generic [ref=e8]:
+        - button [ref=e9] [cursor=pointer]:
+          - img
+        - heading "Cinema" [level=1] [ref=e10]
+    - navigation [ref=e40]:
+      - generic [ref=e41]:
+        - button "Jornal da cidade" [ref=e42] [cursor=pointer]:
+          - img [ref=e43]
+          - generic [ref=e46]:
+            - text: Jornal da
+            - text: cidade
+        - button "Filmes em cartaz" [ref=e47] [cursor=pointer]:
+          - img [ref=e48]
+          - generic [ref=e50]:
+            - text: Filmes em
+            - text: cartaz
+        - button "Pagina inicial" [ref=e51] [cursor=pointer]:
+          - img [ref=e52]
+          - generic [ref=e55]:
+            - text: Pagina
+            - text: inicial
+        - button "Onde ir & Serviços" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+          - generic [ref=e60]:
+            - text: Onde ir &
+            - text: Serviços
+        - button "Mural de ofertas" [ref=e61] [cursor=pointer]:
+          - img [ref=e62]
+          - generic [ref=e65]:
+            - text: Mural de
+            - text: ofertas

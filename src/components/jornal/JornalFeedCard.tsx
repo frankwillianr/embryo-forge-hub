@@ -414,7 +414,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
   const dataExibicao = new Date(jornal.created_at);
 
   return (
-    <article id={`jornal-${jornal.id}`} className="border-b border-border/50 relative mb-6 scroll-mt-16">
+    <article id={`jornal-${jornal.id}`} className="relative flex h-[calc(100dvh-86px)] min-h-[calc(100dvh-86px)] snap-start snap-always flex-col overflow-hidden border-b border-border/50">
       {/* Header - perfil estilo Instagram */}
       <div className="flex items-center px-3 py-2.5">
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -455,7 +455,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
       {/* Imagem/Carrossel */}
       <div
         ref={containerRef}
-        className="relative aspect-square w-full overflow-hidden bg-muted/30"
+        className="relative min-h-0 flex-1 w-full overflow-hidden bg-muted/30"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -520,7 +520,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
       </div>
 
       {/* Ações estilo Instagram */}
-      <div className="px-3 pt-2.5">
+      <div className="flex-shrink-0 px-3 pt-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -584,7 +584,7 @@ const JornalFeedCard = ({ jornal, cidadeSlug }: JornalFeedCardProps) => {
             {jornal.titulo}
           </p>
           {descricao && (
-            <div className="text-[13px] text-muted-foreground leading-relaxed mt-1">
+            <div className={`text-[13px] text-muted-foreground leading-relaxed mt-1 ${isDescricaoExpanded ? "max-h-[28dvh] overflow-y-auto overscroll-contain pr-1" : ""}`}>
               <p
                 className="whitespace-pre-line"
                 style={

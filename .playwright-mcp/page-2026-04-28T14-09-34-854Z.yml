@@ -1,0 +1,182 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e6]:
+    - complementary [ref=e7]:
+      - generic [ref=e14]: OFCORG
+      - navigation [ref=e15]:
+        - button "Espelho" [ref=e16] [cursor=pointer]:
+          - img [ref=e17]
+          - generic [ref=e20]: Espelho
+        - button "Recebimentos" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+          - generic [ref=e24]: Recebimentos
+        - button "Pagamentos" [ref=e25] [cursor=pointer]:
+          - img [ref=e26]
+          - generic [ref=e28]: Pagamentos
+        - button "Contatos" [ref=e29] [cursor=pointer]:
+          - img [ref=e30]
+          - generic [ref=e32]: Contatos
+        - button "Suporte" [ref=e33] [cursor=pointer]:
+          - img [ref=e34]
+          - generic [ref=e37]: Suporte
+        - button "Ponto de equilibrio" [ref=e38] [cursor=pointer]:
+          - img [ref=e39]
+          - generic [ref=e43]: Ponto de equilibrio
+        - button "Painel admin" [ref=e44] [cursor=pointer]:
+          - img [ref=e45]
+          - generic [ref=e46]: Painel admin
+    - main [ref=e47]:
+      - generic [ref=e49]:
+        - button "Calculadora" [ref=e50] [cursor=pointer]:
+          - img [ref=e51]
+          - text: Calculadora
+        - button "Painel" [ref=e53] [cursor=pointer]:
+          - img [ref=e54]
+          - text: Painel
+        - button "Transferir" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+          - text: Transferir
+        - button "Acerto de caixa" [ref=e63] [cursor=pointer]:
+          - img [ref=e64]
+          - text: Acerto de caixa
+        - button "Nova saida" [ref=e67] [cursor=pointer]:
+          - img [ref=e68]
+          - text: Nova saida
+        - button "Nova entrada" [ref=e70] [cursor=pointer]:
+          - img [ref=e71]
+          - text: Nova entrada
+        - generic [ref=e73]:
+          - img [ref=e74]
+          - generic [ref=e76]:
+            - generic [ref=e77]: Minha assinatura
+            - generic [ref=e78]: Ativo ate o dia 01/01/2028
+        - button "PAINEL ADMINISTRATIVO TESTE" [ref=e79] [cursor=pointer]:
+          - img [ref=e80]
+          - text: PAINEL ADMINISTRATIVO TESTE
+      - generic [ref=e82]:
+        - generic [ref=e83]:
+          - generic [ref=e84]:
+            - heading "Dashboard" [level=1] [ref=e85]
+            - paragraph [ref=e86]: Dashboard
+          - img [ref=e87]
+        - generic [ref=e90]:
+          - generic [ref=e91]:
+            - generic [ref=e92]: R$ 0,00
+            - generic [ref=e93]: Recebimentos hoje
+          - generic [ref=e94]:
+            - generic [ref=e95]: R$ 0,00
+            - generic [ref=e96]: Pagamentos hoje
+          - generic [ref=e97]:
+            - button "Ver extrato" [ref=e98] [cursor=pointer]
+            - generic [ref=e99]: R$ 3.489,00
+            - generic [ref=e100]: Recebimentos atraso
+          - generic [ref=e101]:
+            - button "Ver extrato" [ref=e102] [cursor=pointer]
+            - generic [ref=e103]: R$ 43.150,00
+            - generic [ref=e104]: Pagamentos em atraso
+        - generic [ref=e105]:
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - img [ref=e108]
+              - text: Saldos e Extratos
+            - generic [ref=e111]:
+              - combobox [ref=e112]:
+                - option "Janeiro" [selected]
+              - combobox [ref=e113]:
+                - option "2025" [selected]
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - generic [ref=e116]:
+                - generic [ref=e117]: R$ 17.580,67
+                - generic [ref=e118]: Inter
+              - button [ref=e119] [cursor=pointer]:
+                - img [ref=e120]
+            - generic [ref=e123]:
+              - generic [ref=e124]:
+                - generic [ref=e125]: R$ 500,00
+                - generic [ref=e126]: Dinheiro
+              - button [ref=e127] [cursor=pointer]:
+                - img [ref=e128]
+            - generic [ref=e131]:
+              - generic [ref=e132]:
+                - generic [ref=e133]: R$ 13.000,00
+                - generic [ref=e134]: Inter Investimentos
+              - button [ref=e135] [cursor=pointer]:
+                - img [ref=e136]
+            - generic [ref=e139]:
+              - generic [ref=e140]:
+                - generic [ref=e141]: "-R$ 800,00"
+                - generic [ref=e142]: Sicred
+              - button [ref=e143] [cursor=pointer]:
+                - img [ref=e144]
+            - generic [ref=e147]:
+              - generic [ref=e148]:
+                - generic [ref=e149]: R$ 51.953,31
+                - generic [ref=e150]: Bancob
+              - button [ref=e151] [cursor=pointer]:
+                - img [ref=e152]
+        - generic [ref=e155]:
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - generic [ref=e158]: "1"
+              - generic [ref=e159]: Qtd. Entrada (Janeiro)
+            - generic [ref=e160]:
+              - generic [ref=e161]: R$ 843,00
+              - generic [ref=e162]: Total de entrada (Janeiro)
+            - generic [ref=e163]:
+              - generic [ref=e164]: "1"
+              - generic [ref=e165]: Qtd Saida (Janeiro)
+            - generic [ref=e166]:
+              - generic [ref=e167]: R$ 843,00
+              - generic [ref=e168]: Total de saida (Janeiro)
+          - generic [ref=e169]:
+            - heading "Entrada x Saidas" [level=2] [ref=e170]
+            - paragraph [ref=e171]: Atividades OPERACIONAIS
+          - generic [ref=e172]:
+            - button "Barras" [ref=e173] [cursor=pointer]
+            - button "Linhas" [ref=e174] [cursor=pointer]
+            - button "Area" [ref=e175] [cursor=pointer]
+            - button "Misto" [ref=e176] [cursor=pointer]
+            - button "Ocultar valores" [ref=e177] [cursor=pointer]
+          - generic [ref=e179]:
+            - generic [ref=e188]: R$ 0,00
+            - generic [ref=e189]: R$ 10.000,00
+            - generic [ref=e190]: R$ 20.000,00
+            - generic [ref=e191]: R$ 30.000,00
+            - generic [ref=e192]: R$ 40.000,00
+            - generic [ref=e193]: R$ 50.000,00
+            - generic [ref=e194]: R$ 60.000,00
+            - generic [ref=e195]: R$ 70.000,00
+            - generic [ref=e196]:
+              - generic [ref=e198]:
+                - generic [ref=e200]: R$ 843,00
+                - generic [ref=e203]: R$ 843,00
+              - generic [ref=e206]:
+                - generic [ref=e208]: R$ 0,00
+                - generic [ref=e211]: R$ 0,00
+              - generic [ref=e214]:
+                - generic [ref=e216]: R$ 833,31
+                - generic [ref=e219]: R$ 6.203,66
+              - generic [ref=e222]:
+                - generic [ref=e224]: R$ 0,00
+                - generic [ref=e227]: R$ 0,00
+              - generic [ref=e230]:
+                - generic [ref=e232]: R$ 0,00
+                - generic [ref=e235]: R$ 0,00
+              - generic [ref=e238]:
+                - generic [ref=e240]: R$ 0,00
+                - generic [ref=e243]: R$ 0,00
+              - generic [ref=e246]:
+                - generic [ref=e248]: R$ 0,00
+                - generic [ref=e251]: R$ 0,00
+              - generic [ref=e254]:
+                - generic [ref=e256]: R$ 0,00
+                - generic [ref=e259]: R$ 0,00
+              - generic [ref=e262]:
+                - generic [ref=e264]: R$ 0,00
+                - generic [ref=e267]: R$ 0,00
+              - generic [ref=e270]:
+                - generic [ref=e272]: R$ 60.000,00
+                - generic [ref=e275]: R$ 66.300,00
