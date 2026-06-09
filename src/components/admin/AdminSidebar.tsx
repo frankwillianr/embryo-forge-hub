@@ -24,6 +24,7 @@
   PanelLeftClose,
   PanelLeftOpen,
   Radio,
+  ArrowRightLeft,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ const cidadeMenuItems = [
   { id: "sugestoes", title: "Sugestoes", icon: Lightbulb, route: "/admin/sugestoes" },
   { id: "verificar-ios", title: "Verificar iOS", icon: Smartphone, route: "/admin/verificar-ios" },
   { id: "abrir-live", title: "Abrir live", icon: Radio, route: "/admin/abrir-live" },
+  { id: "liberar-numero", title: "Liberar numero", icon: ArrowRightLeft, route: "/admin/liberar-numero" },
   { id: "scarping-cinema", title: "Scarping cinema", icon: Film, route: "/admin/scarping-cinema" },
   { id: "scraping-emprego", title: "Scraping emprego", icon: Briefcase, route: "/admin/scraping-emprego" },
   { id: "categorias-servicos", title: "Categorias de serviços", icon: FolderTree, route: "/admin/categorias-servicos" },
