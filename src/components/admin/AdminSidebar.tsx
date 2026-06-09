@@ -23,6 +23,7 @@
   Trophy,
   PanelLeftClose,
   PanelLeftOpen,
+  Radio,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ const cidadeMenuItems = [
   { id: "enquete", title: "Enquete", icon: MessageCircle, route: "/admin/enquete" },
   { id: "sugestoes", title: "Sugestoes", icon: Lightbulb, route: "/admin/sugestoes" },
   { id: "verificar-ios", title: "Verificar iOS", icon: Smartphone, route: "/admin/verificar-ios" },
+  { id: "abrir-live", title: "Abrir live", icon: Radio, route: "/admin/abrir-live" },
   { id: "scarping-cinema", title: "Scarping cinema", icon: Film, route: "/admin/scarping-cinema" },
   { id: "scraping-emprego", title: "Scraping emprego", icon: Briefcase, route: "/admin/scraping-emprego" },
   { id: "categorias-servicos", title: "Categorias de serviços", icon: FolderTree, route: "/admin/categorias-servicos" },
