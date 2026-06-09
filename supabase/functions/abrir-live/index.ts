@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,6 +36,37 @@ async function getApiVideoAccessToken(apiKey: string) {
   return String(payload.access_token);
 }
 
+async function assertAdmin(req: Request) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const authorization = req.headers.get("Authorization") || "";
+
+  if (!supabaseUrl || !supabaseAnonKey || !authorization) {
+    return { ok: false, error: "Sessao de admin nao encontrada." };
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authorization } },
+  });
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const userId = userData?.user?.id;
+  if (userError || !userId) {
+    return { ok: false, error: "Sessao de admin invalida." };
+  }
+
+  const { count, error: adminError } = await supabase
+    .from("rel_cidade_admin")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (adminError || !count) {
+    return { ok: false, error: "Acesso negado para criar live." };
+  }
+
+  return { ok: true, error: null };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -45,6 +77,11 @@ serve(async (req) => {
   }
 
   try {
+    const admin = await assertAdmin(req);
+    if (!admin.ok) {
+      return jsonResponse({ error: admin.error });
+    }
+
     const apiKey = Deno.env.get("APIVIDEO_API_KEY");
     if (!apiKey) {
       return jsonResponse({ error: "Configure o segredo APIVIDEO_API_KEY no Supabase." }, 500);
@@ -93,7 +130,7 @@ serve(async (req) => {
     console.error("[abrir-live]", error);
     return jsonResponse(
       { error: error instanceof Error ? error.message : "Erro ao criar live." },
-      500,
+      200,
     );
   }
 });
