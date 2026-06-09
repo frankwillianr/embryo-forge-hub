@@ -38,6 +38,7 @@ interface VoucherRow {
   comprovante_path: string | null;
   comprovante_nome: string | null;
   created_at: string;
+  numero_sorteio: number | null;
   nome: string | null;
   email: string | null;
   contato: string | null;
@@ -134,7 +135,12 @@ const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioC
 
         return haystack.includes(normalizedSearch);
       })
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      .sort((a, b) => {
+        const numberA = a.numero_sorteio ?? Number.MAX_SAFE_INTEGER;
+        const numberB = b.numero_sorteio ?? Number.MAX_SAFE_INTEGER;
+        if (numberA !== numberB) return numberA - numberB;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
   }, [search, voucherCountByUser, voucherCountFilter, vouchers]);
 
   const participantes = voucherCountByUser.size;
@@ -245,7 +251,7 @@ const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioC
                     {formatDateTime(voucher.created_at)}
                   </TableCell>
                   <TableCell className="text-sm font-semibold text-gray-600">
-                    {index + 1}
+                    {voucher.numero_sorteio ?? index + 1}
                   </TableCell>
                   <TableCell className="font-medium text-gray-900">
                     {voucher.nome || "Sem nome"}
