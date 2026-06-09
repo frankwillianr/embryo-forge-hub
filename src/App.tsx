@@ -19,6 +19,7 @@ import AdminAtividade from "@/pages/admin/AdminAtividade";
 import AdminEnquete from "@/pages/admin/AdminEnquete";
 import AdminSugestoes from "@/pages/admin/AdminSugestoes";
 import AdminVerificarIos from "@/pages/admin/AdminVerificarIos";
+import AdminAbrirLive from "@/pages/admin/AdminAbrirLive";
 import AdminScarpingCinema from "@/pages/admin/AdminScarpingCinema";
 import AdminScrapingEmprego from "@/pages/admin/AdminScrapingEmprego";
 import AdminCategoriasServicos from "@/pages/admin/AdminCategoriasServicos";
@@ -252,6 +253,7 @@ const App = () => (
             <Route path="/admin/enquete" element={<AdminRouteGuard><AdminLayout><AdminEnquete /></AdminLayout></AdminRouteGuard>} />
             <Route path="/admin/sugestoes" element={<AdminRouteGuard><AdminLayout><AdminSugestoes /></AdminLayout></AdminRouteGuard>} />
             <Route path="/admin/verificar-ios" element={<AdminRouteGuard><AdminLayout><AdminVerificarIos /></AdminLayout></AdminRouteGuard>} />
+            <Route path="/admin/abrir-live" element={<AdminRouteGuard><AdminLayout><AdminAbrirLive /></AdminLayout></AdminRouteGuard>} />
             <Route path="/admin/scarping-cinema" element={<AdminRouteGuard><AdminLayout><AdminScarpingCinema /></AdminLayout></AdminRouteGuard>} />
             <Route path="/admin/scraping-emprego" element={<AdminRouteGuard><AdminLayout><AdminScrapingEmprego /></AdminLayout></AdminRouteGuard>} />
             <Route path="/admin/categorias-servicos" element={<AdminRouteGuard><AdminLayout><AdminCategoriasServicos /></AdminLayout></AdminRouteGuard>} />
