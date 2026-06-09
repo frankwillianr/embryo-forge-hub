@@ -4,7 +4,6 @@ import { Briefcase, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BannerCarousel from "@/components/BannerCarousel";
 import EnqueteSection from "@/components/sections/EnqueteSection";
-import Copa2026SorteioSection from "@/components/sections/Copa2026SorteioSection";
 import MusicaAoVivoSection from "@/components/sections/MusicaAoVivoSection";
 import OfertasSection from "@/components/ofertas/OfertasSection";
 import CuponsSection from "@/components/sections/CuponsSection";
@@ -90,10 +89,6 @@ const HomeSection = ({ cidadeSlug, onMapClick }: HomeSectionProps) => {
       ) : banners.length > 0 ? (
         <BannerCarousel banners={banners} cidadeSlug={cidadeSlug} />
       ) : null}
-
-      <Copa2026SorteioSection cidadeSlug={cidadeSlug} />
-
-      <Separador />
 
       <MusicaAoVivoSection cidadeSlug={cidadeSlug} />
 
