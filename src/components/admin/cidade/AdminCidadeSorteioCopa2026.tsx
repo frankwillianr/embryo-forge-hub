@@ -55,6 +55,34 @@ const formatDateTime = (value: string) => {
   }).format(date);
 };
 
+const maskEmail = (email?: string | null) => {
+  const trimmed = email?.trim();
+  if (!trimmed) return "-";
+
+  const [localPart, domain] = trimmed.split("@");
+  if (!localPart || !domain) return trimmed;
+
+  const visibleStart = localPart.slice(0, Math.min(2, localPart.length));
+  const visibleEnd = localPart.length > 4 ? localPart.slice(-1) : "";
+
+  return `${visibleStart}***${visibleEnd}@${domain}`;
+};
+
+const maskPhone = (phone?: string | null) => {
+  const trimmed = phone?.trim();
+  if (!trimmed) return "-";
+
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length < 8) return trimmed;
+
+  const areaCode = digits.length >= 10 ? `(${digits.slice(0, 2)}) ` : "";
+  const subscriber = digits.length >= 10 ? digits.slice(2) : digits;
+  const visibleStart = subscriber.slice(0, Math.min(2, subscriber.length));
+  const visibleEnd = subscriber.slice(-2);
+
+  return `${areaCode}${visibleStart}***${visibleEnd}`;
+};
+
 const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioCopa2026Props) => {
   const [voucherCountFilter, setVoucherCountFilter] = useState("todos");
   const [search, setSearch] = useState("");
@@ -87,24 +115,26 @@ const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioC
     const normalizedSearch = search.trim().toLowerCase();
     const selectedCount = voucherCountFilter === "todos" ? null : Number(voucherCountFilter);
 
-    return vouchers.filter((voucher) => {
-      const userVoucherCount = voucherCountByUser.get(voucher.user_id) || 0;
-      if (selectedCount !== null && userVoucherCount !== selectedCount) return false;
+    return vouchers
+      .filter((voucher) => {
+        const userVoucherCount = voucherCountByUser.get(voucher.user_id) || 0;
+        if (selectedCount !== null && userVoucherCount !== selectedCount) return false;
 
-      if (!normalizedSearch) return true;
+        if (!normalizedSearch) return true;
 
-      const haystack = [
-        voucher.voucher_codigo,
-        voucher.nome,
-        voucher.email,
-        voucher.contato,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+        const haystack = [
+          voucher.voucher_codigo,
+          voucher.nome,
+          voucher.email,
+          voucher.contato,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
 
-      return haystack.includes(normalizedSearch);
-    });
+        return haystack.includes(normalizedSearch);
+      })
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   }, [search, voucherCountByUser, voucherCountFilter, vouchers]);
 
   const participantes = voucherCountByUser.size;
@@ -180,6 +210,7 @@ const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioC
           <TableHeader>
             <TableRow className="bg-gray-50">
               <TableHead>Data</TableHead>
+              <TableHead className="w-16">Nº</TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Telefone</TableHead>
               <TableHead>Email</TableHead>
@@ -191,35 +222,38 @@ const AdminCidadeSorteioCopa2026 = ({ cidadeId: _cidadeId }: AdminCidadeSorteioC
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-gray-500">
+                <TableCell colSpan={8} className="py-8 text-center text-gray-500">
                   Carregando vouchers...
                 </TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-red-600">
+                <TableCell colSpan={8} className="py-8 text-center text-red-600">
                   {(error as Error).message || "Erro ao carregar vouchers."}
                 </TableCell>
               </TableRow>
             ) : filteredVouchers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-8 text-center text-gray-500">
+                <TableCell colSpan={8} className="py-8 text-center text-gray-500">
                   Nenhum voucher encontrado.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredVouchers.map((voucher) => (
+              filteredVouchers.map((voucher, index) => (
                 <TableRow key={voucher.id}>
                   <TableCell className="whitespace-nowrap text-sm text-gray-600">
                     {formatDateTime(voucher.created_at)}
+                  </TableCell>
+                  <TableCell className="text-sm font-semibold text-gray-600">
+                    {index + 1}
                   </TableCell>
                   <TableCell className="font-medium text-gray-900">
                     {voucher.nome || "Sem nome"}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {voucher.contato || "-"}
+                    {maskPhone(voucher.contato)}
                   </TableCell>
-                  <TableCell>{voucher.email || "-"}</TableCell>
+                  <TableCell>{maskEmail(voucher.email)}</TableCell>
                   <TableCell className="whitespace-nowrap font-mono text-sm font-semibold">
                     {voucher.voucher_codigo}
                   </TableCell>
