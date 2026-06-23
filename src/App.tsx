@@ -66,6 +66,7 @@ import ConversaOrcamentoPage from "@/pages/ConversaOrcamentoPage";
 import EnviarOrcamentoPage from "@/pages/EnviarOrcamentoPage";
 import EditarSolicitacaoOrcamentoPage from "@/pages/EditarSolicitacaoOrcamentoPage";
 import AuthPage from "@/pages/AuthPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import MeusAnunciosPage from "@/pages/MeusAnunciosPage";
 import MinhasEmpresasPage from "@/pages/MinhasEmpresasPage";
 import EditarEmpresaPage from "@/pages/EditarEmpresaPage";
@@ -233,6 +234,7 @@ const App = () => (
               <Route path="/cidade/:slug/meus-cupons" element={<MeusCuponsPage />} />
               <Route path="/cidade/:slug/teste_token" element={<TesteTokenPage />} />
               <Route path="/cidade/:slug/auth" element={<AuthPage />} />
+              <Route path="/cidade/:slug/reset-password" element={<ResetPasswordPage />} />
             </Route>
 
             {/* Public standalone pages */}

@@ -47,6 +47,10 @@ const loginSchema = z.object({
   password: z.string().min(6, "Mínimo 6 caracteres"),
 });
 
+const resetEmailSchema = z.object({
+  email: z.string().trim().email("Email inválido"),
+});
+
 const signupSchema = z.object({
   nome: z.string().trim().min(2, "Nome muito curto").max(100)
     .refine((val) => val.trim().split(/\s+/).length >= 2, "Informe nome e sobrenome"),
@@ -74,6 +78,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isSigningUp, setIsSigningUp] = useState(false); // Flag to prevent auto-redirect during signup
+  const [isResetRequest, setIsResetRequest] = useState(searchParams.get("reset") === "1");
   
   // Form states
   const [email, setEmail] = useState("");
@@ -247,6 +252,60 @@ const AuthPage = () => {
     }
   };
 
+  const handlePasswordResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    const result = resetEmailSchema.safeParse({ email });
+    if (!result.success) {
+      setErrors({ email: result.error.errors[0]?.message || "Email inválido" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const redirectTo = `${window.location.origin}/cidade/${slug}/reset-password`;
+      const { data, error } = await supabase.functions.invoke("send-password-reset-email", {
+        body: {
+          email: email.trim(),
+          redirectTo,
+          cidadeNome: cidade?.nome || "Governador Valadares",
+        },
+      });
+
+      let functionErrorCode = data?.error;
+      if (error && (error as any).context) {
+        try {
+          const errorBody = await (error as any).context.clone().json();
+          functionErrorCode = errorBody?.error || functionErrorCode;
+        } catch {
+          // Keep the original Supabase error when the function response is not JSON.
+        }
+      }
+
+      if (functionErrorCode === "EMAIL_NOT_FOUND") {
+        setErrors({ email: "Esse email não está cadastrado na plataforma." });
+        return;
+      }
+
+      if (error) throw error;
+
+      toast({
+        title: "Confira seu email",
+        description: "Enviamos um link para você criar uma nova senha.",
+      });
+      setIsResetRequest(false);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar email",
+        description: error.message || "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSignupClick = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -384,7 +443,7 @@ const AuthPage = () => {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="text-lg font-semibold">
-            {isLogin ? "Entrar" : "Criar conta"}
+            {isResetRequest ? "Recuperar senha" : isLogin ? "Entrar" : "Criar conta"}
           </h1>
         </div>
       </header>
@@ -409,7 +468,53 @@ const AuthPage = () => {
 
       {/* Form Area */}
       <div className="flex-1 px-6 py-6">
-        {isLogin ? (
+        {isResetRequest ? (
+          <form onSubmit={handlePasswordResetRequest} className="space-y-5">
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-foreground">Esqueceu sua senha?</h2>
+              <p className="text-sm text-muted-foreground">
+                Informe o email cadastrado e enviaremos um link seguro para criar uma nova senha.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="reset-email" className="text-sm font-medium">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="reset-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="pl-10 h-12 bg-background border-border/50 focus:border-primary"
+                />
+              </div>
+              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+            </div>
+
+            <Button
+              type="submit"
+              variant="dark"
+              className="w-full h-12 text-base font-semibold rounded-xl"
+              disabled={loading}
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Enviar link de recuperação"}
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setIsResetRequest(false);
+                setErrors({});
+              }}
+              className="w-full rounded-xl"
+            >
+              Voltar para entrar
+            </Button>
+          </form>
+        ) : isLogin ? (
           /* Login Form */
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
@@ -463,6 +568,17 @@ const AuthPage = () => {
                 </>
               )}
             </Button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsResetRequest(true);
+                setErrors({});
+              }}
+              className="w-full text-center text-sm font-medium text-primary hover:underline"
+            >
+              Esqueci minha senha
+            </button>
           </form>
         ) : (
           /* Signup Form */
@@ -630,11 +746,13 @@ const AuthPage = () => {
         )}
 
         {/* Toggle Login/Signup */}
+        {!isResetRequest && (
         <div className="mt-6 text-center">
           <button
             type="button"
             onClick={() => {
               setIsLogin(!isLogin);
+              setIsResetRequest(false);
               setErrors({});
             }}
             className="text-sm text-muted-foreground"
@@ -646,6 +764,7 @@ const AuthPage = () => {
             )}
           </button>
         </div>
+        )}
 
         {/* Terms */}
         <p className="text-[11px] text-center text-muted-foreground mt-6 px-4">

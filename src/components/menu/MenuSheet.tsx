@@ -42,6 +42,11 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
     navigate(`/cidade/${cidadeSlug}/auth`);
   };
 
+  const handlePasswordReset = () => {
+    onOpenChange(false);
+    navigate(`/cidade/${cidadeSlug}/auth?reset=1`);
+  };
+
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
   };
@@ -178,13 +183,22 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
                 </Button>
               </div>
             ) : (
-              <Button 
-                variant="dark"
-                onClick={handleLogin}
-                className="w-full rounded-xl"
-              >
-                Fazer Login
-              </Button>
+              <div className="space-y-2">
+                <Button 
+                  variant="dark"
+                  onClick={handleLogin}
+                  className="w-full rounded-xl"
+                >
+                  Entrar na conta
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={handlePasswordReset}
+                  className="w-full rounded-xl text-primary"
+                >
+                  Esqueci minha senha
+                </Button>
+              </div>
             )}
           </div>
 
@@ -225,23 +239,37 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
           {/* Contatos Section */}
           <div className="px-6 py-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Contatos
+              Contato
             </h3>
+
+            <p className="text-sm text-muted-foreground mb-4">
+              Tem alguma sugestão ou ideia para melhorar o app? Não encontrou o que estava procurando?
+              Ou quer adicionar sua empresa?
+            </p>
+
+            <p className="text-sm font-medium text-foreground mb-3">
+              Chame a gente no WhatsApp!
+            </p>
 
             <div className="space-y-2">
               <a
-                href="tel:+5533999999999"
+                href="https://wa.me/5533997305519"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
               >
                 <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
                   <Phone className="h-5 w-5 text-green-600" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">WhatsApp</p>
-                  <p className="text-xs text-muted-foreground">(33) 99999-9999</p>
+                  <p className="text-xs text-muted-foreground">(33) 99730-5519</p>
                 </div>
+                <span className="text-sm font-semibold text-primary">Chamar</span>
               </a>
 
+              {false && (
+                <>
               <a
                 href="mailto:contato@app.com"
                 className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
@@ -266,6 +294,8 @@ const MenuSheet = ({ open, onOpenChange, cidadeNome, cidadeSlug }: MenuSheetProp
                   </p>
                 </div>
               </div>
+                </>
+              )}
             </div>
           </div>
 
